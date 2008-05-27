@@ -1,0 +1,1 @@
+LD_LIBRARY_PATH=/home/bill/lib:/depot/slash/usr/X11R7/lib::/depot/slash/lib:/depot/slash/usr/lib:/home/bill/apps/jdk1.6.0_06/jre/lib/i386:/home/bill/apps/jdk1.6.0_06/jre/lib/i386/client /home/bill/work/SauerGroovy/src/sauer_client
