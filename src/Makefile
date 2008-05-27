@@ -1,10 +1,11 @@
 CXXOPTFLAGS= -O3 -fomit-frame-pointer
-INCLUDES= -Ishared -Iengine -Ifpsgame -Irpggame -Ienet/include -I/usr/X11R6/include `sdl-config --cflags`
+INC=$(PWD)/src
+INCLUDES= -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -I$(INC) -I$(INC)/include -I$(INC)/shared -I$(INC)/engine -I$(INC)/fpsgame -I$(INC)/rpggame -I$(INC)/enet/include -I/usr/X11R6/include `sdl-config --cflags`
 CXXFLAGS= -Wall -fsigned-char $(CXXOPTFLAGS) $(INCLUDES)
 
 PLATFORM_PREFIX=native
 
-CLIENT_LIBS=-Lenet -lenet -L/usr/X11R6/lib `sdl-config --libs` -lSDL_image -lSDL_mixer -lz -lGL -lGLU 
+CLIENT_LIBS=-L$(JAVA_HOME)/jre/lib/i386 -ljava -Lenet -lenet -L/usr/X11R6/lib `sdl-config --libs` -lSDL_image -lSDL_mixer -lz -lGL -lGLU 
 CLIENT_OBJS= \
 	shared/tools.o \
 	shared/geom.o \
@@ -40,6 +41,7 @@ CLIENT_OBJS= \
 	engine/world.o \
 	engine/worldio.o \
 	fpsgame/fps.o \
+	groovy/groovy.o \
 	rpggame/rpg.o
 
 SERVER_LIBS=-Lenet -lenet -lz
@@ -53,12 +55,19 @@ DPROVIDER= $(if $(wildcard /usr/sbin/dtrace), shared/sbtrace.o, )
 
 default: all
 
-all: client server
+all: duh client server
+
+duh: FRC
+	echo JAVA_HOME: $(JAVA_HOME)
+
+FRC:
 
 enet/Makefile:
+	echo PWD: $(PWD)
 	cd enet; ./configure
 	
 libenet: enet/Makefile
+	echo PWD: $(PWD)
 	$(MAKE)	-C enet/ all
 
 clean: enet/Makefile
