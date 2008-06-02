@@ -704,6 +704,7 @@ bool serveroption(char *opt)
     }
 }
 
+#ifndef CMD
 #ifdef STANDALONE
 int main(int argc, char* argv[])
 {   
@@ -712,4 +713,5 @@ int main(int argc, char* argv[])
     initserver(true);
     return 0;
 }
+#endif
 #endif

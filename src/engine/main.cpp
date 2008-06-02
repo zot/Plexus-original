@@ -683,6 +683,7 @@ int main(int argc, char **argv)
         }
 
         if(lastmillis) cl->updateworld(worldpos, curtime, lastmillis);
+        extern void remotetick();remotetick();
        
         menuprocess();
 

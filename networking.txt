@@ -1,0 +1,2 @@
+relaying
+	to prevent, set curmsg = p.length(), otherwise it multicasts the current message

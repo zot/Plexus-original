@@ -1,12 +1,12 @@
 CXXOPTFLAGS= -O3 -fomit-frame-pointer
 INC=$(PWD)/src
-INCLUDES= -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -I$(INC) -I$(INC)/include -I$(INC)/shared -I$(INC)/engine -I$(INC)/fpsgame -I$(INC)/rpggame -I$(INC)/enet/include -I/usr/X11R6/include `sdl-config --cflags`
+INCLUDES= -I$(INC) -I$(INC)/include -I$(INC)/shared -I$(INC)/engine -I$(INC)/fpsgame -I$(INC)/rpggame -I$(INC)/enet/include -I/usr/X11R6/include `sdl-config --cflags`
 CXXFLAGS= -Wall -fsigned-char $(CXXOPTFLAGS) $(INCLUDES)
 
 PLATFORM_PREFIX=native
 
-CLIENT_LIBS=-L$(JAVA_HOME)/jre/lib/i386 -ljava -Lenet -lenet -L/usr/X11R6/lib `sdl-config --libs` -lSDL_image -lSDL_mixer -lz -lGL -lGLU 
-CLIENT_OBJS= \
+CLIENT_LIBS=-Lenet -lenet -L/usr/X11R6/lib `sdl-config --libs` -lSDL_image -lSDL_mixer -lz -lGL -lGLU 
+CLIENT_OBJS_SUB= \
 	shared/tools.o \
 	shared/geom.o \
 	engine/3dgui.o \
@@ -17,7 +17,6 @@ CLIENT_OBJS= \
 	engine/cubeloader.o \
 	engine/grass.o \
 	engine/lightmap.o \
-	engine/main.o \
 	engine/material.o \
 	engine/menus.o \
 	engine/normal.o	\
@@ -41,8 +40,10 @@ CLIENT_OBJS= \
 	engine/world.o \
 	engine/worldio.o \
 	fpsgame/fps.o \
-	groovy/groovy.o \
+	remote/remote.o \
 	rpggame/rpg.o
+
+CLIENT_OBJS=$(CLIENT_OBJS_SUB) 	engine/main.o
 
 SERVER_LIBS=-Lenet -lenet -lz
 SERVER_OBJS= \
@@ -55,10 +56,10 @@ DPROVIDER= $(if $(wildcard /usr/sbin/dtrace), shared/sbtrace.o, )
 
 default: all
 
-all: duh client server
+all: duh client server cmd
 
 duh: FRC
-	echo JAVA_HOME: $(JAVA_HOME)
+p	echo JAVA_HOME: $(JAVA_HOME)
 
 FRC:
 
@@ -77,14 +78,24 @@ clean: enet/Makefile
 %-standalone.o:
 	$(CXX) $(CXXFLAGS) -DSTANDALONE -c -o $@ $(subst -standalone.o,.cpp,$@)
 
+%-cmd.o:
+	$(CXX) $(CXXFLAGS) -DSTANDALONE -DCMD -c -o $@ $(subst -cmd.o,.cpp,$@)
+
 shared/sbtrace.o: shared/sbtrace.d $(CLIENT_OBJS)
 	$(DTRACE) -o $@ -s $< $(CLIENT_OBJS)
 
-client:	libenet $(CLIENT_OBJS) $(DPROVIDER)
+client: sauer_client
+
+sauer_client:	libenet $(CLIENT_OBJS) $(DPROVIDER)
 	$(CXX) $(CXXFLAGS) -o sauer_client $(DPROVIDER) $(CLIENT_OBJS) $(CLIENT_LIBS)
 
-server:	libenet $(SERVER_OBJS)
-	$(CXX) $(CXXFLAGS) -o sauer_server $(SERVER_OBJS) $(SERVER_LIBS)  
+cmd: libenet $(SERVER_OBJS) engine/command.o
+	$(CXX) $(CXXFLAGS) -o cmd remote/cmd.cpp engine/command.o $(SERVER_OBJS) $(SERVER_LIBS) -z muldefs
+
+server: sauer_server
+
+sauer_server:	libenet $(SERVER_OBJS)
+	$(CXX) $(CXXFLAGS) -o sauer_server -USTANDALONE $(SERVER_OBJS) $(SERVER_LIBS)  
 	
 install: all
 	cp sauer_client	../bin_unix/$(PLATFORM_PREFIX)_client

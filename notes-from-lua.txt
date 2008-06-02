@@ -1,0 +1,133 @@
+WORKING FEATURES
+	plot guns: talk, spawn, move (+ grenade), dice, control
+	network: talk, spawn, move
+	gun target insert into prompt
+	edit mode in normal play
+	item pickup chain o' command
+	monitor objects send events -- doorways, eyeballs, etc. (use additem hook)
+	basic mud objects
+	p and l key bindings to print/eval lua exprs
+	map selection (sauer._setsel() -- used by newItem)
+	basic persistence (tc_id and tc_model saved for items)
+	newmap hook loads map.lua file (if present) for map.ogz
+	network item editing/creation
+	game mechanics (sotc: fudge dice)
+
+
+Scenario 1: Shop keeper
+	* put lua file in base dir and load it from the map's cfg
+	trigger for shop entry: keeper says hello, gun changes to a bag of money
+	trigger for shop exit: if gun hasn't changed, it changes back to old gun
+	shoot the keeper and a menu pops up
+	talking sends text to the keeper
+	buy command subtracts money and adds items to inventory
+	sell command removes item from inventory and adds money
+
+
+TODO (release 1)
+fix hitch when surface changes normal during control
+default ghost master only for yoked thing
+get/drop
+check out Eisenstern's context-sensitive operations
+yoke item
+dice grenade -- put die at grenade after it explodes
+finish basic persistence.lua + file.ldb loading
+store lua id counter state in map
+lock/unlock doors
+check each player in entities.h:checkitems() on the master mud?
+allow oids in place of vectors and headings (define int getvector(l, &vec), which returns the number of args consumed)
+make network request/update wrappers so you can say sauer.sendrequest.move(asdfasdf) instead of sauer.sendrequest('move', asdfasdf)
+invisible items as markers on map (use triggers)
+make tc abstract and subclass it with tc_lua to make hooks explicit
+world sync for new players (for monsters, etc. that are only in Lua -- reset counter on new map?)
+change callbacks & handlers to use a single table as the arg?
+	easier integration into other engines
+	labeled args better than positional
+menus for hudguns (question mark over gun?) -- choose monsters, items, etc.
+talk: shooting ground means system message
+plot guns (G means works well as a grenade, too):
+	follow
+	freeze (everything if shoot ground)
+	target (specify a target for the next command) -- put bouncing arrow over head of target
+	dirt (G) (accrete material)
+	excavator (G)
+	destroy (G)
+	control (return key jumps back out)
+	create item
+	configure (shot item/monster)
+plot grenades:
+	excavator
+	dirt
+	mood
+unpack hudguns from quadropolis
+[monsters have physics, items are intangible]
+
+
+TODO (future)
+barriers (to bar doorways, etc.)
+JSON (deferred because luaforge version is GPL)
+
+
+DONE
+2/28/07 Bill: sauer.monstersay() (particle text)
+2/28/07 Bill: sauer.ghost()
+2/28/07 Bill: added return key menu
+3/01/07 Bill: TC_GUN (replaceable gun models, lua-defined behavior)
+	sauer.handleshoot() -> sauer.allowshoot() -- chain of command for shots to occur
+	sauer.handledamage() -> sauer.allowdamage() -- chain of command for damage to occur from a shot
+	sauer.gunname() -- set the model for the hudgun
+3/02/07 Bill: fix getmonsterid so that plot guns can work
+	talk gun
+	lua sauer commands
+3/05/07 Bill: broadcast updates for command effects (ghost, etc)
+	switched say and spawn to request/update model
+	auto master on local network (standalone)
+	fixed alloc/free bugs with strings from Lua
+	changed to call handledamage with null defender if no target (coords of wall or whatever)
+3/07/07 Bill: search for monster/player/item ids (instead of id as array index)
+	item creation (added choice to return key menu)
+	TC_ITEM (replaceable item models)
+3/09/07 Bill: gun switching
+	monster gun
+	finish weaponswitch chain o' command wedge with direction (roll up/down)
+	make simple, null-animation wand hudgun
+	gun switch
+	move gun (no damage defines target, damage moves monster)
+	monster move
+	download bunch of gun/weapon models from quadropolis to use for plot guns
+3/10/07 Bill: mudlingua (i.e. accepting quotes)
+3/11/07 Bill: fix M_TC_MOVE to handle obstacles better (modified regular monster AI)
+	monster move over net
+3/13/07 Bill: gun target insert into prompt
+	callbacks object (for handlers, like request and update)
+3/14/07 Bill: edit mode for master game
+3/15/07 Bill: network add item
+3/17/07 Bill: l and p commands
+	started object model
+3/18/07 Bill: fixing items
+3/22/07 Bill: entity persistence
+	entity selection
+	map.lua file
+	seal access to prevent inadvertant creation of globals
+3/23/07 Bill: currentmaster() function
+	dice gun
+	tidied up weapons
+	improved mudlingua tokenizer: id resolution
+	prototypes
+	sotc module (fudge dice)
+3/26/07 Bill: network item creation/editing
+3/28/07 Bill: fixed editing bug
+	hidehud
+	ghost
+	weapon switch callback
+	sightseeing gun
+	master and shots are invisible
+3/29/07 Bill: fixed player ids
+	setcursor
+	item gun with menu
+4/3/07 Bill: semighost master (pass through monsters and other players)
+	control gun
+	persistence hook for ldb
+	mudlingua persitence
+	better error handling & diag
+	mudlingua command (m)
