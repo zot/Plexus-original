@@ -1,9 +1,13 @@
-CXXOPTFLAGS= -O3 -fomit-frame-pointer
+CXXOPTFLAGS= -O3 -fomit-frame-pointer -DTC
 INC=$(PWD)/src
 INCLUDES= -I$(INC) -I$(INC)/include -I$(INC)/shared -I$(INC)/engine -I$(INC)/fpsgame -I$(INC)/rpggame -I$(INC)/enet/include -I/usr/X11R6/include `sdl-config --cflags`
 CXXFLAGS= -Wall -fsigned-char $(CXXOPTFLAGS) $(INCLUDES)
 
 PLATFORM_PREFIX=native
+
+REMOTE_OBJS= \
+	remote/remote.o \
+	remote/moderation.o
 
 CLIENT_LIBS=-Lenet -lenet -L/usr/X11R6/lib `sdl-config --libs` -lSDL_image -lSDL_mixer -lz -lGL -lGLU 
 CLIENT_OBJS_SUB= \
@@ -40,7 +44,7 @@ CLIENT_OBJS_SUB= \
 	engine/world.o \
 	engine/worldio.o \
 	fpsgame/fps.o \
-	remote/remote.o \
+	$(REMOTE_OBJS) \
 	rpggame/rpg.o
 
 CLIENT_OBJS=$(CLIENT_OBJS_SUB) 	engine/main.o

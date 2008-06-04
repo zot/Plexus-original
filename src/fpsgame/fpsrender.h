@@ -93,12 +93,20 @@ struct fpsrender
             int mdl = 0;
             if(m_assassin) mdl = cl.asc.targets.find(d)>=0 ? 2 : (cl.asc.hunters.find(d)>=0 ? 0 : 1);
             else if(teamskins() || m_teammode) mdl = isteam(cl.player1->team, d->team) ? 1 : 2;
+#ifdef TC
+            d->renderplayer(cl, mdl, mdlnames, true);
+#else
             if(d->state!=CS_DEAD || d->superdamage<50) renderplayer(d, mdlnames[mdl]);
             s_strcpy(d->info, cl.colorname(d, NULL, "@"));
             if(d->maxhealth>100) { s_sprintfd(sn)(" +%d", d->maxhealth-100); s_strcat(d->info, sn); }
             if(d->state!=CS_DEAD) particle_text(d->abovehead(), d->info, mdl ? (mdl==1 ? 16 : 13) : 11, 1);
+#endif
         }
+#ifdef TC
+        if(isthirdperson()) cl.player1->renderplayer(cl, teamskins() || m_teamskins ? 1 : 0, mdlnames, false);
+#else
         if(isthirdperson()) renderplayer(cl.player1, teamskins() || m_teamskins ? mdlnames[1] : mdlnames[0]);
+#endif
 
         cl.ms.monsterrender();
         cl.mo.render();

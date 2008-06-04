@@ -133,6 +133,10 @@ struct physent                                  // base entity type, can be affe
 
 struct occludequery;
 
+#ifdef TC
+struct fpsclient;
+#endif
+
 struct dynent : physent                         // animated characters, or characters that can receive input
 {
     bool k_left, k_right, k_up, k_down;         // see input code
@@ -146,7 +150,17 @@ struct dynent : physent                         // animated characters, or chara
     occludequery *query;
     int occluded, lastrendered;
 
+#ifdef TC
+    char *modelname;
+
+	void renderplayer(fpsclient &cl, int mdl, const char **modelnames, bool fiddlies);
+	void rendermonster(fpsclient &cl);
+	void rendermovable(fpsclient &cl, vec o, vec color, vec dir, const char *suggestion);
+
+    dynent() : lastyaw(0), lastpitch(0), orientmillis(0), query(NULL), occluded(0), lastrendered(0), modelname(0)
+#else
     dynent() : lastyaw(0), lastpitch(0), orientmillis(0), query(NULL), occluded(0), lastrendered(0)
+#endif
     { 
         reset(); 
         loopi(2) { lastanimswitchtime[i] = -1; lastmodel[i] = NULL; } 

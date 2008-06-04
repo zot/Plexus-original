@@ -34,17 +34,15 @@ static char *remotedisconnect(char *msg) {
 	}
 	return NULL;
 }
-COMMAND(remotedisconnect, "s");
+ICOMMAND(remotedisconnect, "s", (char *msg), remotedisconnect(msg));
 
-static char *remotedisable() {
+ICOMMAND(remotedisable, "", (),
 	if (initialized == SET) {
 		remotedisconnect("remote connections disabled");
 		delete[] remoteHost;
 	}
 	initialized = NOT_ALLOWED;
-	return NULL;
-}
-COMMAND(remotedisable, "");
+);
 
 static char *remoteallow(char *host, int *port) {
 	if (host == 0) {
@@ -79,7 +77,7 @@ static char *remoteallow(char *host, int *port) {
 	}
 	return NULL;
 }
-COMMAND(remoteallow, "si");
+ICOMMAND(remoteallow, "si", (char *host, int *port), remoteallow(host, port););
 
 static char *remoteconnect() {
 	if (mysocket != -1) {
@@ -122,9 +120,9 @@ static char *remoteconnect() {
 	}
 	return NULL;
 }
-COMMAND(remoteconnect, "");
+ICOMMAND(remoteconnect, "", (), remoteconnect(););
 
-static char *remotesend(char **msgs, int *nummsgs) {
+ICOMMAND(remotesend, "V", (char **msgs, int *nummsgs),
 	inputLinesPending++;
 	for (int i = 0; i < *nummsgs; i++) {
 		if (i > 0) {
@@ -133,9 +131,7 @@ static char *remotesend(char **msgs, int *nummsgs) {
 		output.put(msgs[i], strlen(msgs[i]));
 	}
 	output.add('\n');
-	return NULL;
-}
-COMMAND(remotesend, "V");
+);
 
 static void readChunk() {
 	if (inputLinesPending) {

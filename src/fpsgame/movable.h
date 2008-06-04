@@ -160,7 +160,11 @@ struct movableset
             o.z -= m.eyeheight;
             const char *mdlname = mapmodelname(m.mapmodel);
             if(!mdlname) continue;
+#ifdef TC
+            m.rendermovable(cl, o, color, dir, mdlname);
+#else
 			rendermodel(color, dir, mdlname, ANIM_MAPMODEL|ANIM_LOOP, 0, 0, o, m.yaw, 0, 0, 0, &m, MDL_SHADOW | MDL_CULL_VFC | MDL_CULL_DIST | MDL_CULL_OCCLUDED, NULL);
+#endif
         }
     }
 };

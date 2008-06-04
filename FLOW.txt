@@ -1,0 +1,28 @@
+PCs can only perform limited actions without approval
+* talking
+* looking around
+* walking within range of the current beacon
+
+
+Actions requiring approval
+* moving to another beacon
+* shooting things
+* moving things
+* opening things (doors, chests, etc.)
+
+
+When a PC is awaiting approval, it FREEZES
+* it doesn't queue up multiple requests and overload the moderator
+
+
+The hudgun will change based on context (i.e. where the cursor is)
+* walking
+* interacting with an object
+* interacting with a monster
+
+
+Interaction
+* if there is one choice, indicate it with the hudgun
+* if there is more than one choice
+** indicate multiple with the hudgun
+** pop up a menu for the player to choose an appropriate action

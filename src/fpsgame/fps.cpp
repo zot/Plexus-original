@@ -796,6 +796,10 @@ struct fpsclient : igameclient
 
 REGISTERGAME(fpsgame, "fps", new fpsclient(), new fpsserver());
 
+#ifdef TC
+#include "remote/fpsplug.cpp"
+#endif
+
 #else
 
 REGISTERGAME(fpsgame, "fps", NULL, new fpsserver());
