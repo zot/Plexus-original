@@ -1,4 +1,5 @@
-CXXOPTFLAGS= -O3 -fomit-frame-pointer -DTC
+#CXXOPTFLAGS= -O3 -fomit-frame-pointer -DTC
+CXXOPTFLAGS= -g -fomit-frame-pointer -DTC
 INC=$(PWD)/src
 INCLUDES= -I$(INC) -I$(INC)/include -I$(INC)/shared -I$(INC)/engine -I$(INC)/fpsgame -I$(INC)/rpggame -I$(INC)/enet/include -I/usr/X11R6/include `sdl-config --cflags`
 CXXFLAGS= -Wall -fsigned-char $(CXXOPTFLAGS) $(INCLUDES)

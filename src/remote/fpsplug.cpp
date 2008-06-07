@@ -1,4 +1,5 @@
 // plug in to fps.cpp
+#include "remote.h"
 
 extern fpsclient *cl;
 
@@ -110,6 +111,19 @@ fpsclient::movableset::movable *getitem(char *id) {
 	return NULL;
 }
 
+dynent *getdynent(char *id) {
+	switch (id[0]) {
+	case TC_ITEM:
+		return getitem(id);
+	case TC_MONSTER:
+		return getmonster(id);
+	case TC_PLAYER:
+		return getplayer(id);
+	default:
+		return NULL;
+	}
+}
+
 void dumpent(char *id) {
 	if (id && id[0]) {
 		switch (id[0]) {
@@ -163,3 +177,7 @@ ICOMMAND(dumpents, "", (),
 		dumpent(id);
 	}
 );
+
+ICOMMAND(currentweapon, "", (), {
+	intret(cl->player1->gunselect);
+});

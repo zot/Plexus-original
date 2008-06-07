@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include "remote.h"
 
 #define UNSET 0
 #define SET 1
@@ -183,7 +184,21 @@ static void writeChunk() {
 	}
 }
 
+vector<void (*)()> *tickhooks = NULL;
+
 void remotetick() {
 	writeChunk();
 	readChunk();
+	if (tickhooks) {
+		loopi(tickhooks->length()) {
+			((*tickhooks)[i])();
+		}
+	}
+}
+
+void addTickHook(void (*hook)()) {
+	if (!tickhooks) {
+		tickhooks = new vector<void (*)()>;
+	}
+	tickhooks->add(hook);
 }

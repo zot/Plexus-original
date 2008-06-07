@@ -588,7 +588,11 @@ struct weaponstate
                 cl.playsoundc(S_NOAMMO, d); 
                 d->gunwait = 600; 
                 d->lastattackgun = -1; 
-                weaponswitch(); 
+#ifdef TC
+                execute("weapon -1 -1 -1");
+#else
+                weaponswitch();
+#endif
             }
             return; 
         }
