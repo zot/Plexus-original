@@ -1,8 +1,11 @@
 // plug in to fps.cpp
-#include "remote.h"
-
 extern fpsclient *cl;
+struct moderation moderator;
+char idbuf[1024];
 
+/////
+// MEMBERS FOR: dynent
+/////
 void dynent::renderplayer(fpsclient &cl, int mdl, const char **modelnames, bool fiddlies) {
 	fpsent *d = (fpsent *)this;
 	const char *model = modelname ? modelname : modelnames[mdl];
@@ -52,7 +55,7 @@ int enttype(int index) {
 	return TC_ERROR;
 }
 
-void idfor(void *ent, char *buf, int buflen) {
+char *idfor(void *ent, char *buf, int buflen) {
 	int id = -1;
 
 	loopi(cl->numdynents()) {
@@ -68,10 +71,11 @@ void idfor(void *ent, char *buf, int buflen) {
 				id = type == TC_MONSTER ? i : i - cl->ms.monsters.length();
 			}
 			snprintf(buf, buflen, "%c%d", type, id);
-			return;
+			return buf;
 		}
 	}
 	strncpy(buf, "error", buflen);
+	return buf;
 }
 
 fpsent *getplayer(char *id) {
@@ -181,3 +185,112 @@ ICOMMAND(dumpents, "", (),
 ICOMMAND(currentweapon, "", (), {
 	intret(cl->player1->gunselect);
 });
+
+/////
+// MEMBERS FOR: dynent
+/////
+moderation::moderation(): rayhitcode(NULL), projectilehitcode(NULL) {}
+void moderation::defaulthit() {
+	((fpsclient::weaponstate*)weaponstate)->hit(damage, shooter, target, velocity, gun, info);
+}
+void moderation::rayhit(/*fpsclient::weaponstate*/void *w, int damage, dynent *d, fpsent *at, const vec &vel, int gun, int info) {
+	hittype = RAY;
+	weaponstate = w;
+	this->damage = damage;
+	shooter = d;
+	target = at;
+	velocity = vel;
+	this->gun = gun;
+	this->info = info;
+	if (rayhitcode) {
+		executeret(rayhitcode);
+	} else {
+		defaulthit();
+	}
+	hittype = NONE;
+	weaponstate = NULL;
+	shooter = NULL;
+	target = NULL;
+}
+void moderation::projectilehit(/*fpsclient::weaponstate*/void *w, int damage, dynent *d, fpsent *at, const vec &vel, int gun, int info) {
+	hittype = PROJECTILE;
+	weaponstate = w;
+	this->damage = damage;
+	shooter = d;
+	target = at;
+	velocity = vel;
+	this->gun = gun;
+	this->info = info;
+	if (projectilehitcode) {
+		executeret(projectilehitcode);
+	} else {
+		defaulthit();
+	}
+	hittype = NONE;
+	target = NULL;
+	weaponstate = NULL;
+	shooter = NULL;
+}
+ICOMMAND(defaulthit, "", (),
+	if (moderator.hittype != NONE) {
+		moderator.defaulthit();
+	}
+);
+ICOMMAND(onrayhit, "s", (char *code),
+	if (moderator.rayhitcode) {
+		delete[] moderator.rayhitcode;
+	}
+	moderator.rayhitcode = code[0] ? newstring(code) : NULL;
+);
+ICOMMAND(onprojectilehit, "s", (char *code),
+	if (moderator.projectilehitcode) {
+		delete[] moderator.projectilehitcode;
+	}
+	moderator.projectilehitcode = code[0] ? newstring(code) : NULL;
+);
+
+static void hit_shooter() {
+	if (moderator.hittype != NONE) {
+		result(idfor(moderator.shooter, idbuf, sizeof (idbuf)));
+	}
+}
+
+static void hit_target() {
+	if (moderator.hittype != NONE) {
+		result(idfor(moderator.target, idbuf, sizeof (idbuf)));
+	}
+}
+
+static void hit_damage() {
+	if (moderator.hittype != NONE) {
+		intret(moderator.damage);
+	}
+}
+
+static void hit_type() {
+	intret(moderator.hittype);
+}
+
+static void hit_gun() {
+	if (moderator.hittype != NONE) {
+		intret(moderator.gun);
+	}
+}
+
+static void hit_info() {
+	if (moderator.hittype != NONE) {
+		intret(moderator.info);
+	}
+}
+
+static bool initfpsplug() {
+	addcommand("hit.shooter", hit_shooter, "");
+	addcommand("hit.target", hit_target, "");
+	addcommand("hit.damage", hit_damage, "");
+	addcommand("hit.type", hit_type, "");
+	addcommand("hit.gun", hit_gun, "");
+	addcommand("hit.info", hit_info, "");
+	return true;
+}
+
+bool plug_fpspluginitialized = initfpsplug();

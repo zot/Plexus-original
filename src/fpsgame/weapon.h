@@ -298,7 +298,11 @@ struct weaponstate
         vec v(to);
         v.sub(from);
         v.normalize();
+#ifdef TC
+        moderator.rayhit(this, damage, d, at, v, gun, rays);
+#else
         hit(damage, d, at, v, gun, rays);
+#endif
     }
 
     void radialeffect(dynent *o, vec &v, int qdam, fpsent *at, int gun)
@@ -366,7 +370,11 @@ struct weaponstate
         vec dir;
         if(guns[p.gun].part) { dir = v; dir.normalize(); }
         else rocketdist(o, dir, v);
+#ifdef TC
+        moderator.projectilehit(this, qdam, o, p.owner, dir, p.gun, 0);
+#else
         hit(qdam, o, p.owner, dir, p.gun, 0);
+#endif
         return true;
     }
 

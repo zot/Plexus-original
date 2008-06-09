@@ -9,6 +9,10 @@
 
 #include "fpsserver.h"
 
+#ifdef TC
+	#include "remote/fpsplug.h"
+#endif
+
 #ifndef STANDALONE
 
 struct fpsclient : igameclient
