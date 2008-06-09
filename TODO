@@ -1,3 +1,39 @@
-TODO
-context targeting
-changeable gun models
+MODERATION
+master player -- invisible/intangible and does not transmit coords to the server
+movement modes
+	puppet -- move according to instructions (default is frozen)
+	normal -- moves with limitations (movement blockers)
+movement blockers
+	beacons: players can move as long as they remain within the radius of at least one authorized beacon
+		This allows cell-style hand off
+	walls: players can pass through authorized walls
+
+
+COMMANDS
+moveto id x y z -- sets id's movement target to location
+warp id x y z -- teleports id to location
+gunset id model
+contexthook hook -- when active, execute hook on context change for player1
+usecontext on/off -- set whether player1's contexthook is active
+monstersay command
+authorize id blocker
+unauthorize id blocker
+puppet id -- makes id move toward its movement target and if it's a player unyoke the controls
+unpuppet id -- makes id ignore its movement target and if it's a player, yoke the controls
+
+
+GUNS
+talk
+move -- shoot destination, then target(s) 
+authorize -- shoot blocker, then target(s)
+unauthorize -- shoot blocker, then target(s)
+dirt
+blast
+paralyze
+puppet
+die roll
+
+
+NETWORK
+slaverequest req
+mastercommand cmd
