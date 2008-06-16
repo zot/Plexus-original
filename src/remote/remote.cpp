@@ -21,14 +21,14 @@ static char *remoteHost;
 static int mysocket = -1;
 static vector<char> input;
 static vector<char> output;
-static int inputLinesPending = 0;
+//static int inputLinesPending = 0;
 
 static char *remotedisconnect(char *msg) {
 	if (mysocket != -1) {
 		close(mysocket);
 		mysocket = -1;
 		conoutf("Disconnected from remote host: %s", msg ? msg : "");
-		inputLinesPending = 0;
+//		inputLinesPending = 0;
 		output.setsize(0);
 		input.setsize(0);
 		perror(msg ? msg : "");
@@ -123,19 +123,14 @@ static char *remoteconnect() {
 }
 ICOMMAND(remoteconnect, "", (), remoteconnect(););
 
-ICOMMAND(remotesend, "V", (char **msgs, int *nummsgs),
-	inputLinesPending++;
-	for (int i = 0; i < *nummsgs; i++) {
-		if (i > 0) {
-			output.add(' ');
-		}
-		output.put(msgs[i], strlen(msgs[i]));
-	}
+ICOMMAND(remotesend, "C", (char *line),
+//	inputLinesPending++;
+	output.put(line, strlen(line));
 	output.add('\n');
 );
 
 static void readChunk() {
-	if (inputLinesPending) {
+//	if (inputLinesPending) {
 		ssize_t bytesRead;
 		databuf<char> buf = input.reserve(1000);
 
@@ -149,14 +144,16 @@ static void readChunk() {
 			input.addbuf(buf);
 			for (int i = 0; i < bytesRead; i++) {
 				if (buf.buf[i] == '\n') {
-					inputLinesPending--;
+//					inputLinesPending--;
 					buf.buf[i] = ';';
 					lastNl = i;
 				}
 			}
 			if (lastNl > -1) {
 				input.last() = 0;
-				executeret(input.getbuf());
+				if (input.length() > 1) {
+					executeret(input.getbuf());
+				}
 				if (lastNl + 1 < input.length()) {
 					input.remove(0, lastNl + 1);
 				} else {
@@ -164,7 +161,7 @@ static void readChunk() {
 				}
 			}
 		}
-	}
+//	}
 }
 
 static void writeChunk() {

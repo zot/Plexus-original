@@ -23,9 +23,12 @@ struct watcher {
 	watcher(char *id, char *code, float _moveRes, float _rotRes): moveRes(_moveRes), rotRes(_rotRes) {
 		entity = getdynent(id);
 		if (entity) {
-			this->id = id;
+			this->id = newstring(id);
 			this->code = newstring(code);
 			update();
+		} else {
+			this->id = NULL;
+			this->code = NULL;
 		}
 	}
 	bool valid() {
@@ -207,9 +210,37 @@ bool init = initModeration();
 ICOMMAND(watch, "ss", (char *entName, char *code), {
 		if (!entName || !entName[0]) {
 			conoutf("no entity specified to watch");
-		} else if (!code || !code[0]) {
+		} else if (!code) {
 			conoutf("no watching code given");
+		} else if (!code[0]) {
+			loopi(watchers.length()) {
+				watcher *w = &watchers[i];
+
+				if (!strcmp(w->id, entName)) {
+					if (w->id) {
+						delete[] w->id;
+					}
+					if (w->code) {
+						delete[] w->code;
+					}
+					watchers.remove(i);
+					return;
+				}
+			}
 		} else {
+			loopi(watchers.length()) {
+				watcher *w = &watchers[i];
+
+				if (!strcmp(w->id, entName)) {
+					if (w->code) {
+						printf("REPLACING OLD CODE \"%s\" WITH ", w->code);
+						delete[] w->code;
+					}
+					w->code = newstring(code);
+					printf("NEW CODE \"%s\"\n", w->code);
+					return;
+				}
+			}
 			watcher w(entName, code, 1, 1);
 			
 			if (!w.valid()) {
