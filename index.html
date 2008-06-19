@@ -505,13 +505,42 @@ Also see AdvancedOptions</pre>
 <pre>P2PMud
 [[News]]</pre>
 </div>
-<div title="MainMenu" modifier="Zot" created="200806171608" modified="200806191149" changecount="8">
+<div title="Flow" modifier="Zot" created="200806191220" modified="200806191220" changecount="2">
+<pre>~PCs can only perform limited actions without approval
+* talking
+* looking around
+* walking within range of the current beacon
+
+Actions requiring approval
+* moving to another beacon
+* shooting things
+* moving things
+* opening things (doors, chests, etc.)
+
+When a PC is awaiting approval, it FREEZES
+* it doesn't queue up multiple requests and overload the moderator
+
+The hudgun will change based on context (i.e. where the cursor is)
+* walking
+* interacting with an object
+* interacting with a monster
+
+Interaction
+* if there is one choice, indicate it with the hudgun
+* if there is more than one choice
+** indicate multiple with the hudgun
+** pop up a menu for the player to choose an appropriate action
+</pre>
+</div>
+<div title="MainMenu" modifier="Zot" created="200806171608" modified="200806191223" changecount="10">
 <pre>[img[TEAM CTHULHU|docs/images/cthulhu.jpg][http://teamcthulhu.com]]
 ToDo
+PotentialIssues
 [[Commands]]
 PeerToPeer
 MudLingua
 RoadMap
+[[Flow]]
 OldDocs
 ----
 MainMenu
@@ -543,6 +572,10 @@ Part of this is putting in hooks for moderated play, for instance, chain of comm
 </div>
 <div title="PeerToPeer" modifier="Zot" created="200806191132" changecount="1">
 <pre>Here is a slippery topic.  At the most basic level, peer to peer (p2p) used to mean that applications communicate directly instead of having to use a server (or several servers).  Peer to peer has come to mean the use of an &quot;overlay&quot; network atop a conventional network.  There is no central control in a pure p2p network.</pre>
+</div>
+<div title="PotentialIssues" modifier="Zot" created="200806191223" modified="200806191224" changecount="2">
+<pre>relaying (if using Sauerbraten's server)
+*to prevent, set curmsg = p.length(), otherwise it multicasts the current message</pre>
 </div>
 <div title="Reloaded" modifier="Zot" created="200806171638" modified="200806191143" changecount="9">
 <pre>P2PMud traces its roots back to the murky depths history in 1988 when Roy Riggs first wrote a tiny multi-user dungeon in C, one of the earliest ~MMORPGs that ran over the Internet (while, maybe an MORPG, anyway.)  It took only a matter of days, or perhaps even hours, for Bill Burdick to join Roy in this glorious endevour and together they formed the sinister TEAM CTHULHU!
