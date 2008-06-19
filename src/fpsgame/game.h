@@ -1,3 +1,13 @@
+// console message types
+
+enum
+{
+    CON_CHAT       = 1<<8,
+    CON_TEAMCHAT   = 1<<9,
+    CON_GAMEINFO   = 1<<10,
+    CON_FRAG_SELF  = 1<<11,
+    CON_FRAG_OTHER = 1<<12
+};
 
 // network quantization scale
 #define DMF 16.0f                // for world locations
@@ -9,7 +19,7 @@ enum                            // static entity types
     NOTUSED = ET_EMPTY,         // entity slot not in use in map
     LIGHT = ET_LIGHT,           // lightsource, attr1 = radius, attr2 = intensity
     MAPMODEL = ET_MAPMODEL,     // attr1 = angle, attr2 = idx
-    PLAYERSTART,                // attr1 = angle
+    PLAYERSTART,                // attr1 = angle, attr2 = team
     ENVMAP = ET_ENVMAP,         // attr1 = radius
     PARTICLES = ET_PARTICLES,
     MAPSOUND = ET_SOUND,
@@ -29,6 +39,7 @@ enum                            // static entity types
     BARREL,                     // attr1 = angle, attr2 = idx, attr3 = weight, attr4 = health
     PLATFORM,                   // attr1 = angle, attr2 = idx, attr3 = tag, attr4 = speed
     ELEVATOR,                   // attr1 = angle, attr2 = idx, attr3 = tag, attr4 = speed
+    FLAG,                       // attr1 = angle, attr2 = team
     MAXENTTYPES
 };
 
@@ -41,14 +52,15 @@ enum { GUN_FIST = 0, GUN_SG, GUN_CG, GUN_RL, GUN_RIFLE, GUN_GL, GUN_PISTOL, GUN_
 enum { A_BLUE, A_GREEN, A_YELLOW };     // armour types... take 20/40/60 % off
 enum { M_NONE = 0, M_SEARCH, M_HOME, M_ATTACKING, M_PAIN, M_SLEEP, M_AIMING };  // monster states
 
-#define m_noitems      ((gamemode>=4 && gamemode<=11) || gamemode==13 || gamemode==14 || gamemode==16)
-#define m_noitemsrail  ((gamemode>=4 && gamemode<=5) || (gamemode>=8 && gamemode<=9) || gamemode==13 || gamemode==16)
+#define m_noitems      ((gamemode>=4 && gamemode<=11) || gamemode==13 || gamemode==14 || gamemode==16 || gamemode==18 || gamemode==-3)
+#define m_noitemsrail  ((gamemode>=4 && gamemode<=5) || (gamemode>=8 && gamemode<=9) || gamemode==13 || gamemode==16 || gamemode==18)
 #define m_arena        (gamemode>=8 && gamemode<=11)
 #define m_tarena       (gamemode>=10 && gamemode<=11)
 #define m_capture      (gamemode>=12 && gamemode<=14)
 #define m_regencapture (gamemode==14)
 #define m_assassin     (gamemode>=15 && gamemode<=16)
-#define m_teammode     ((gamemode>2 && gamemode<12 && gamemode&1) || m_capture)
+#define m_ctf          (gamemode>=17 && gamemode<=18)
+#define m_teammode     ((gamemode>2 && gamemode<12 && gamemode&1) || m_capture || m_ctf)
 #define m_teamskins    (m_teammode || m_assassin)
 #define m_sp           (m_dmsp || m_classicsp)
 #define m_dmsp         (gamemode==-1 || gamemode==-4)
@@ -57,7 +69,7 @@ enum { M_NONE = 0, M_SEARCH, M_HOME, M_ATTACKING, M_PAIN, M_SLEEP, M_AIMING };  
 #define m_demo         (gamemode==-3)
 #define isteam(a,b)    (m_teammode && strcmp(a, b)==0)
 
-#define m_mp(mode)    (mode>=0 && mode<=16)
+#define m_mp(mode)    (mode>=0 && mode<=18)
 
 // hardcoded sounds, defined in sounds.cfg
 enum
@@ -86,6 +98,14 @@ enum
     S_V_BOOST, S_V_BOOST10,
     S_V_QUAD, S_V_QUAD10,
     S_V_RESPAWNPOINT, 
+
+    S_FLAGPICKUP,
+    S_FLAGDROP,
+    S_FLAGRETURN,
+    S_FLAGSCORE,
+    S_FLAGRESET,
+
+    S_BURN
 };
 
 // network messages codes, c2s, c2c, s2c
@@ -109,6 +129,8 @@ enum
     SV_CLEARTARGETS, SV_CLEARHUNTERS, SV_ADDTARGET, SV_REMOVETARGET, SV_ADDHUNTER, SV_REMOVEHUNTER,
     SV_LISTDEMOS, SV_SENDDEMOLIST, SV_GETDEMO, SV_SENDDEMO,
     SV_DEMOPLAYBACK, SV_RECORDDEMO, SV_STOPDEMO, SV_CLEARDEMOS,
+    SV_TAKEFLAG, SV_RETURNFLAG, SV_RESETFLAG, SV_DROPFLAG, SV_SCOREFLAG, SV_INITFLAGS,
+    SV_SAYTEAM,
     SV_CLIENT,
 };
 
@@ -131,6 +153,8 @@ static char msgsizelookup(int msg)
         SV_CLEARTARGETS, 1, SV_CLEARHUNTERS, 1, SV_ADDTARGET, 2, SV_REMOVETARGET, 2, SV_ADDHUNTER, 2, SV_REMOVEHUNTER, 2,
         SV_LISTDEMOS, 1, SV_SENDDEMOLIST, 0, SV_GETDEMO, 2, SV_SENDDEMO, 0,
         SV_DEMOPLAYBACK, 2, SV_RECORDDEMO, 2, SV_STOPDEMO, 1, SV_CLEARDEMOS, 2,
+        SV_DROPFLAG, 6, SV_SCOREFLAG, 5, SV_RETURNFLAG, 3, SV_TAKEFLAG, 2, SV_RESETFLAG, 2, SV_INITFLAGS, 6,   
+        SV_SAYTEAM, 0, 
         SV_CLIENT, 0,
         -1
     };
@@ -140,7 +164,7 @@ static char msgsizelookup(int msg)
 
 #define SAUERBRATEN_SERVER_PORT 28785
 #define SAUERBRATEN_SERVINFO_PORT 28786
-#define PROTOCOL_VERSION 255            // bump when protocol changes
+#define PROTOCOL_VERSION 256            // bump when protocol changes
 #define DEMO_VERSION 1                  // bump when demo format changes
 #define DEMO_MAGIC "SAUERBRATEN_DEMO"
 
@@ -174,20 +198,20 @@ static struct itemstat { int add, max, sound; const char *name; int info; } item
 #define RL_SELFDAMDIV 2
 #define RL_DISTSCALE 1.5f
 
-static struct guninfo { short sound, attackdelay, damage, projspeed, part, kickamount; const char *name, *file; } guns[NUMGUNS] =
+static struct guninfo { short sound, attackdelay, damage, projspeed, part, kickamount, range; const char *name, *file; } guns[NUMGUNS] =
 {
-    { S_PUNCH1,    250,  50, 0,   0,  1, "fist",            "fist"  },
-    { S_SG,       1400,  10, 0,   0, 20, "shotgun",         "shotg" },  // *SGRAYS
-    { S_CG,        100,  30, 0,   0,  7, "chaingun",        "chaing"},
-    { S_RLFIRE,    800, 120, 80,  0, 10, "rocketlauncher",  "rocket"},
-    { S_RIFLE,    1500, 100, 0,   0, 30, "rifle",           "rifle" },
-    { S_FLAUNCH,   500,  75, 80,  0, 10, "grenadelauncher", "gl" },
-    { S_PISTOL,    500,  25, 0,   0,  7, "pistol",          "pistol" },
-    { S_FLAUNCH,   200,  20, 50,  4,  1, "fireball",        NULL },
-    { S_ICEBALL,   200,  40, 30,  6,  1, "iceball",         NULL },
-    { S_SLIMEBALL, 200,  30, 160, 7,  1, "slimeball",       NULL },
-    { S_PIGR1,     250,  50, 0,   0,  1, "bite",            NULL },
-    { -1,            0, 120, 0,   0,  0, "barrel",          NULL }
+    { S_PUNCH1,    250,  50, 0,   0,  1,   12, "fist",            "fist"  },
+    { S_SG,       1400,  10, 0,   0, 20, 1024, "shotgun",         "shotg" },  // *SGRAYS
+    { S_CG,        100,  30, 0,   0,  7, 1024, "chaingun",        "chaing"},
+    { S_RLFIRE,    800, 120, 80,  0, 10, 1024, "rocketlauncher",  "rocket"},
+    { S_RIFLE,    1500, 100, 0,   0, 30, 2048, "rifle",           "rifle" },
+    { S_FLAUNCH,   500,  75, 80,  0, 10, 1024, "grenadelauncher", "gl" },
+    { S_PISTOL,    500,  25, 0,   0,  7, 1024, "pistol",          "pistol" },
+    { S_FLAUNCH,   200,  20, 50,  4,  1, 1024, "fireball",        NULL },
+    { S_ICEBALL,   200,  40, 30,  6,  1, 1024, "iceball",         NULL },
+    { S_SLIMEBALL, 200,  30, 160, 7,  1, 1024, "slimeball",       NULL },
+    { S_PIGR1,     250,  50, 0,   0,  1,   12, "bite",            NULL },
+    { -1,            0, 120, 0,   0,  0,    0, "barrel",          NULL }
 };
 
 // inherited by fpsent and server clients
@@ -229,7 +253,7 @@ struct fpsstate
             case I_GREENARMOUR:
                 // (100h/100g only absorbs 200 damage)
                 if(armourtype==A_YELLOW && armour>=100) return false;
-            case I_YELLOWARMOUR: return armour<is.max;
+            case I_YELLOWARMOUR: return !armourtype || armour<is.max;
             case I_QUAD: return quadmillis<is.max;
             default: return ammo[is.info]<is.max;
         }
@@ -274,7 +298,11 @@ struct fpsstate
 
     void spawnstate(int gamemode)
     {
-        if(m_noitems || m_capture)
+        if(m_demo)
+        {
+            gunselect = GUN_FIST;
+        }
+        else if(m_noitems || m_capture)
         {
             armour = 0;
             if(m_noitemsrail)
@@ -312,6 +340,13 @@ struct fpsstate
                 }
             }
         }
+        else if(m_ctf)
+        {
+            armourtype = A_BLUE;
+            armour = 50;
+            ammo[GUN_PISTOL] = 40;
+            ammo[GUN_GL] = 1;
+        }
         else
         {
             ammo[GUN_PISTOL] = m_sp ? 80 : 40;
@@ -340,14 +375,16 @@ struct fpsent : dynent, fpsstate
     int lastaction, lastattackgun;
     bool attacking;
     int lasttaunt;
-    int lastpickup, lastpickupmillis;
+    int lastpickup, lastpickupmillis, lastbase;
     int superdamage;
     int frags, deaths, totaldamage, totalshots;
     editinfo *edit;
+    float deltayaw, deltapitch, newyaw, newpitch;
+    int smoothmillis;
 
     string name, team, info;
 
-    fpsent() : weight(100), clientnum(-1), privilege(PRIV_NONE), lastupdate(0), plag(0), ping(0), lifesequence(0), lastpain(0), frags(0), deaths(0), totaldamage(0), totalshots(0), edit(NULL)
+    fpsent() : weight(100), clientnum(-1), privilege(PRIV_NONE), lastupdate(0), plag(0), ping(0), lifesequence(0), lastpain(0), frags(0), deaths(0), totaldamage(0), totalshots(0), edit(NULL), smoothmillis(-1)
                { name[0] = team[0] = info[0] = 0; respawn(); }
     ~fpsent() { freeeditinfo(edit); }
 
@@ -375,6 +412,7 @@ struct fpsent : dynent, fpsstate
         lasttaunt = 0;
         lastpickup = -1;
         lastpickupmillis = 0;
+        lastbase = -1;
         superdamage = 0;
     }
 };

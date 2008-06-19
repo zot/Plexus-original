@@ -54,7 +54,7 @@ struct igameclient
     virtual bool clientoption(char *arg) { return false; }
     virtual void updateworld(vec &pos, int curtime, int lm) = 0;
     virtual void initclient() = 0;
-    virtual void physicstrigger(physent *d, bool local, int floorlevel, int waterlevel) = 0;
+    virtual void physicstrigger(physent *d, bool local, int floorlevel, int waterlevel, int material = 0) = 0;
     virtual void edittrigger(const selinfo &sel, int op, int arg1 = 0, int arg2 = 0, int arg3 = 0) = 0;
     virtual char *getclientmap() = 0;
     virtual void resetgamestate() = 0;
@@ -62,6 +62,7 @@ struct igameclient
     virtual void newmap(int size) = 0;
     virtual void startmap(const char *name) = 0;
     virtual void preload() {}
+    virtual float abovegameplayhud() { return 1.0f; }
     virtual void gameplayhud(int w, int h) = 0;
     virtual void drawhudgun() = 0;
     virtual bool canjump() = 0;
@@ -73,11 +74,16 @@ struct igameclient
     virtual void writegamedata(vector<char> &extras) = 0;
     virtual void readgamedata(vector<char> &extras) = 0;
     virtual void g3d_gamemenus() = 0;
-    virtual void crosshaircolor(float &r, float &g, float &b) {} 
+    virtual const char *defaultcrosshair(int index) { return NULL; }
+    virtual int selectcrosshair(float &r, float &g, float &b) { return 0; }
     virtual void lighteffects(dynent *d, vec &color, vec &dir) {}
     virtual void setupcamera() {}
+    virtual bool detachcamera() { return false; }
     virtual void adddynlights() {}
     virtual void particletrack(physent *owner, vec &o, vec &d) {}
+    virtual bool serverinfostartcolumn(g3d_gui *g, int i) { return false; }
+    virtual void serverinfoendcolumn(g3d_gui *g, int i) {}
+    virtual bool serverinfoentry(g3d_gui *g, int i, const char *name, const char *desc, const char *map, int ping, const vector<int> &attr, int np) { return false; };
 }; 
  
 struct igameserver
@@ -96,11 +102,10 @@ struct igameserver
     virtual void recordpacket(int chan, void *data, int len) {}
     virtual void parsepacket(int sender, int chan, bool reliable, ucharbuf &p) = 0;
     virtual bool sendpackets() = 0;
-    virtual int welcomepacket(ucharbuf &p, int n) = 0;
-    virtual void serverinforeply(ucharbuf &p) = 0;
+    virtual int welcomepacket(ucharbuf &p, int n, ENetPacket *packet) = 0;
+    virtual void serverinforeply(ucharbuf &req, ucharbuf &p) = 0;
     virtual void serverupdate(int lastmillis, int totalmillis) = 0;
     virtual bool servercompatible(char *name, char *sdec, char *map, int ping, const vector<int> &attr, int np) = 0;
-    virtual void serverinfostr(char *buf, const char *name, const char *desc, const char *map, int ping, const vector<int> &attr, int np) = 0;
     virtual int serverinfoport() = 0;
     virtual int serverport() = 0;
     virtual const char *getdefaultmaster() = 0;

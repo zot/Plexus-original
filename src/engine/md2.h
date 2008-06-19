@@ -75,9 +75,11 @@ struct md2 : vertmodel
     
     md2(const char *name) : vertmodel(name) {}
 
-    int type() { return MDL_MD2; }
+    int type() const { return MDL_MD2; }
 
-    struct md2meshgroup : meshgroup
+    int linktype(animmodel *m) const { return LINK_COOP; }
+
+    struct md2meshgroup : vertmeshgroup
     {
         void genverts(int *glcommands, vector<tcvert> &tcverts, vector<ushort> &vindexes, vector<tri> &tris)
         {
@@ -86,8 +88,8 @@ struct md2 : vertmodel
             for(int *command = glcommands; (*command)!=0;)
             {
                 int numvertex = *command++;
-                bool isfan;
-                if(isfan = (numvertex<0)) numvertex = -numvertex;
+                bool isfan = numvertex<0;
+                if(isfan) numvertex = -numvertex;
                 idxs.setsizenodelete(0);
                 loopi(numvertex)
                 {
@@ -141,7 +143,7 @@ struct md2 : vertmodel
 
             numframes = header.numframes;
 
-            mesh &m = *new mesh;
+            vertmesh &m = *new vertmesh;
             m.group = this;
             meshes.add(&m);
 
@@ -200,7 +202,7 @@ struct md2 : vertmodel
 
     struct md2part : part
     {
-        void getdefaultanim(animstate &as, int anim, int varseed, dynent *d)
+        void getdefaultanim(animinfo &info, int anim, uint varseed, dynent *d)
         {
             //                      0              3              6   7   8   9   10   11  12  13   14  15  16  17
             //                      D    D    D    D    D    D    A   P   I   R,  E    J   T   W    FO  SA  GS  GI
@@ -212,33 +214,16 @@ struct md2 : vertmodel
             anim &= ANIM_INDEX;
             if((size_t)anim >= sizeof(animfr)/sizeof(animfr[0]))
             {
-                as.frame = 0;
-                as.range = 1;
+                info.frame = 0;
+                info.range = 1;
                 return;
             }
             int n = animfr[anim];
-            if(anim==ANIM_DYING || anim==ANIM_DEAD) n -= uint(varseed)%3;
-            as.frame = _frame[n];
-            as.range = _range[n];
+            if(anim==ANIM_DYING || anim==ANIM_DEAD) n -= varseed%3;
+            info.frame = _frame[n];
+            info.range = _range[n];
         }
     };
-
-    void render(int anim, int varseed, float speed, int basetime, float pitch, const vec &axis, dynent *d, modelattach *a, const vec &dir, const vec &campos, const plane &fogplane)
-    {
-        if(!loaded) return;
-
-        parts[0]->render(anim, varseed, speed, basetime, pitch, axis, d, dir, campos, fogplane);
-
-        if(a) for(int i = 0; a[i].name; i++)
-        {
-            md2 *m = (md2 *)a[i].m;
-            if(!m) continue;
-            m->setskin();
-            part *p = m->parts[0];
-            p->index = parts.length()+i;
-            p->render(anim, varseed, speed, basetime, pitch, axis, d, dir, campos, fogplane);
-        }
-    }
 
     void extendbb(int frame, vec &center, vec &radius, modelattach &a)
     {
@@ -256,9 +241,9 @@ struct md2 : vertmodel
         center.add(radius);
     }
 
-    meshgroup *loadmeshes(char *name)
+    meshgroup *loadmeshes(char *name, va_list args)
     {
-        md2meshgroup *group = new md2meshgroup();
+        md2meshgroup *group = new md2meshgroup;
         if(!group->load(name)) { delete group; return NULL; }
         return group;
     }
@@ -276,7 +261,7 @@ struct md2 : vertmodel
         if(!mdl.meshes)
         {
             s_sprintfd(name2)("packages/models/%s/tris.md2", pname);    // try md2 in parent folder (vert sharing)
-            mdl.meshes = loadmeshes(path(name2));
+            mdl.meshes = sharemeshes(path(name2));
             if(!mdl.meshes) return false;
         }
         Texture *tex, *masks;
@@ -284,12 +269,14 @@ struct md2 : vertmodel
         mdl.initskins(tex, masks);
         if(tex==notexture) conoutf("could not load model skin for %s", name1);
         loadingmd2 = this;
+        persistidents = false;
         s_sprintfd(name3)("packages/models/%s/md2.cfg", loadname);
         if(!execfile(name3))
         {
             s_sprintf(name3)("packages/models/%s/md2.cfg", pname);
             execfile(name3);
         }
+        persistidents = true;
         loadingmd2 = 0;
         loopv(parts) parts[i]->meshes = parts[i]->meshes->scaleverts(scale/4.0f, i ? vec(0, 0, 0) : vec(translate.x, -translate.y, translate.z));
         return loaded = true;
@@ -323,7 +310,7 @@ void md2anim(char *anim, int *frame, int *range, float *speed, int *priority)
     if(anims.empty()) conoutf("could not find animation %s", anim);
     else loopv(anims)
     {
-        loadingmd2->parts.last()->setanim(anims[i], *frame, *range, *speed, *priority);
+        loadingmd2->parts.last()->setanim(0, anims[i], *frame, *range, *speed, *priority);
     }
 }
 

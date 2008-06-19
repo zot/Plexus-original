@@ -20,11 +20,11 @@ struct BIH
     int numnodes;
     BIHNode *nodes;
     int numtris;
-    tri *tris;
+    tri *tris, *noclip;
 
     vec bbmin, bbmax;
 
-    BIH(int numtris, tri *tris);
+    BIH(vector<tri> *tris);
 
     ~BIH()
     {
@@ -32,12 +32,11 @@ struct BIH
         DELETEA(tris);
     }
 
-    static bool triintersect(tri &tri, const vec &o, const vec &ray, float maxdist, float &dist, int mode);
+	static bool triintersect(tri &t, const vec &o, const vec &ray, float maxdist, float &dist, int mode, tri *noclip);
 
     void build(vector<BIHNode> &buildnodes, ushort *indices, int numindices, int depth = 1);
 
     bool traverse(const vec &o, const vec &ray, float maxdist, float &dist, int mode);
-    bool collide(const vec &o, const vec &radius, const vec &ray, float cutoff, vec &normal);
 };
 
 extern bool mmintersect(const extentity &e, const vec &o, const vec &ray, float maxdist, int mode, float &dist);

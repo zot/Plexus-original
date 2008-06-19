@@ -3,15 +3,18 @@
 
 VARP(oqdynent, 0, 1, 1);
 VARP(animationinterpolationtime, 0, 150, 1000);
-VARP(orientinterpolationtime, 0, 75, 1000);
 
 model *loadingmodel = NULL;
 
+#include "animmodel.h"
 #include "vertmodel.h"
+#include "skelmodel.h"
 #include "md2.h"
 #include "md3.h"
+#include "md5.h"
+#include "obj.h"
 
-#define checkmdl if(!loadingmodel) { conoutf("not loading a model"); return; }
+#define checkmdl if(!loadingmodel) { conoutf(CON_ERROR, "not loading a model"); return; }
 
 void mdlcullface(int *cullface)
 {
@@ -62,7 +65,7 @@ COMMAND(mdlambient, "i");
 void mdlalphatest(float *cutoff)
 {   
     checkmdl;
-    loadingmodel->setalphatest(max(0, min(1, *cutoff)));
+    loadingmodel->setalphatest(max(0.0f, min(1.0f, *cutoff)));
 }
 
 COMMAND(mdlalphatest, "f");
@@ -86,13 +89,21 @@ void mdlglow(int *percent)
 
 COMMAND(mdlglow, "i");
 
-void mdlenvmap(int *envmapmax, int *envmapmin, char *envmap)
+void mdlglare(float *specglare, float *glowglare)
+{
+    checkmdl;
+    loadingmodel->setglare(*specglare, *glowglare);
+}
+
+COMMAND(mdlglare, "ff");
+
+void mdlenvmap(float *envmapmax, float *envmapmin, char *envmap)
 {
     checkmdl;
     loadingmodel->setenvmap(*envmapmin, *envmapmax, envmap[0] ? cubemapload(envmap) : NULL);
 }
 
-COMMAND(mdlenvmap, "iis");
+COMMAND(mdlenvmap, "ffs");
 
 void mdltranslucent(float *translucency)
 {
@@ -145,6 +156,22 @@ void mdltrans(float *x, float *y, float *z)
 
 COMMAND(mdltrans, "fff");
 
+void mdlyaw(float *angle)
+{
+    checkmdl;
+    loadingmodel->offsetyaw = *angle;
+}
+
+COMMAND(mdlyaw, "f");
+
+void mdlpitch(float *angle)
+{
+    checkmdl;
+    loadingmodel->offsetpitch = *angle;
+}
+
+COMMAND(mdlpitch, "f");
+
 void mdlshadow(int *shadow)
 {
     checkmdl;
@@ -175,17 +202,16 @@ COMMAND(mdlname, "");
 
 vector<mapmodelinfo> mapmodels;
 
-void mmodel(char *name, int *tex)
+void mmodel(char *name)
 {
     mapmodelinfo &mmi = mapmodels.add();
     s_strcpy(mmi.name, name);
-    mmi.tex = *tex;
     mmi.m = NULL;
 }
 
 void mapmodelcompat(int *rad, int *h, int *tex, char *name, char *shadow)
 {
-    mmodel(name, tex);
+    mmodel(name);
 }
 
 void mapmodelreset() { mapmodels.setsize(0); }
@@ -193,9 +219,11 @@ void mapmodelreset() { mapmodels.setsize(0); }
 mapmodelinfo &getmminfo(int i) { return mapmodels.inrange(i) ? mapmodels[i] : *(mapmodelinfo *)0; }
 const char *mapmodelname(int i) { return mapmodels.inrange(i) ? mapmodels[i].name : NULL; }
 
-COMMAND(mmodel, "si");
+COMMAND(mmodel, "s");
 COMMANDN(mapmodel, mapmodelcompat, "iiiss");
 COMMAND(mapmodelreset, "");
+ICOMMAND(mapmodelname, "i", (int *index), { result(mapmodels.inrange(*index) ? mapmodels[*index].name : ""); });
+ICOMMAND(nummapmodels, "", (), { intret(mapmodels.length()); });
 
 // model registry
 
@@ -230,8 +258,20 @@ model *loadmodel(const char *name, int i, bool msg)
             if(!m->load())
             {    
                 delete m;
-                loadingmodel = NULL;
-                return NULL; 
+                m = new md5(name);
+                loadingmodel = m;
+                if(!m->load())
+                {
+                    delete m;
+                    m = new obj(name);
+                    loadingmodel = m;
+                    if(!m->load())
+                    {
+                        delete m;
+                        loadingmodel = NULL;
+                        return NULL; 
+                    }
+                }
             }
         }
         loadingmodel = NULL;
@@ -246,10 +286,28 @@ void clear_mdls()
     enumerate(mdllookup, model *, m, delete m);
 }
 
+void cleanupmodels()
+{
+    enumerate(mdllookup, model *, m, m->cleanup());
+}
+
+void clearmodel(char *name)
+{
+    model **m = mdllookup.access(name);
+    if(!m) { conoutf("model %s is not loaded", name); return; }
+    mdllookup.remove(name);
+    (*m)->cleanup();
+    delete *m;
+    conoutf("cleared model %s", name);
+}
+
+COMMAND(clearmodel, "s");
+
 bool modeloccluded(const vec &center, float radius)
 {
     int br = int(radius*2)+1;
-    return bboccluded(ivec(int(center.x-radius), int(center.y-radius), int(center.z-radius)), ivec(br, br, br), worldroot, ivec(0, 0, 0), hdr.worldsize/2);
+    return pvsoccluded(ivec(int(center.x-radius), int(center.y-radius), int(center.z-radius)), ivec(br, br, br)) ||
+           bboccluded(ivec(int(center.x-radius), int(center.y-radius), int(center.z-radius)), ivec(br, br, br));
 }
 
 VAR(showboundingbox, 0, 0, 2);
@@ -272,6 +330,7 @@ void render3dbox(vec &o, float tofloor, float toceil, float xradius, float yradi
     float xsz = xradius*2, ysz = yradius*2;
     float h = tofloor+toceil;
     notextureshader->set();
+    glDisable(GL_TEXTURE_2D);
     glColor3f(1, 1, 1);
     render2dbox(c, xsz, 0, h);
     render2dbox(c, 0, ysz, h);
@@ -279,11 +338,13 @@ void render3dbox(vec &o, float tofloor, float toceil, float xradius, float yradi
     render2dbox(c, -xsz, 0, h);
     render2dbox(c, 0, -ysz, h);
     xtraverts += 16;
+    glEnable(GL_TEXTURE_2D);
 }
 
 void renderellipse(vec &o, float xradius, float yradius, float yaw)
 {
     notextureshader->set();
+    glDisable(GL_TEXTURE_2D);
     glColor3f(0.5f, 0.5f, 0.5f);
     glBegin(GL_LINE_LOOP);
     loopi(16)
@@ -294,6 +355,7 @@ void renderellipse(vec &o, float xradius, float yradius, float yaw)
         glVertex3fv(p.v);
     }
     glEnd();
+    glEnable(GL_TEXTURE_2D);
 }
 
 void setshadowmatrix(const plane &p, const vec &dir)
@@ -312,13 +374,13 @@ void setshadowmatrix(const plane &p, const vec &dir)
 VARP(bounddynshadows, 0, 1, 1);
 VARP(dynshadow, 0, 60, 100);
 
-void rendershadow(vec &dir, model *m, int anim, int varseed, const vec &o, vec center, float radius, float yaw, float pitch, float speed, int basetime, dynent *d, int cull, modelattach *a)
+void rendershadow(vec &dir, model *m, int anim, const vec &o, vec center, float radius, float yaw, float pitch, float speed, int basetime, dynent *d, int cull, modelattach *a)
 {
     vec floor;
     float dist = rayfloor(center, floor, 0, center.z);
     if(dist<=0 || dist>=center.z) return;
     center.z -= dist;
-    if((cull&MDL_CULL_VFC) && refracting && center.z>=refracting) return;
+    if((cull&MDL_CULL_VFC) && refracting<0 && center.z>=reflectz) return;
     if(vec(center).sub(camera1->o).dot(floor)>0) return;
 
     vec shaddir; 
@@ -340,47 +402,47 @@ void rendershadow(vec &dir, model *m, int anim, int varseed, const vec &o, vec c
     glDisable(GL_TEXTURE_2D);
     glDepthMask(GL_FALSE);
     
-    if(!hasFBO || !reflecting || hasDS) glEnable(GL_STENCIL_TEST);
+    if(!hasFBO || !reflecting || !refracting || hasDS) 
+    {
+        glEnable(GL_STENCIL_TEST);
 
-    if((!hasFBO || !reflecting || hasDS) && bounddynshadows)
-    { 
-        nocolorshader->set();
-        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-        glStencilFunc(GL_ALWAYS, 1, 1);
-        glStencilOp(GL_KEEP, GL_REPLACE, GL_ZERO);
+        if(bounddynshadows)
+        {    
+            nocolorshader->set();
+            glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+            glStencilFunc(GL_ALWAYS, 1, 1);
+            glStencilOp(GL_KEEP, GL_REPLACE, GL_ZERO);
 
-        vec below(center);
-        below.z -= 1.0f;
-        glPushMatrix();
-        setshadowmatrix(plane(floor, -floor.dot(below)), shaddir);
-        glBegin(GL_QUADS);
-        loopi(6) if((shaddir[dimension(i)]>0)==dimcoord(i)) loopj(4)
-        {
-            const ivec &cc = cubecoords[fv[i][j]];
-            glVertex3f(center.x + (cc.x ? 1.5f : -1.5f)*radius,
-                       center.y + (cc.y ? 1.5f : -1.5f)*radius,
-                       cc.z ? center.z + dist + radius : below.z);
-            xtraverts += 4;
+            vec below(center);
+            below.z -= 1.0f;
+            glPushMatrix();
+            setshadowmatrix(plane(floor, -floor.dot(below)), shaddir);
+            glBegin(GL_QUADS);
+            loopi(6) if((shaddir[dimension(i)]>0)==dimcoord(i)) loopj(4)
+            {
+                const ivec &cc = cubecoords[fv[i][j]];
+                glVertex3f(center.x + (cc.x ? 1.5f : -1.5f)*radius,
+                           center.y + (cc.y ? 1.5f : -1.5f)*radius,
+                           cc.z ? center.z + dist + radius : below.z);
+                xtraverts += 4;
+            }
+            glEnd();
+            glPopMatrix();
+
+            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, fading ? GL_FALSE : GL_TRUE);
         }
-        glEnd();
-        glPopMatrix();
-
-        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, refracting && renderpath!=R_FIXEDFUNCTION ? GL_FALSE : GL_TRUE);
     }
 
     float intensity = dynshadow/100.0f;
-    if(refracting)
+    if(fogging)
     {
-        if(renderpath!=R_FIXEDFUNCTION) setfogplane(0, max(0.1f, refracting-center.z));
-        else if(refractfog) intensity *= 1 - max(0, min(1, (refracting - center.z)/waterfog));
+        if(renderpath!=R_FIXEDFUNCTION) setfogplane(0, max(0.1f, reflectz-center.z));
+        else intensity *= 1.0f - max(0.0f, min(1.0f, (reflectz - center.z)/waterfog));
     }
+    if((anim&ANIM_INDEX)==ANIM_DYING) intensity *= max(1.0f - (lastmillis - basetime)/1000.0f, 0.0f);
     glColor4f(0, 0, 0, intensity);
 
-    static Shader *dynshadowshader = NULL;
-    if(!dynshadowshader) dynshadowshader = lookupshaderbyname("dynshadow");
-    dynshadowshader->set();
-
-    if(!hasFBO || !reflecting || hasDS)
+    if(!hasFBO || !reflecting || !refracting || hasDS)
     {
         glStencilFunc(GL_NOTEQUAL, bounddynshadows ? 0 : 1, 1);
         glStencilOp(GL_KEEP, GL_REPLACE, GL_REPLACE);
@@ -391,19 +453,19 @@ void rendershadow(vec &dir, model *m, int anim, int varseed, const vec &o, vec c
 
     glPushMatrix();
     setshadowmatrix(plane(floor, -floor.dot(above)), shaddir);
-    m->render(anim|ANIM_NOSKIN|ANIM_SHADOW, varseed, speed, basetime, o, yaw, pitch, d, a);
+    m->render(anim|ANIM_NOSKIN|ANIM_SHADOW, speed, basetime, o, yaw, pitch, d, a);
     glPopMatrix();
 
     glEnable(GL_TEXTURE_2D);
     glDepthMask(GL_TRUE);
     
-    if(!hasFBO || !reflecting || hasDS) glDisable(GL_STENCIL_TEST);
+    if(!hasFBO || !reflecting || !refracting || hasDS) glDisable(GL_STENCIL_TEST);
 }
 
 struct batchedmodel
 {
     vec pos, color, dir;
-    int anim, varseed, tex;
+    int anim;
     float yaw, pitch, speed;
     int basetime, cull;
     dynent *d;
@@ -450,21 +512,29 @@ void renderbatchedmodel(model *m, batchedmodel &b)
 {
     modelattach *a = NULL;
     if(b.attached>=0) a = &modelattached[b.attached];
-    if((!shadowmap || renderpath==R_FIXEDFUNCTION) && (b.cull&(MDL_SHADOW|MDL_DYNSHADOW)) && dynshadow && hasstencil && (!reflecting || refracting))
+    if((!shadowmap || renderpath==R_FIXEDFUNCTION) && (b.cull&(MDL_SHADOW|MDL_DYNSHADOW)) && dynshadow && hasstencil && !reflecting && refracting<=0)
     {
         vec center;
         float radius = m->boundsphere(0/*frame*/, center, a); // FIXME
         center.add(b.pos);
-        rendershadow(b.dir, m, b.anim, b.varseed, b.pos, center, radius, b.yaw, b.pitch, b.speed, b.basetime, b.d, b.cull, a);
-        if((b.cull&MDL_CULL_VFC) && refracting && center.z-radius>=refracting) return;
+        rendershadow(b.dir, m, b.anim, b.pos, center, radius, b.yaw, b.pitch, b.speed, b.basetime, b.d, b.cull, a);
+        if((b.cull&MDL_CULL_VFC) && refracting<0 && center.z-radius>=reflectz) return;
     }
 
     int anim = b.anim;
-    if(shadowmapping) anim |= ANIM_NOSKIN; 
-    else if(b.cull&MDL_TRANSLUCENT) anim |= ANIM_TRANSLUCENT;
+    if(shadowmapping) 
+    {
+        anim |= ANIM_NOSKIN; 
+        setenvparamf("shadowintensity", SHPARAM_VERTEX, 1,
+            (anim&ANIM_INDEX)==ANIM_DYING ? max(1.0f - (lastmillis - b.basetime)/1000.0f, 0.0f) : 1.0f);
+    }
+    else 
+    {
+        if(b.cull&MDL_TRANSLUCENT) anim |= ANIM_TRANSLUCENT;
+        if(b.cull&MDL_FULLBRIGHT) anim |= ANIM_FULLBRIGHT;
+    }
 
-    m->setskin(b.tex);
-    m->render(anim, b.varseed, b.speed, b.basetime, b.pos, b.yaw, b.pitch, b.d, a, b.color, b.dir);
+    m->render(anim, b.speed, b.basetime, b.pos, b.yaw, b.pitch, b.d, a, b.color, b.dir);
 }
 
 struct translucentmodel
@@ -581,10 +651,17 @@ void endmodelquery()
     modelattached.setsizenodelete(minattached);
 }
 
-VARP(maxmodelradiusdistance, 10, 100, 1000);
+VARP(maxmodelradiusdistance, 10, 200, 1000);
 
 void rendermodelquery(model *m, dynent *d, const vec &center, float radius)
 {
+    if(fabs(camera1->o.x-center.x) < radius+1 &&
+       fabs(camera1->o.y-center.y) < radius+1 &&
+       fabs(camera1->o.z-center.z) < radius+1)
+    {
+        d->query = NULL;
+        return;
+    }
     d->query = newquery(d);
     if(!d->query) return;
     nocolorshader->set();
@@ -594,32 +671,40 @@ void rendermodelquery(model *m, dynent *d, const vec &center, float radius)
     int br = int(radius*2)+1;
     drawbb(ivec(int(center.x-radius), int(center.y-radius), int(center.z-radius)), ivec(br, br, br));
     endquery(d->query);
-    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, refracting && renderpath!=R_FIXEDFUNCTION ? GL_FALSE : GL_TRUE);
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, fading ? GL_FALSE : GL_TRUE);
     glDepthMask(GL_TRUE);
 }   
 
-void rendermodel(vec &color, vec &dir, const char *mdl, int anim, int varseed, int tex, const vec &o, float yaw, float pitch, float speed, int basetime, dynent *d, int cull, modelattach *a)
+extern int oqfrags;
+
+void rendermodel(entitylight *light, const char *mdl, int anim, const vec &o, float yaw, float pitch, int cull, dynent *d, modelattach *a, int basetime, float speed)
 {
     if(shadowmapping && !(cull&(MDL_SHADOW|MDL_DYNSHADOW))) return;
     model *m = loadmodel(mdl); 
     if(!m) return;
     vec center;
     float radius = 0;
-    bool shadow = (!shadowmap || renderpath==R_FIXEDFUNCTION) && (cull&(MDL_SHADOW|MDL_DYNSHADOW)) && dynshadow && hasstencil;
-    if(cull)
+    bool shadow = (!shadowmap || renderpath==R_FIXEDFUNCTION) && (cull&(MDL_SHADOW|MDL_DYNSHADOW)) && dynshadow && hasstencil,
+         doOQ = cull&MDL_CULL_QUERY && hasOQ && oqfrags && oqdynent;
+    if(cull&(MDL_CULL_VFC|MDL_CULL_DIST|MDL_CULL_OCCLUDED|MDL_CULL_QUERY|MDL_SHADOW|MDL_DYNSHADOW))
     {
         radius = m->boundsphere(0/*frame*/, center, a); // FIXME
+        center.rotate_around_z((-180-yaw)*RAD);
         center.add(o);
         if(cull&MDL_CULL_DIST && center.dist(camera1->o)/radius>maxmodelradiusdistance) return;
         if(cull&MDL_CULL_VFC)
         {
-            if(reflecting)
+            if(reflecting || refracting)
             {
-                if(refracting)
+                if(reflecting || refracting>0) 
                 {
-                    if(center.z+radius<refracting-waterfog || (!shadow && center.z-radius>=refracting)) return;
+                    if(center.z+radius<=reflectz) return;
                 }
-                else if(center.z+radius<=reflecting) return;
+                else
+                {
+                    if(fogging && center.z+radius<reflectz-waterfog) return;
+                    if(!shadow && center.z-radius>=reflectz) return;
+                }
                 if(center.dist(camera1->o)-radius>reflectdist) return;
             }
             if(isvisiblesphere(radius, center) >= VFC_FOGGED) return;
@@ -630,7 +715,7 @@ void rendermodel(vec &color, vec &dir, const char *mdl, int anim, int varseed, i
             if(d)
             {
                 if(cull&MDL_CULL_OCCLUDED && d->occluded>=OCCLUDE_PARENT) return;
-                if(cull&MDL_CULL_QUERY && hasOQ && oqdynent && d->occluded+1>=OCCLUDE_BB && d->query && d->query->owner==d && checkquery(d->query)) return;
+                if(doOQ && d->occluded+1>=OCCLUDE_BB && d->query && d->query->owner==d && checkquery(d->query)) return;
             }
             if(!addshadowmapcaster(center, radius, radius)) return;
         }
@@ -639,11 +724,11 @@ void rendermodel(vec &color, vec &dir, const char *mdl, int anim, int varseed, i
             if(!reflecting && !refracting && d)
             {
                 d->occluded = OCCLUDE_PARENT;
-                if(cull&MDL_CULL_QUERY && hasOQ && oqdynent) rendermodelquery(m, d, center, radius);
+                if(doOQ) rendermodelquery(m, d, center, radius);
             }
             return;
         }
-        else if(cull&MDL_CULL_QUERY && hasOQ && oqdynent && d && d->query && d->query->owner==d && checkquery(d->query))
+        else if(doOQ && d && d->query && d->query->owner==d && checkquery(d->query))
         {
             if(!reflecting && !refracting) 
             {
@@ -653,7 +738,7 @@ void rendermodel(vec &color, vec &dir, const char *mdl, int anim, int varseed, i
             return;
         }
     }
-    if(showboundingbox && !shadowmapping)
+    if(showboundingbox && !shadowmapping && !reflecting && !refracting)
     {
         if(d && showboundingbox==1) 
         {
@@ -671,31 +756,54 @@ void rendermodel(vec &color, vec &dir, const char *mdl, int anim, int varseed, i
         }
     }
 
-    if(d && !shadowmapping) 
+    vec lightcolor(1, 1, 1), lightdir(0, 0, 1);
+    if(!shadowmapping)
     {
-        if(!reflecting && !refracting) d->occluded = OCCLUDE_NOTHING;
-        lightreaching(d->o, color, dir);
-        cl->lighteffects(d, color, dir);
+        if(d) 
+        {
+            if(!reflecting && !refracting) d->occluded = OCCLUDE_NOTHING;
+            if(!light) light = &d->light;
+            if(cull&MDL_LIGHT && light->millis!=lastmillis)
+            {
+                lightreaching(d->o, light->color, light->dir);
+                dynlightreaching(o, light->color, light->dir);
+                cl->lighteffects(d, light->color, light->dir);
+                light->millis = lastmillis;
+            }
+        }
+        else if(cull&MDL_LIGHT)
+        {
+            if(!light) 
+            {
+                lightreaching(o, lightcolor, lightdir);
+                dynlightreaching(o, lightcolor, lightdir);
+            }
+            else if(light->millis!=lastmillis)
+            {
+                lightreaching(o, light->color, light->dir);
+                dynlightreaching(o, light->color, light->dir);
+                light->millis = lastmillis;
+            }
+        }
+        if(light) { lightcolor = light->color; lightdir = light->dir; }
+        if(cull&MDL_DYNLIGHT) dynlightreaching(o, lightcolor, lightdir);
     }
-    vec dyncolor(color), dyndir(dir);
-    if(!shadowmapping) dynlightreaching(o, dyncolor, dyndir);
+
     if(a) for(int i = 0; a[i].name; i++)
     {
         a[i].m = loadmodel(a[i].name);
-        if(a[i].m && a[i].m->type()!=m->type()) a[i].m = NULL;
+        //if(a[i].m && a[i].m->type()!=m->type()) a[i].m = NULL;
     }
 
-    bool doOQ = cull&MDL_CULL_QUERY && !reflecting && !refracting && !shadowmapping && hasOQ && oqdynent && d;
+    if(!d || reflecting || refracting || shadowmapping) doOQ = false;
   
     if(numbatches>=0)
     {
         batchedmodel &b = addbatchedmodel(m);
         b.pos = o;
-        b.color = dyncolor;
-        b.dir = dyndir;
+        b.color = lightcolor;
+        b.dir = lightdir;
         b.anim = anim;
-        b.varseed = varseed;
-        b.tex = tex;
         b.yaw = yaw;
         b.pitch = pitch;
         b.speed = speed;
@@ -710,14 +818,23 @@ void rendermodel(vec &color, vec &dir, const char *mdl, int anim, int varseed, i
 
     m->startrender();
 
-    if(shadow && (!reflecting || refracting))
+    if(shadow && !reflecting && refracting<=0)
     {
-        rendershadow(dyndir, m, anim, varseed, o, center, radius, yaw, pitch, speed, basetime, d, cull, a);
-        if((cull&MDL_CULL_VFC) && refracting && center.z-radius>=refracting) { m->endrender(); return; }
+        rendershadow(lightdir, m, anim, o, center, radius, yaw, pitch, speed, basetime, d, cull, a);
+        if((cull&MDL_CULL_VFC) && refracting<0 && center.z-radius>=reflectz) { m->endrender(); return; }
     }
 
-    if(shadowmapping) anim |= ANIM_NOSKIN;
-    else if(cull&MDL_TRANSLUCENT) anim |= ANIM_TRANSLUCENT; 
+    if(shadowmapping)
+    {
+        anim |= ANIM_NOSKIN;
+        setenvparamf("shadowintensity", SHPARAM_VERTEX, 1,
+            (anim&ANIM_INDEX)==ANIM_DYING ? max(1.0f - (lastmillis - basetime)/1000.0f, 0.0f) : 1.0f);
+    }
+    else
+    {
+        if(cull&MDL_TRANSLUCENT) anim |= ANIM_TRANSLUCENT;
+        if(cull&MDL_FULLBRIGHT) anim |= ANIM_FULLBRIGHT;
+    }
 
     if(doOQ)
     {
@@ -725,8 +842,7 @@ void rendermodel(vec &color, vec &dir, const char *mdl, int anim, int varseed, i
         if(d->query) startquery(d->query);
     }
 
-    m->setskin(tex);
-    m->render(anim, varseed, speed, basetime, o, yaw, pitch, d, a, dyncolor, dyndir);
+    m->render(anim, speed, basetime, o, yaw, pitch, d, a, lightcolor, lightdir);
 
     if(doOQ && d->query) endquery(d->query);
 
@@ -784,67 +900,47 @@ void findanims(const char *pattern, vector<int> &anims)
 void loadskin(const char *dir, const char *altdir, Texture *&skin, Texture *&masks) // model skin sharing
 {
 #define ifnoload(tex, path) if((tex = textureload(path, 0, true, false))==notexture)
-#define tryload(tex, path, prefix, name) \
-    s_sprintfd(path)("%spackages/models/%s/%s.jpg", prefix, dir, name); \
-    ifnoload(tex, path) \
+#define tryload(tex, prefix, name) \
+    ifnoload(tex, makerelpath(mdir, name ".jpg", prefix)) \
     { \
-        strcpy(path+strlen(path)-3, "png"); \
-        ifnoload(tex, path) \
+        ifnoload(tex, makerelpath(mdir, name ".png", prefix)) \
         { \
-            s_sprintf(path)("%spackages/models/%s/%s.jpg", prefix, altdir, name); \
-            ifnoload(tex, path) \
+            ifnoload(tex, makerelpath(maltdir, name ".jpg", prefix)) \
             { \
-                strcpy(path+strlen(path)-3, "png"); \
-                ifnoload(tex, path) return; \
+                ifnoload(tex, makerelpath(maltdir, name ".png", prefix)) return; \
             } \
         } \
     }
-     
+   
+    s_sprintfd(mdir)("packages/models/%s", dir);
+    s_sprintfd(maltdir)("packages/models/%s", altdir);
     masks = notexture;
-    tryload(skin, skinpath, "", "skin");
-    if(renderpath!=R_FIXEDFUNCTION) { tryload(masks, maskspath, "", "masks"); }
-    else { tryload(masks, maskspath, "<ffmask:25>", "masks"); }
+    tryload(skin, NULL, "skin");
+    tryload(masks, "<ffmask:25>", "masks");
 }
 
 // convenient function that covers the usual anims for players/monsters/npcs
 
-VAR(animoverride, 0, 0, NUMANIMS-1);
+VAR(animoverride, -1, 0, NUMANIMS-1);
 VAR(testanims, 0, 0, 1);
-
-void interpolateorientation(dynent *d, float &interpyaw, float &interppitch)
-{
-    if(!orientinterpolationtime) { interpyaw = d->yaw; interppitch = d->pitch; return; }
-    if(d->orientmillis!=lastmillis)
-    {
-        float yaw = d->yaw, pitch = d->pitch;
-        if(yaw-d->lastyaw>=180) yaw -= 360;
-        else if(d->lastyaw-yaw>=180) yaw += 360;
-        d->lastyaw += (yaw-d->lastyaw)*min(orientinterpolationtime, lastmillis-d->orientmillis)/float(orientinterpolationtime);
-        d->lastpitch += (pitch-d->lastpitch)*min(orientinterpolationtime, lastmillis-d->orientmillis)/float(orientinterpolationtime);
-        d->orientmillis = lastmillis;
-    }
-    interpyaw = d->lastyaw;
-    interppitch = d->lastpitch;
-}
+VAR(testpitch, -90, 0, 90);
 
 void renderclient(dynent *d, const char *mdlname, modelattach *attachments, int attack, int attackdelay, int lastaction, int lastpain, float sink)
 {
     int anim = ANIM_IDLE|ANIM_LOOP;
     float yaw = d->yaw, pitch = d->pitch;
-    if(d->type==ENT_PLAYER && d!=player && orientinterpolationtime) interpolateorientation(d, yaw, pitch);
     vec o(d->o);
     o.z -= d->eyeheight + sink;
-    int varseed = (int)(size_t)d, basetime = 0;
-    if(animoverride) anim = animoverride|ANIM_LOOP;
+    int basetime = 0;
+    if(animoverride) anim = (animoverride<0 ? ANIM_ALL : animoverride)|ANIM_LOOP;
     else if(d->state==CS_DEAD)
     {
         pitch = 0;
         anim = ANIM_DYING;
         basetime = lastpain;
-        varseed += lastpain;
         int t = lastmillis-lastpain;
         if(t<0 || t>20000) return;
-        if(t>500) { anim = ANIM_DEAD|ANIM_LOOP; if(t>1600) { t -= 1600; o.z -= t*t/10000000000.0f*t/16.0f; } }
+        if(t>1000) { anim = ANIM_DEAD|ANIM_LOOP; if(t>1600) { t -= 1600; o.z -= t*t/10000000000.0f*t/16.0f; } }
         if(o.z<-1000) return;
     }
     else if(d->state==CS_EDITING || d->state==CS_SPECTATOR) anim = ANIM_EDIT|ANIM_LOOP;
@@ -855,16 +951,14 @@ void renderclient(dynent *d, const char *mdlname, modelattach *attachments, int 
         { 
             anim = ANIM_PAIN;
             basetime = lastpain;
-            varseed += lastpain; 
         }
-        else if(attack<0 || (d->type!=ENT_AI && lastmillis-lastaction<attackdelay)) 
+        else if(lastpain < lastaction && (attack<0 || (d->type!=ENT_AI && lastmillis-lastaction<attackdelay)))
         { 
             anim = attack<0 ? -attack : attack; 
             basetime = lastaction; 
-            varseed += lastaction;
         }
 
-        if(d->inwater && d->physstate<=PHYS_FALL) anim |= (((cl->allowmove(d) && (d->move || d->strafe)) || d->vel.z+d->gravity.z>0 ? ANIM_SWIM : ANIM_SINK)|ANIM_LOOP)<<ANIM_SECONDARY;
+        if(d->inwater && d->physstate<=PHYS_FALL) anim |= (((cl->allowmove(d) && (d->move || d->strafe)) || d->vel.z+d->falling.z>0 ? ANIM_SWIM : ANIM_SINK)|ANIM_LOOP)<<ANIM_SECONDARY;
         else if(d->timeinair>100) anim |= (ANIM_JUMP|ANIM_END)<<ANIM_SECONDARY;
         else if(cl->allowmove(d)) 
         {
@@ -876,12 +970,13 @@ void renderclient(dynent *d, const char *mdlname, modelattach *attachments, int 
         if((anim&ANIM_INDEX)==ANIM_IDLE && (anim>>ANIM_SECONDARY)&ANIM_INDEX) anim >>= ANIM_SECONDARY;
     }
     if(!((anim>>ANIM_SECONDARY)&ANIM_INDEX)) anim |= (ANIM_IDLE|ANIM_LOOP)<<ANIM_SECONDARY;
-    int flags = MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY;
-    if(d->type!=ENT_PLAYER) flags |= MDL_CULL_DIST;
-    if((anim&ANIM_INDEX)!=ANIM_DEAD) flags |= MDL_DYNSHADOW;
+    int flags = MDL_LIGHT;
+    if(d!=player) flags |= MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY;
+    if(d->type==ENT_PLAYER) flags |= MDL_FULLBRIGHT;
+    else flags |= MDL_CULL_DIST;
     if(d->state==CS_LAGGED) flags |= MDL_TRANSLUCENT;
-    vec color, dir;
-    rendermodel(color, dir, mdlname, anim, varseed, 0, o, testanims && d==player ? 0 : yaw+90, pitch, 0, basetime, d, flags, attachments);
+    else if((anim&ANIM_INDEX)!=ANIM_DEAD) flags |= MDL_DYNSHADOW;
+    rendermodel(NULL, mdlname, anim, o, testanims && d==player ? 0 : yaw+90, testpitch && d==player ? testpitch : pitch, flags, d, attachments, basetime);
 }
 
 void setbbfrommodel(dynent *d, const char *mdl)

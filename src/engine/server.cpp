@@ -38,7 +38,7 @@ void registergame(const char *name, igame *ig)
 void initgame(const char *game)
 {
     igame **ig = gamereg->access(game);
-    if(!ig) fatal("cannot start game module: ", game);
+    if(!ig) fatal("cannot start game module: %s", game);
     sv = (*ig)->newserver();
     cl = (*ig)->newclient();
     if(cl)
@@ -55,7 +55,7 @@ void initgame(const char *game)
 #ifdef STANDALONE
                 printf("unknown command-line option: %s\n", gameargs[i]);
 #else
-                conoutf("unknown command-line option: %s", gameargs[i]);
+                conoutf(CON_ERROR, "unknown command-line option: %s", gameargs[i]);
 #endif
         }
     }
@@ -325,7 +325,7 @@ void send_welcome(int n)
 {
     ENetPacket *packet = enet_packet_create (NULL, MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
     ucharbuf p(packet->data, packet->dataLength);
-    int chan = sv->welcomepacket(p, n);
+    int chan = sv->welcomepacket(p, n, packet);
     enet_packet_resize(packet, p.length());
     sendpacket(n, chan, packet);
     if(packet->referenceCount==0) enet_packet_destroy(packet);
@@ -356,10 +356,19 @@ int localclients = 0, nonlocalclients = 0;
 bool hasnonlocalclients() { return nonlocalclients!=0; }
 bool haslocalclients() { return localclients!=0; }
 
+static ENetAddress pongaddr;
+
+void sendserverinforeply(ucharbuf &p)
+{
+    ENetBuffer buf;
+    buf.data = p.buf;
+    buf.dataLength = p.length();
+    enet_socket_send(pongsock, &pongaddr, &buf, 1);
+}
+
 void sendpongs()        // reply all server info requests
 {
     ENetBuffer buf;
-    ENetAddress addr;
     uchar pong[MAXTRANS];
     int len;
     enet_uint32 events = ENET_SOCKET_WAIT_RECEIVE;
@@ -367,12 +376,11 @@ void sendpongs()        // reply all server info requests
     while(enet_socket_wait(pongsock, &events, 0) >= 0 && events)
     {
         buf.dataLength = sizeof(pong);
-        len = enet_socket_receive(pongsock, &addr, &buf, 1);
+        len = enet_socket_receive(pongsock, &pongaddr, &buf, 1);
         if(len < 0) return;
-        ucharbuf p(&pong[len], sizeof(pong)-len);
-        sv->serverinforeply(p);
-        buf.dataLength = len + p.length();
-        enet_socket_send(pongsock, &addr, &buf, 1);
+        ucharbuf req(pong, len), p(pong, sizeof(pong));
+        p.len += len;
+        sv->serverinforeply(req, p);
     }
 }      
 
@@ -498,12 +506,8 @@ uchar *retrieveservers(uchar *buf, int buflen)
     while(httpgetreceive(sock, eb, 250))
     {
         timeout = SDL_GetTicks() - starttime;
-        show_out_of_renderloop_progress(min(float(timeout)/RETRIEVELIMIT, 1), text);
-        SDL_Event event;
-        while(SDL_PollEvent(&event))
-        {
-            if(event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) timeout = RETRIEVELIMIT + 1;
-        }
+        show_out_of_renderloop_progress(min(float(timeout)/RETRIEVELIMIT, 1.0f), text);
+        if(interceptkey(SDLK_ESCAPE)) timeout = RETRIEVELIMIT + 1;
         if(timeout > RETRIEVELIMIT)
         {
             buf[0] = '\0';

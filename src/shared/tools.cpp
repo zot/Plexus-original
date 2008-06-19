@@ -15,25 +15,62 @@
 string homedir = "";
 vector<char *> packagedirs;
 
+char *makerelpath(const char *dir, const char *file, const char *prefix)
+{
+    static string tmp;
+    if(prefix) s_strcpy(tmp, prefix);
+    else tmp[0] = '\0';
+    if(file[0]=='<')
+    {
+        const char *end = strrchr(file, '>');
+        if(end)
+        {
+            size_t len = strlen(tmp);
+            s_strncpy(&tmp[len], file, min(sizeof(tmp)-len, size_t(end+2-file)));
+            file = end+1;
+        }
+    }
+    s_sprintfd(pname)("%s/%s", dir, file);
+    s_strcat(tmp, pname);
+    return tmp;
+}
+
 char *path(char *s)
 {
-    for(char *t = s; (t = strpbrk(t, "/\\")); *t++ = PATHDIV);
-    for(char *prevdir = NULL, *curdir = s;;)
+    for(char *curpart = s;;)
     {
-        prevdir = curdir[0]==PATHDIV ? curdir+1 : curdir;
-        curdir = strchr(prevdir, PATHDIV);
-        if(!curdir) break;
-        if(prevdir+1==curdir && prevdir[0]=='.')
+        char *endpart = strchr(curpart, '&');
+        if(endpart) *endpart = '\0';
+        if(curpart[0]=='<')
         {
-            memmove(prevdir, curdir+1, strlen(curdir+1)+1);
-            curdir = prevdir;
+            char *file = strrchr(curpart, '>');
+            if(!file) return s;
+            curpart = file+1;
         }
-        else if(curdir[1]=='.' && curdir[2]=='.' && curdir[3]==PATHDIV) 
+        for(char *t = curpart; (t = strpbrk(t, "/\\")); *t++ = PATHDIV);
+        for(char *prevdir = NULL, *curdir = s;;)
         {
-            if(prevdir+2==curdir && prevdir[0]=='.' && prevdir[1]=='.') continue;
-            memmove(prevdir, curdir+4, strlen(curdir+4)+1); 
-            curdir = prevdir;
+            prevdir = curdir[0]==PATHDIV ? curdir+1 : curdir;
+            curdir = strchr(prevdir, PATHDIV);
+            if(!curdir) break;
+            if(prevdir+1==curdir && prevdir[0]=='.')
+            {
+                memmove(prevdir, curdir+1, strlen(curdir+1)+1);
+                curdir = prevdir;
+            }
+            else if(curdir[1]=='.' && curdir[2]=='.' && curdir[3]==PATHDIV) 
+            {
+                if(prevdir+2==curdir && prevdir[0]=='.' && prevdir[1]=='.') continue;
+                memmove(prevdir, curdir+4, strlen(curdir+4)+1); 
+                curdir = prevdir;
+            }
         }
+        if(endpart)
+        {
+            *endpart = '&';
+            curpart = endpart+1;
+        }
+        else break;
     }
     return s;
 }

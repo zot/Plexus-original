@@ -16,6 +16,7 @@ struct clientcom : iclientcom
     clientcom(fpsclient &_cl) : cl(_cl), c2sinit(false), senditemstoserver(false), lastping(0), connected(false), remote(false), demoplayback(false), spectator(false), player1(_cl.player1)
     {
         CCOMMAND(say, "C", (clientcom *self, char *s), self->toserver(s));
+        CCOMMAND(sayteam, "C", (clientcom *self, char *s), self->sayteam(s));
         CCOMMAND(name, "s", (clientcom *self, char *s), self->switchname(s));
         CCOMMAND(team, "s", (clientcom *self, char *s), self->switchteam(s));
         CCOMMAND(map, "s", (clientcom *self, char *s), self->changemap(s));
@@ -35,9 +36,13 @@ struct clientcom : iclientcom
         CCOMMAND(stopdemo, "", (clientcom *self), self->stopdemo());
         CCOMMAND(cleardemos, "i", (clientcom *self, int *val), self->cleardemos(*val));
 
-        extern void result(const char *s);
+        CCOMMAND(getmode, "", (clientcom *self), intret(self->cl.gamemode));
         CCOMMAND(getname, "", (clientcom *self), result(self->player1->name));
         CCOMMAND(getteam, "", (clientcom *self), result(self->player1->team));
+        CCOMMAND(getclientfocus, "", (clientcom *self), intret(self->getclientfocus()));
+        CCOMMAND(getclientname, "i", (clientcom *self, int *cn), result(self->getclientname(*cn)));
+        CCOMMAND(getclientnum, "s", (clientcom *self, char *name), intret(name[0] ? self->parseplayer(name) : self->player1->clientnum));
+        CCOMMAND(listclients, "i", (clientcom *self, int *local), self->listclients(*local!=0));
     }
 
     void switchname(const char *name)
@@ -46,6 +51,7 @@ struct clientcom : iclientcom
         { 
             c2sinit = false; 
             filtertext(player1->name, name, false, MAXNAMELEN);
+            if(!player1->name[0]) s_strcpy(player1->name, "unnamed");
         }
         else conoutf("your name is: %s", cl.colorname(player1));
     }
@@ -97,7 +103,7 @@ struct clientcom : iclientcom
     bool allowedittoggle()
     {
         bool allow = !connected || !remote || cl.gamemode==1;
-        if(!allow) conoutf("editing in multiplayer requires coopedit mode (1)");
+        if(!allow) conoutf(CON_ERROR, "editing in multiplayer requires coopedit mode (1)");
         if(allow && spectator) return false;
         return allow;
     }
@@ -105,14 +111,34 @@ struct clientcom : iclientcom
     void edittoggled(bool on)
     {
         addmsg(SV_EDITMODE, "ri", on ? 1 : 0);
+        if(player1->state==CS_DEAD) cl.deathstate(player1, true);
+        else if(player1->state==CS_EDITING && player1->editstate==CS_DEAD) cl.sb.showscores(false);
+        setvar("zoom", -1, true);
+    }
+
+    int getclientfocus()
+    {
+        fpsent *d = cl.pointatplayer();
+        return d ? d->clientnum : -1;
+    }
+
+    const char *getclientname(int cn)
+    {
+        if(cn == cl.player1->clientnum) return cl.player1->name;
+
+        fpsent *d = cl.getclient(cn);
+        return d ? d->name : "";
     }
 
     int parseplayer(const char *arg)
     {
         char *end;
         int n = strtol(arg, &end, 10);
-        if(!cl.players.inrange(n)) return -1;
-        if(*arg && !*end) return n;
+        if(*arg && !*end) 
+        {
+            if(n!=player1->clientnum && !cl.players.inrange(n)) return -1;
+            return n;
+        }
         // try case sensitive first
         loopi(cl.numdynents())
         {
@@ -126,6 +152,27 @@ struct clientcom : iclientcom
             if(o && !strcasecmp(arg, o->name)) return o->clientnum;
         }
         return -1;
+    }
+
+    void listclients(bool local)
+    {
+        vector<char> buf;
+        string cn;
+        int numclients = 0;
+        if(local)
+        {
+            s_sprintf(cn)("%d", player1->clientnum);
+            buf.put(cn, strlen(cn));
+            numclients++;
+        }
+        loopv(cl.players) if(cl.players[i])
+        {
+            s_sprintf(cn)("%d", cl.players[i]->clientnum);
+            if(numclients++) buf.add(' ');
+            buf.put(cn, strlen(cn));
+        }
+        buf.add('\0');
+        result(buf.getbuf());
     }
 
     void clearbans()
@@ -228,7 +275,8 @@ struct clientcom : iclientcom
         loopi(len) messages.add(buf[i]);
     }
 
-    void toserver(char *text) { conoutf("%s:\f0 %s", cl.colorname(player1), text); addmsg(SV_TEXT, "rs", text); }
+    void toserver(char *text) { conoutf(CON_CHAT, "%s:\f0 %s", cl.colorname(player1), text); addmsg(SV_TEXT, "rs", text); }
+    void sayteam(char *text) { conoutf(CON_TEAMCHAT, "%s:\f1 %s", cl.colorname(player1), text); addmsg(SV_SAYTEAM, "rs", text); }
 
     int sendpacketclient(ucharbuf &p, bool &reliable, dynent *d)
     {
@@ -248,13 +296,13 @@ struct clientcom : iclientcom
             putint(q, (int)(d->vel.x*DVELF));          // quantize to itself, almost always 1 byte
             putint(q, (int)(d->vel.y*DVELF));
             putint(q, (int)(d->vel.z*DVELF));
-            putuint(q, d->physstate | (d->gravity.x || d->gravity.y ? 0x20 : 0) | (d->gravity.z ? 0x10 : 0) | ((((fpsent *)d)->lifesequence&1)<<6));
-            if(d->gravity.x || d->gravity.y)
+            putuint(q, d->physstate | (d->falling.x || d->falling.y ? 0x20 : 0) | (d->falling.z ? 0x10 : 0) | ((((fpsent *)d)->lifesequence&1)<<6));
+            if(d->falling.x || d->falling.y)
             {
-                putint(q, (int)(d->gravity.x*DVELF));      // quantize to itself, almost always 1 byte
-                putint(q, (int)(d->gravity.y*DVELF));
+                putint(q, (int)(d->falling.x*DVELF));      // quantize to itself, almost always 1 byte
+                putint(q, (int)(d->falling.y*DVELF));
             }
-            if(d->gravity.z) putint(q, (int)(d->gravity.z*DVELF));
+            if(d->falling.z) putint(q, (int)(d->falling.z*DVELF));
             // pack rest in almost always 1 byte: strafe:2, move:2, garmour: 1, yarmour: 1, quad: 1
             uint flags = (d->strafe&3) | ((d->move&3)<<2);
             putuint(q, flags);
@@ -263,12 +311,11 @@ struct clientcom : iclientcom
         }
         if(senditemstoserver)
         {
-            reliable = true;
-            putint(p, SV_ITEMLIST);
             int gamemode = cl.gamemode;
+            reliable = !m_noitems || m_capture || m_ctf;
             if(!m_noitems) cl.et.putitems(p, gamemode);
-            putint(p, -1);
             if(m_capture) cl.cpc.sendbases(p);
+            else if(m_ctf) cl.ctf.sendflags(p);
             senditemstoserver = false;
         }
         if(!c2sinit)    // tell other clients who I am
@@ -331,7 +378,7 @@ struct clientcom : iclientcom
             case SV_POS:                        // position of another client
             {
                 int cn = getint(p);
-                vec o, vel, gravity;
+                vec o, vel, falling;
                 float yaw, pitch, roll;
                 int physstate, f;
                 o.x = getuint(p)/DMF;
@@ -344,39 +391,55 @@ struct clientcom : iclientcom
                 vel.y = getint(p)/DVELF;
                 vel.z = getint(p)/DVELF;
                 physstate = getuint(p);
-                gravity = vec(0, 0, 0);
+                falling = vec(0, 0, 0);
                 if(physstate&0x20)
                 {
-                    gravity.x = getint(p)/DVELF;
-                    gravity.y = getint(p)/DVELF;
+                    falling.x = getint(p)/DVELF;
+                    falling.y = getint(p)/DVELF;
                 }
-                if(physstate&0x10) gravity.z = getint(p)/DVELF;
+                if(physstate&0x10) falling.z = getint(p)/DVELF;
                 int seqcolor = (physstate>>6)&1;
                 f = getuint(p);
                 fpsent *d = cl.getclient(cn);
                 if(!d || seqcolor!=(d->lifesequence&1)) continue;
+                float oldyaw = d->yaw, oldpitch = d->pitch;
                 d->yaw = yaw;
                 d->pitch = pitch;
                 d->roll = roll;
                 d->strafe = (f&3)==3 ? -1 : f&3;
                 f >>= 2;
                 d->move = (f&3)==3 ? -1 : f&3;
-                f >>= 2;
-                if(f&1) { d->armourtype = A_GREEN; d->armour = 1; }
-                else if(f&2) { d->armourtype = A_YELLOW; d->armour = 1; }
-                else { d->armourtype = A_BLUE; d->armour = 0; }
-                d->quadmillis = f&4 ? 1 : 0;
-                f >>= 3;
-                d->maxhealth = 100 + f*itemstats[I_BOOST-I_SHELLS].add;
+                vec oldpos(d->o);
                 if(cl.allowmove(d))
                 {
                     d->o = o;
                     d->vel = vel;
+                    d->falling = falling;
                     d->physstate = physstate & 0x0F;
-                    d->gravity = gravity;
                     updatephysstate(d);
                     updatepos(d);
                 }
+                if(d->state==CS_DEAD)
+                {
+                    d->resetinterp();
+                    d->smoothmillis = 0;
+                }
+                else if(cl.smoothmove() && d->smoothmillis>=0 && oldpos.dist(d->o) < cl.smoothdist())
+                {
+                    d->newpos = d->o;
+                    d->newyaw = d->yaw;
+                    d->newpitch = d->pitch;
+                    d->o = oldpos;
+                    d->yaw = oldyaw;
+                    d->pitch = oldpitch;
+                    (d->deltapos = oldpos).sub(d->newpos);
+                    d->deltayaw = oldyaw - d->newyaw;
+                    if(d->deltayaw > 180) d->deltayaw -= 360;
+                    else if(d->deltayaw < -180) d->deltayaw += 360;
+                    d->deltapitch = oldpitch - d->newpitch;
+                    d->smoothmillis = cl.lastmillis;
+                }
+                else d->smoothmillis = 0;
                 if(d->state==CS_LAGGED || d->state==CS_SPAWNING) d->state = CS_ALIVE;
                 break;
             }
@@ -405,6 +468,34 @@ struct clientcom : iclientcom
         }
     }
 
+    void parsestate(fpsent *d, ucharbuf &p, bool resume = false)
+    {
+        if(!d) { static fpsent dummy; d = &dummy; }
+        if(resume) 
+        {
+            if(d==cl.player1) getint(p);
+            else d->state = getint(p);
+            d->frags = getint(p);
+            if(d==cl.player1) getint(p);
+            else d->quadmillis = getint(p);
+        }
+        d->lifesequence = getint(p);
+        d->health = getint(p);
+        d->maxhealth = getint(p);
+        d->armour = getint(p);
+        d->armourtype = getint(p);
+        if(resume && d==cl.player1) 
+        {
+            getint(p);
+            loopi(GUN_PISTOL-GUN_SG+1) getint(p);
+        }
+        else
+        {
+            d->gunselect = getint(p);
+            loopi(GUN_PISTOL-GUN_SG+1) d->ammo[GUN_SG+i] = getint(p);
+        }
+    }
+
     void parsemessages(int cn, fpsent *d, ucharbuf &p)
     {
         int gamemode = cl.gamemode;
@@ -419,12 +510,13 @@ struct clientcom : iclientcom
                 int mycn = getint(p), prot = getint(p), hasmap = getint(p);
                 if(prot!=PROTOCOL_VERSION)
                 {
-                    conoutf("you are using a different game protocol (you: %d, server: %d)", PROTOCOL_VERSION, prot);
+                    conoutf(CON_ERROR, "you are using a different game protocol (you: %d, server: %d)", PROTOCOL_VERSION, prot);
                     disconnect();
                     return;
                 }
                 player1->clientnum = mycn;      // we are now fully connected
                 if(!hasmap && (cl.gamemode==1 || cl.getclientmap()[0])) changemap(cl.getclientmap()); // we are the first client on this server, set map
+                gamemode = cl.gamemode;
                 break;
             }
 
@@ -451,7 +543,23 @@ struct clientcom : iclientcom
                     s_sprintfd(ds)("@%s", &text);
                     particle_text(d->abovehead(), ds, 9);
                 }
-                conoutf("%s:\f0 %s", cl.colorname(d), &text);
+                conoutf(CON_CHAT, "%s:\f0 %s", cl.colorname(d), text);
+                break;
+            }
+
+            case SV_SAYTEAM:
+            {
+                int tcn = getint(p);
+                fpsent *t = tcn==cl.player1->clientnum ? cl.player1 : cl.getclient(tcn);
+                getstring(text, p);
+                filtertext(text, text);
+                if(!t) break;
+                if(t->state!=CS_DEAD && t->state!=CS_SPECTATOR)
+                {
+                    s_sprintfd(ts)("@%s", &text);
+                    particle_text(t->abovehead(), ts, 34);
+                }
+                conoutf(CON_TEAMCHAT, "%s:\f1 %s", cl.colorname(t), text);
                 break;
             }
 
@@ -459,17 +567,20 @@ struct clientcom : iclientcom
                 getstring(text, p);
                 changemapserv(text, getint(p));
                 mapchanged = true;
+                gamemode = cl.gamemode;
+                if(getint(p)) cl.et.spawnitems(gamemode);
+                else senditemstoserver = false;
                 break;
 
             case SV_ARENAWIN:
             {
                 int acn = getint(p);
                 fpsent *alive = acn<0 ? NULL : (acn==player1->clientnum ? player1 : cl.getclient(acn));
-                conoutf("arena round is over! next round in 5 seconds...");
-                if(!alive) conoutf("everyone died!");
-                else if(m_teammode) conoutf("team %s has won the round", alive->team);
-                else if(alive==player1) conoutf("you are the last man standing!");
-                else conoutf("%s is the last man standing", cl.colorname(alive));
+                conoutf(CON_GAMEINFO, "arena round is over! next round in 5 seconds...");
+                if(!alive) conoutf(CON_GAMEINFO, "everyone died!");
+                else if(m_teammode) conoutf(CON_GAMEINFO, "team %s has won the round", alive->team);
+                else if(alive==player1) conoutf(CON_GAMEINFO, "you are the last man standing!");
+                else conoutf(CON_GAMEINFO, "%s is the last man standing", cl.colorname(alive));
                 break;
             }
 
@@ -481,8 +592,10 @@ struct clientcom : iclientcom
                 if(d==player1)
                 {
                     if(editmode) toggleedit();
+                    cl.stopfollowing();
                     cl.sb.showscores(true);
                 }
+                else d->resetinterp();
                 d->state = CS_DEAD;
                 break;
             }
@@ -490,8 +603,7 @@ struct clientcom : iclientcom
             case SV_ITEMLIST:
             {
                 int n;
-                if(mapchanged) { senditemstoserver = false; cl.et.resetspawns(); }
-                while((n = getint(p))!=-1)
+                while((n = getint(p))>=0 && !p.overread())
                 {
                     if(mapchanged) cl.et.setspawn(n, true);
                     getint(p); // type
@@ -501,7 +613,7 @@ struct clientcom : iclientcom
 
             case SV_MAPRELOAD:          // server requests next map
             {
-                s_sprintfd(nextmapalias)("nextmap_%s%s", m_capture ? "capture_" : "", cl.getclientmap());
+                s_sprintfd(nextmapalias)("nextmap_%s%s", m_capture ? "capture_" : (m_ctf ? "ctf_" : ""), cl.getclientmap());
                 const char *map = getalias(nextmapalias);     // look up map in the cycle
                 addmsg(SV_MAPCHANGE, "rsi", *map ? map : cl.getclientmap(), cl.nextmode);
                 break;
@@ -550,29 +662,27 @@ struct clientcom : iclientcom
 
             case SV_SPAWN:
             {
-                int ls = getint(p), gunselect = getint(p);
+                if(d) d->respawn();
+                parsestate(d, p);
                 if(!d) break;
-                d->lifesequence = ls;
-                d->gunselect = gunselect;
                 d->state = CS_SPAWNING;
+                if(cl.player1->state==CS_SPECTATOR && cl.following==d->clientnum)
+                    cl.lasthit = 0;
                 break;
             }
 
             case SV_SPAWNSTATE:
             {
                 if(editmode) toggleedit();
+                cl.stopfollowing();
                 player1->respawn();
-                player1->lifesequence = getint(p); 
-                player1->health = getint(p);
-                player1->maxhealth = getint(p);
-                player1->armour = getint(p);
-                player1->armourtype = getint(p);
-                player1->gunselect = getint(p);
-                loopi(GUN_PISTOL-GUN_SG+1) player1->ammo[GUN_SG+i] = getint(p);
+                parsestate(player1, p);
                 player1->state = CS_ALIVE;
-                findplayerspawn(player1, m_capture ? cl.cpc.pickspawn(player1->team) : -1);
+                findplayerspawn(player1, m_capture ? cl.cpc.pickspawn(player1->team) : -1, m_ctf ? ctfteamflag(player1->team) : 0);
                 cl.sb.showscores(false);
-                if(m_arena) conoutf("new round starting... fight!");
+                cl.lasthit = 0;
+                if(m_arena) conoutf(CON_GAMEINFO, "new round starting... fight!");
+                else if(m_capture) cl.cpc.lastrepammo = -1;
                 addmsg(SV_SPAWN, "rii", player1->lifesequence, player1->gunselect);
                 break;
             }
@@ -585,9 +695,10 @@ struct clientcom : iclientcom
                 loopk(3) to[k] = getint(p)/DMF;
                 fpsent *s = cl.getclient(scn);
                 if(!s) break;
+                if(gun>GUN_FIST && gun<=GUN_PISTOL && s->ammo[gun]) s->ammo[gun]--; 
                 if(gun==GUN_SG) cl.ws.createrays(from, to);
-                s->gunselect = max(gun, 0);
-                s->gunwait = 0;
+                s->gunselect = clamp(gun, (int)GUN_FIST, (int)GUN_PISTOL);
+                s->gunwait = guns[s->gunselect].attackdelay;
                 s->lastaction = cl.lastmillis;
                 s->lastattackgun = s->gunselect;
                 cl.ws.shootv(gun, from, to, s, false);
@@ -626,7 +737,7 @@ struct clientcom : iclientcom
                        *actor = acn==player1->clientnum ? player1 : cl.getclient(acn);
                 if(!actor) break;
                 actor->frags = frags;
-                if(actor!=player1)
+                if(actor!=player1 && !m_capture && !m_ctf)
                 {
                     s_sprintfd(ds)("@%d", actor->frags);
                     particle_text(actor->abovehead(), ds, 9);
@@ -657,19 +768,9 @@ struct clientcom : iclientcom
                 for(;;)
                 {
                     int cn = getint(p);
-                    if(cn<0) break;
-                    int state = getint(p), lifesequence = getint(p), gunselect = getint(p), maxhealth = getint(p), frags = getint(p);
+                    if(p.overread() || cn<0) break;
                     fpsent *d = (cn == player1->clientnum ? player1 : cl.newclient(cn));
-                    if(!d) continue;
-                    if(d!=player1) 
-                    {
-                        d->state = state;
-                        d->gunselect = gunselect;
-                    }
-                    d->lifesequence = lifesequence;
-                    if(d->state==CS_ALIVE && d->health==d->maxhealth) d->health = maxhealth;
-                    d->maxhealth = maxhealth;
-                    d->frags = frags;
+                    parsestate(d, p, true);
                 }
                 break;
             }
@@ -781,6 +882,8 @@ struct clientcom : iclientcom
                 if(on) player1->state = CS_SPECTATOR;
                 else stopdemo();
                 demoplayback = on!=0;
+                const char *alias = on ? "demostart" : "demoend";
+                if(identexists(alias)) execute(alias);
                 break;
             }
 
@@ -801,8 +904,16 @@ struct clientcom : iclientcom
             {
                 int val = getint(p);
                 if(!d) break;
-                if(val) d->state = CS_EDITING;
-                else d->state = CS_ALIVE;
+                if(val) 
+                {
+                    d->editstate = d->state;
+                    d->state = CS_EDITING;
+                }
+                else 
+                {
+                    d->state = d->editstate;
+                    if(d->state==CS_DEAD) cl.deathstate(d, true);
+                }
                 break;
             }
 
@@ -825,7 +936,12 @@ struct clientcom : iclientcom
                 else if(s->state==CS_SPECTATOR) 
                 {
                     s->state = CS_DEAD;
-                    if(s==player1) cl.sb.showscores(true);
+                    if(s==player1) 
+                    {
+                        cl.stopfollowing();
+                        cl.sb.showscores(true);
+                    }
+                    else s->resetinterp();
                 }
                 break;
             }
@@ -849,7 +965,6 @@ struct clientcom : iclientcom
                 getstring(text, p);
                 s_strcpy(enemy, text);
                 int converted = getint(p), ammo = getint(p);
-                int gamemode = cl.gamemode;
                 if(m_capture) cl.cpc.updatebase(base, owner, enemy, converted, ammo);
                 break;
             }
@@ -868,16 +983,17 @@ struct clientcom : iclientcom
 
             case SV_BASES:
             {
-                int base = 0, ammotype;
-                while((ammotype = getint(p))>=0)
+                int numbases = getint(p);
+                loopi(numbases)
                 {
+                    int ammotype = getint(p);
                     string owner, enemy;
                     getstring(text, p);
                     s_strcpy(owner, text);
                     getstring(text, p);
                     s_strcpy(enemy, text);
                     int converted = getint(p), ammo = getint(p);
-                    cl.cpc.initbase(base++, ammotype, owner, enemy, converted, ammo);
+                    cl.cpc.initbase(i, ammotype, owner, enemy, converted, ammo);
                 }
                 break;
             }
@@ -885,7 +1001,7 @@ struct clientcom : iclientcom
             case SV_TEAMSCORE:
             {
                 getstring(text, p);
-                int total = getint(p), gamemode = cl.gamemode;
+                int total = getint(p);
                 if(m_capture) cl.cpc.setscore(text, total);
                 break;
             }
@@ -893,16 +1009,62 @@ struct clientcom : iclientcom
             case SV_REPAMMO:
             {
                 int ammotype = getint(p);
-                int gamemode = cl.gamemode;
                 if(m_capture) cl.cpc.receiveammo(ammotype);
+                break;
+            }
+
+            case SV_INITFLAGS:
+            {
+                cl.ctf.parseflags(p, m_ctf);
+                break;
+            }
+
+            case SV_DROPFLAG:
+            {
+                int ocn = getint(p), flag = getint(p);
+                vec droploc;
+                loopk(3) droploc[k] = getint(p)/DMF;
+                fpsent *o = ocn==cl.player1->clientnum ? cl.player1 : cl.newclient(ocn);  
+                if(m_ctf) cl.ctf.dropflag(o, flag, droploc);
+                break;
+            }
+
+            case SV_SCOREFLAG:
+            {
+                int ocn = getint(p), relayflag = getint(p), goalflag = getint(p), score = getint(p);
+                fpsent *o = ocn==cl.player1->clientnum ? cl.player1 : cl.newclient(ocn);
+                if(m_ctf) cl.ctf.scoreflag(o, relayflag, goalflag, score);
+                break;
+            }
+
+            case SV_RETURNFLAG:
+            {
+                int ocn = getint(p), flag = getint(p);
+                fpsent *o = ocn==cl.player1->clientnum ? cl.player1 : cl.newclient(ocn);
+                if(m_ctf) cl.ctf.returnflag(o, flag);
+                break;
+            }
+
+            case SV_TAKEFLAG:
+            {
+                int ocn = getint(p), flag = getint(p);
+                fpsent *o = ocn==cl.player1->clientnum ? cl.player1 : cl.newclient(ocn);
+                if(m_ctf) cl.ctf.takeflag(o, flag);
+                break;
+            }
+
+            case SV_RESETFLAG:
+            {
+                int flag = getint(p);
+                if(m_ctf) cl.ctf.resetflag(flag);
                 break;
             }
 
             case SV_ANNOUNCE:
             {
                 int t = getint(p);
-                if     (t==I_QUAD)  { playsound(S_V_QUAD10);  conoutf("\f2quad damage will spawn in 10 seconds!"); }
-                else if(t==I_BOOST) { playsound(S_V_BOOST10); conoutf("\f2+10 health will spawn in 10 seconds!"); }
+                if     (t==I_QUAD)  { playsound(S_V_QUAD10);  conoutf(CON_GAMEINFO, "\f2quad damage will spawn in 10 seconds!"); }
+                else if(t==I_BOOST) { playsound(S_V_BOOST10); conoutf(CON_GAMEINFO, "\f2+10 health will spawn in 10 seconds!"); }
                 break;
             }
 
@@ -984,18 +1146,24 @@ struct clientcom : iclientcom
         cl.gamemode = gamemode;
         cl.nextmode = gamemode;
         cl.minremain = -1;
-        if(editmode && !allowedittoggle()) toggleedit();
-        if(m_demo) return;
-        if(gamemode==1 && !name[0]) emptymap(0, true);
-        else load_world(name);
+        if(editmode) toggleedit();
+        if(m_demo) { cl.et.resetspawns(); return; }
+        if((gamemode==1 && !name[0]) || (!load_world(name) && remote)) 
+        {
+            emptymap(0, true, name);
+            senditemstoserver = false;
+        }
         if(m_capture) cl.cpc.setupbases();
         else if(m_assassin) cl.asc.reset();
-        if(editmode) edittoggled(editmode);
+        else if(m_ctf) cl.ctf.setupflags();
     }
 
     void changemap(const char *name) // request map change, server may ignore
     {
-        if(!spectator || player1->privilege) addmsg(SV_MAPVOTE, "rsi", name, cl.nextmode);
+        if(spectator && !player1->privilege) return;
+        int nextmode = cl.nextmode; // in case stopdemo clobbers cl.nextmode
+        if(!remote) stopdemo();
+        addmsg(SV_MAPVOTE, "rsi", name, nextmode);
     }
         
     void receivefile(uchar *data, int len)
@@ -1039,7 +1207,7 @@ struct clientcom : iclientcom
 
     void getmap()
     {
-        if(cl.gamemode!=1) { conoutf("\"getmap\" only works in coopedit mode"); return; }
+        if(cl.gamemode!=1) { conoutf(CON_ERROR, "\"getmap\" only works in coopedit mode"); return; }
         conoutf("getting map...");
         addmsg(SV_GETMAP, "r");
     }
@@ -1087,7 +1255,7 @@ struct clientcom : iclientcom
 
     void sendmap()
     {
-        if(cl.gamemode!=1 || (spectator && !player1->privilege)) { conoutf("\"sendmap\" only works in coopedit mode"); return; }
+        if(cl.gamemode!=1 || (spectator && !player1->privilege)) { conoutf(CON_ERROR, "\"sendmap\" only works in coopedit mode"); return; }
         conoutf("sending map...");
         s_sprintfd(mname)("sendmap_%d", cl.lastmillis);
         save_world(mname, true);
@@ -1097,11 +1265,13 @@ struct clientcom : iclientcom
         if(map)
         {
             fseek(map, 0, SEEK_END);
-            if(ftell(map) > 1024*1024) conoutf("map is too large");
+            int len = ftell(map);
+            if(len > 1024*1024) conoutf(CON_ERROR, "map is too large");
+            else if(!len) conoutf(CON_ERROR, "could not read map");
             else sendfile(-1, 2, map);
             fclose(map);
         }
-        else conoutf("could not read map");
+        else conoutf(CON_ERROR, "could not read map");
         remove(file);
     }
 
@@ -1117,6 +1287,7 @@ struct clientcom : iclientcom
             vec dir;
             vecfromyawpitch(player1->yaw, player1->pitch, 1, 0, dir);
             player1->o.add(dir.mul(-32));
+            player1->resetinterp();
         }
     }
 };

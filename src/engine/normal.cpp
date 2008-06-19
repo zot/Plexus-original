@@ -1,25 +1,10 @@
 #include "pch.h"
 #include "engine.h"
 
-#define NORMAL_BITS 11
-
-struct nvec : svec
-{
-    nvec(const vec &v) : svec(short(v.x*(1<<NORMAL_BITS)), short(v.y*(1<<NORMAL_BITS)), short(v.z*(1<<NORMAL_BITS))) {}
-    
-    float dot(const vec &o) const
-    {
-        return x*o.x + y*o.y + z*o.z;
-    }
-
-    vec tovec() const { return vec(x, y, z).normalize(); }
-};
-        
 struct normal
 {
-    uchar face;
-    nvec surface;
-    nvec average;
+    int next;
+    vec surface;
 };
 
 struct nkey
@@ -36,7 +21,9 @@ struct nkey
 
 struct nval
 {
-    vector<normal> normals;
+    int normals;
+
+    nval() : normals(-1) {}
 };
 
 static inline bool htcmp(const nkey &x, const nkey &y)
@@ -49,69 +36,43 @@ static inline uint hthash(const nkey &k)
     return k.v.x^k.v.y^k.v.z;
 }
 
-hashtable<nkey, nval> normals;
+hashtable<nkey, nval> normalgroups(1<<16);
+vector<normal> normals;
 
 VARF(lerpangle, 0, 44, 180, hdr.lerpangle = lerpangle);
 
 static float lerpthreshold = 0;
 
-void addnormal(const ivec &origin, int orient, const vvec &offset, const vec &surface)
+void addnormal(const ivec &origin, const vvec &offset, const vec &surface)
 {
     nkey key(origin, offset);
-    nval &val = normals[key];
-
-    uchar face = orient<<3;
-    int dim = dimension(orient), r = R[dim], c = C[dim], originr = origin[r]<<VVEC_FRAC, originc = origin[c]<<VVEC_FRAC;
-    if(originr >= int(offset[r])+(originr&(~VVEC_INT_MASK<<1))) face |= 1;
-    if(originc >= int(offset[c])+(originc&(~VVEC_INT_MASK<<1))) face |= 2;
-
-    loopv(val.normals) if(val.normals[i].face == face) return;
-
-    normal n = {face, surface, surface};
-    loopv(val.normals)
-    {
-        normal &o = val.normals[i];
-        if(o.face != n.face && o.surface.dot(surface) > lerpthreshold)
-        {
-            o.average.add(n.surface);
-            n.average.add(o.surface);
-        }
-    }
-    val.normals.add(n);
+    nval &val = normalgroups[key];
+    normal &n = normals.add();
+    n.next = val.normals;
+    n.surface = surface;
+    val.normals = normals.length()-1;
 }
 
-bool findnormal(const ivec &origin, int orient, const vvec &offset, vec &v, int index)
+void findnormal(const ivec &origin, const vvec &offset, const vec &surface, vec &v)
 {
     nkey key(origin, offset);
-    nval *val = normals.access(key);
-    if(!val) return false;
+    nval *val = normalgroups.access(key);
+    if(!val) { v = surface; return; }
 
-    uchar face = orient<<3;
-    int dim = dimension(orient), r = R[dim], c = C[dim];
-
-    if(index>=0)
+    v = vec(0, 0, 0);
+    int total = 0;
+    for(int cur = val->normals; cur >= 0;)
     {
-        const ivec &coords = cubecoords[fv[orient][index]];
-        if(!coords[r]) face |= 1;
-        if(!coords[c]) face |= 2;
-    }
-    else
-    {
-        int originr = origin[r]<<VVEC_FRAC, originc = origin[c]<<VVEC_FRAC;
-        if(originr >= int(offset[r])+(originr&(~VVEC_INT_MASK<<1))) face |= 1;
-        if(originc >= int(offset[c])+(originc&(~VVEC_INT_MASK<<1))) face |= 2;
-    }
-
-    loopv(val->normals)
-    {
-        normal &n = val->normals[i];
-        if(n.face == face)
+        normal &o = normals[cur];
+        if(o.surface.dot(surface) >= lerpthreshold) 
         {
-            v = n.average.tovec();
-            return true;
+            v.add(o.surface);
+            total++;
         }
+        cur = o.next;
     }
-    return false;
+    if(total > 1) v.normalize();
+    else if(!total) v = surface;
 }
 
 VAR(lerpsubdiv, 0, 2, 4);
@@ -142,10 +103,9 @@ void addnormals(cube &c, const ivec &o, int size)
 
     vvec vvecs[8];
     bool usefaces[6];
-    int vertused[8];
-    calcverts(c, o.x, o.y, o.z, size, vvecs, usefaces, vertused, false/*lodcube*/);
+    int vertused = calcverts(c, o.x, o.y, o.z, size, vvecs, usefaces);
     vec verts[8];
-    loopi(8) if(vertused[i]) verts[i] = vvecs[i].tovec(o);
+    loopi(8) if(vertused&(1<<i)) verts[i] = vvecs[i].tovec(o);
     loopi(6) if(usefaces[i])
     {
         CHECK_PROGRESS(return);
@@ -167,24 +127,23 @@ void addnormals(cube &c, const ivec &o, int size)
             avg.add(planes[1]);
             avg.normalize();
         }
-        int index = faceverts(c, i, 0);
+        int idxs[4];
+        loopj(4) idxs[j] = faceverts(c, i, j);
         loopj(4)
         {
-            const vvec &v = vvecs[index];
+            const vvec &v = vvecs[idxs[j]], &vn = vvecs[idxs[(j+1)%4]];
+            if(v==vn) continue;
             const vec &cur = numplanes < 2 || j == 1 ? planes[0] : (j == 3 ? planes[1] : avg);
-            addnormal(o, i, v, cur);
-            index = faceverts(c, i, (j+1)%4);
+            addnormal(o, v, cur);
             if(subdiv < 2) continue;
-            const vvec &v2 = vvecs[index];
-            vvec dv(v2);
-            dv.sub(v);
-            dv.div(subdiv);
-            vvec vs(v);
+            ivec dv;
+            loopk(3) dv[k] = (int(vn[k]) - int(v[k])) / subdiv;
             if(dv.iszero()) continue;
+            vvec vs(v);
             if(numplanes < 2) loopk(subdiv - 1)
             {
                 vs.add(dv);
-                addnormal(o, i, vs, planes[0]);
+                addnormal(o, vs, planes[0]);
             }
             else
             {
@@ -196,7 +155,7 @@ void addnormals(cube &c, const ivec &o, int size)
                 {
                     vs.add(dv);
                     n.add(dn);
-                    addnormal(o, i, vs, vec(dn).normalize());
+                    addnormal(o, vs, vec(dn).normalize());
                 }
             }
         }
@@ -206,14 +165,15 @@ void addnormals(cube &c, const ivec &o, int size)
 void calcnormals()
 {
     if(!lerpangle) return;
-    lerpthreshold = (1<<NORMAL_BITS)*cos(lerpangle*RAD); 
+    lerpthreshold = cos(lerpangle*RAD) - 1e-5f; 
     progress = 1;
     loopi(8) addnormals(worldroot[i], ivec(i, 0, 0, 0, hdr.worldsize/2), hdr.worldsize/2);
 }
 
 void clearnormals()
 {
-    normals.clear();
+    normalgroups.clear();
+    normals.setsizenodelete(0);
 }
 
 void calclerpverts(const vec &origin, const vec *p, const vec *n, const vec &ustep, const vec &vstep, lerpvert *lv, int &numv)

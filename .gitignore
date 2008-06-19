@@ -1,0 +1,10 @@
+*.o
+*.a
+*.so
+*.dll
+config.log
+config.status
+sauer_client
+sauer_server
+cmd
+CVS

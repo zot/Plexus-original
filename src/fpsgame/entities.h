@@ -30,7 +30,8 @@ struct entities : icliententities
             NULL, NULL,
             "checkpoint",
             NULL, NULL,
-            NULL, NULL
+            NULL, NULL,
+            NULL
         };
         return entmdlnames[type];
     }
@@ -45,11 +46,15 @@ struct entities : icliententities
         }
     }
 
-    void renderent(extentity &e, int type, float z, float yaw, int anim = ANIM_MAPMODEL|ANIM_LOOP, int basetime = 0, float speed = 10.0f)
+    void renderent(extentity &e, const char *mdlname, float z, float yaw)
     {
-        const char *mdlname = entmdlname(type);
         if(!mdlname) return;
-        rendermodel(e.color, e.dir, mdlname, anim, 0, 0, vec(e.o).add(vec(0, 0, z)), yaw, 0, speed, basetime, NULL, MDL_SHADOW | MDL_CULL_VFC | MDL_CULL_DIST | MDL_CULL_OCCLUDED);
+        rendermodel(&e.light, mdlname, ANIM_MAPMODEL|ANIM_LOOP, vec(e.o).add(vec(0, 0, z)), yaw, 0, MDL_SHADOW | MDL_CULL_VFC | MDL_CULL_DIST | MDL_CULL_OCCLUDED);
+    }
+
+    void renderent(extentity &e, int type, float z, float yaw)
+    {
+        renderent(e, entmdlname(type), z, yaw);
     }
 
     void renderentities()
@@ -62,8 +67,20 @@ struct entities : icliententities
                 renderent(e, e.type, (float)(1+sin(cl.lastmillis/100.0+e.o.x+e.o.y)/20), cl.lastmillis/(e.attr2 ? 1.0f : 10.0f));
                 continue;
             }
-            if(!e.spawned && e.type!=TELEPORT) continue;
-            if(e.type<I_SHELLS || e.type>TELEPORT) continue;
+            if(e.type==TELEPORT)
+            {
+                if(e.attr2 < 0) continue;
+                if(e.attr2 > 0)
+                {
+                    renderent(e, mapmodelname(e.attr2), (float)(1+sin(cl.lastmillis/100.0+e.o.x+e.o.y)/20), cl.lastmillis/10.0f);        
+                    continue;
+                }
+            }
+            else
+            {
+                if(!e.spawned) continue;
+                if(e.type<I_SHELLS || e.type>I_QUAD) continue;
+            }
             renderent(e, e.type, (float)(1+sin(cl.lastmillis/100.0+e.o.x+e.o.y)/20), cl.lastmillis/10.0f);
         }
     }
@@ -109,17 +126,16 @@ struct entities : icliententities
         itemstat &is = itemstats[type-I_SHELLS];
         if(d!=cl.player1 || isthirdperson()) particle_text(d->abovehead(), is.name, 15);
         playsound(itemstats[type-I_SHELLS].sound, d!=cl.player1 ? &d->o : NULL); 
-        if(d!=cl.player1) return;
         d->pickup(type);
-        switch(type)
+        if(d==cl.player1) switch(type)
         {
             case I_BOOST:
-                conoutf("\f2you have a permanent +10 health bonus! (%d)", d->maxhealth);
+                conoutf(CON_GAMEINFO, "\f2you have a permanent +10 health bonus! (%d)", d->maxhealth);
                 playsound(S_V_BOOST);
                 break;
 
             case I_QUAD:
-                conoutf("\f2you got the quad!");
+                conoutf(CON_GAMEINFO, "\f2you got the quad!");
                 playsound(S_V_QUAD);
                 break;
         }
@@ -133,7 +149,7 @@ struct entities : icliententities
         for(;;)
         {
             e = findentity(TELEDEST, e+1);
-            if(e==beenhere || e<0) { conoutf("no teleport destination for tag %d", tag); return; }
+            if(e==beenhere || e<0) { conoutf(CON_WARN, "no teleport destination for tag %d", tag); return; }
             if(beenhere<0) beenhere = e;
             if(ents[e]->attr2==tag)
             {
@@ -142,6 +158,7 @@ struct entities : icliententities
                 d->pitch = 0;
                 d->vel = vec(0, 0, 0);//vec(cosf(RAD*(d->yaw-90)), sinf(RAD*(d->yaw-90)), 0);
                 entinmap(d);
+                updatedynentcache(d);
                 cl.playsoundc(S_TELEPORT, d);
                 break;
             }
@@ -173,7 +190,7 @@ struct entities : icliententities
                 if(d!=cl.player1) break;
                 if(n==cl.respawnent) break;
                 cl.respawnent = n;
-                conoutf("\f2respawn point set!");
+                conoutf(CON_GAMEINFO, "\f2respawn point set!");
                 playsound(S_V_RESPAWNPOINT);
                 break;
 
@@ -184,7 +201,7 @@ struct entities : icliententities
                 d->lastpickupmillis = cl.lastmillis;
                 vec v((int)(char)ents[n]->attr3*10.0f, (int)(char)ents[n]->attr2*10.0f, ents[n]->attr1*12.5f);
                 d->timeinair = 0;
-                d->gravity = vec(0, 0, 0);
+                d->falling = vec(0, 0, 0);
                 d->vel = v;
 //                d->vel.z = 0;
 //                d->vel.add(v);
@@ -214,23 +231,33 @@ struct entities : icliententities
         if(d->quadmillis && (d->quadmillis -= time)<=0)
         {
             d->quadmillis = 0;
-            cl.playsoundc(S_PUPOUT, d);
-            if(d==cl.player1) conoutf("\f2quad damage is over");
+            playsound(S_PUPOUT, d==cl.player1 ? NULL : &d->o);
+            if(d==cl.player1) conoutf(CON_GAMEINFO, "\f2quad damage is over");
         }
     }
 
     void putitems(ucharbuf &p, int gamemode)            // puts items in network stream and also spawns them locally
     {
+        putint(p, SV_ITEMLIST);
         loopv(ents) if(ents[i]->type>=I_SHELLS && ents[i]->type<=I_QUAD && (!m_capture || ents[i]->type<I_SHELLS || ents[i]->type>I_CARTRIDGES))
         {
             putint(p, i);
             putint(p, ents[i]->type);
-            
-            ents[i]->spawned = (m_sp || (ents[i]->type!=I_QUAD && ents[i]->type!=I_BOOST)); 
         }
+        putint(p, -1);
     }
 
     void resetspawns() { loopv(ents) ents[i]->spawned = false; }
+
+    void spawnitems(int gamemode)
+    {
+        if(m_noitems) return;
+        loopv(ents) if(ents[i]->type>=I_SHELLS && ents[i]->type<=I_QUAD && (!m_capture || ents[i]->type<I_SHELLS || ents[i]->type>I_CARTRIDGES))
+        {
+            ents[i]->spawned = (m_sp || (ents[i]->type!=I_QUAD && ents[i]->type!=I_BOOST));
+        }
+    }
+
     void setspawn(int i, bool on) { if(ents.inrange(i)) ents[i]->spawned = on; }
 
     extentity *newentity() { return new fpsentity(); }
@@ -239,6 +266,7 @@ struct entities : icliententities
     {
         switch(e.type)
         {
+            case FLAG:
             case BOX:
             case BARREL:
             case PLATFORM:
@@ -271,6 +299,7 @@ struct entities : icliententities
                 dir = vec((int)(char)e.attr3*10.0f, (int)(char)e.attr2*10.0f, e.attr1*12.5f).normalize();
                 break;
 
+            case FLAG:
             case MONSTER:
             case TELEDEST:
             case MAPMODEL:
@@ -298,6 +327,7 @@ struct entities : icliententities
             "base", "respawnpoint",
             "box", "barrel",
             "platform", "elevator",
+            "flag",
             "", "", "", "",
         };
         return i>=0 && size_t(i)<sizeof(entnames)/sizeof(entnames[0]) ? entnames[i] : "";
@@ -330,7 +360,7 @@ struct entities : icliententities
 
     float dropheight(entity &e)
     {
-        if(e.type==MAPMODEL || e.type==BASE) return 0.0f;
+        if(e.type==MAPMODEL || e.type==BASE || e.type==FLAG) return 0.0f;
         return 4.0f;
     }
 };

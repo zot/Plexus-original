@@ -95,7 +95,8 @@ struct movableset
             movable *m = new movable(e, this);
             movables.add(m);
             m->o = e.o;
-            entinmap(m, true);
+            entinmap(m);
+            updatedynentcache(m);
         }
     }
 
@@ -128,7 +129,7 @@ struct movableset
             if(m->state!=CS_ALIVE) continue;
             if(m->etype==PLATFORM || m->etype==ELEVATOR)
             {
-                if(m->vel.iszero() || !insideworld(m->o)) continue;
+                if(m->vel.iszero()) continue;
                 for(int remaining = curtime; remaining>0;)
                 {
                     int step = min(remaining, 20);
@@ -145,8 +146,9 @@ struct movableset
                 m->state = CS_DEAD;
                 m->explode = 0;
                 cl.ws.explode(true, (fpsent *)m, m->o, m, guns[GUN_BARREL].damage, GUN_BARREL);
+                adddecal(DECAL_SCORCH, m->o, vec(0, 0, 1), RL_DAMRAD/2);
             }
-            else if(m->moving || (m->onplayer && (m->onplayer->state!=CS_ALIVE || m->lastmoveattempt <= m->onplayer->lastmove))) moveplayer(m, 2, false);
+            else if(m->moving || (m->onplayer && (m->onplayer->state!=CS_ALIVE || m->lastmoveattempt <= m->onplayer->lastmove))) moveplayer(m, 1, true);
         }
     }
 
@@ -156,11 +158,11 @@ struct movableset
         {
             movable &m = *movables[i];
             if(m.state!=CS_ALIVE) continue;
-            vec o(m.o), color, dir;
+            vec o(m.o);
             o.z -= m.eyeheight;
             const char *mdlname = mapmodelname(m.mapmodel);
             if(!mdlname) continue;
-			rendermodel(color, dir, mdlname, ANIM_MAPMODEL|ANIM_LOOP, 0, 0, o, m.yaw, 0, 0, 0, &m, MDL_SHADOW | MDL_CULL_VFC | MDL_CULL_DIST | MDL_CULL_OCCLUDED, NULL);
+			rendermodel(NULL, mdlname, ANIM_MAPMODEL|ANIM_LOOP, o, m.yaw, 0, MDL_LIGHT | MDL_SHADOW | MDL_CULL_VFC | MDL_CULL_DIST | MDL_CULL_OCCLUDED, &m);
         }
     }
 };

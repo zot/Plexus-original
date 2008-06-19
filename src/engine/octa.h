@@ -79,16 +79,6 @@ struct grasstexture
     ushort texture, reserved;
 };
 
-struct lodlevel
-{
-    elementset *eslist;      // List of element indces sets (range) per texture
-    ushort *ebuf;            // packed element indices buffer
-    ushort *skybuf;          // skybox packed element indices buffer
-    materialsurface *matbuf; // buffer of material surfaces
-    GLuint ebufGL, skybufGL;  // element index VBO
-    int tris, texs, matsurfs, sky, explicitsky;
-};
-
 struct occludequery
 {
     void *owner;
@@ -133,38 +123,53 @@ enum
 struct vtxarray
 {
     vtxarray *parent;
-    vector<vtxarray *> *children;
-    lodlevel l0, l1;
-    vertex *vbuf;           // vertex buffer
-    ushort minvert, maxvert; // DRE info
+    vector<vtxarray *> children;
     vtxarray *next, *rnext; // linked list of visible VOBs
-    int allocsize;          // size of allocated memory for this va
-    int verts, explicitsky, curlod, distance;
+    vertex *vdata;           // vertex data
+    ushort voffset;          // offset into vertex data
+    ushort *edata, *skydata; // vertex indices
+    GLuint vbuf, ebuf, skybuf; // VBOs
+    ushort minvert, maxvert; // DRE info
+    elementset *eslist;      // List of element indices sets (range) per texture
+    materialsurface *matbuf; // buffer of material surfaces
+    int verts, tris, texs, texmask, sky, explicitsky, skyfaces, skyclip, matsurfs, distance;
     double skyarea;
-    GLuint vbufGL;          // VBO buffer ID
-    int x, y, z, size;      // location and size of cube.
-    ivec min, max;          // BB
-    ivec shadowmapmin, shadowmapmax;      // BB of shadowmapped surfaces
+    ivec o;
+    int size;                // location and size of cube.
+    ivec geommin, geommax;   // BB of geom
+    ivec shadowmapmin, shadowmapmax; // BB of shadowmapped surfaces
+    ivec matmin, matmax;     // BB of any materials
+    ivec bbmin, bbmax;       // BB of everything including children
     uchar curvfc, occluded;
     occludequery *query, *rquery;
     vector<octaentities *> *mapmodels;
     vector<grasstri> *grasstris;
     vector<grasssample> *grasssamples;
     int hasmerges;
+    uint dynlightmask;
+    bool shadowed;
 };
+
+struct cube;
 
 struct clipplanes
 {
     vec o, r;
     int size;
     plane p[12];
-    clipplanes *next, *prev;
-    clipplanes **backptr;
+    cube *owner;
 };
 
 struct mergeinfo
 {
-    short u1, u2, v1, v2;
+    ushort u1, u2, v1, v2;
+};
+
+struct tjoint
+{
+    int next;
+    ushort offset;
+    uchar edge;
 };
 
 struct cubeext
@@ -179,6 +184,7 @@ struct cubeext
     surfacenormals *normals; // per-vertex normals for each surface
     octaentities *ents;      // list of map entites totally inside cube
     mergeinfo *merges;       // bounds of merged surfaces
+    int tjoints;             // linked list of t-joints
 };  
 
 struct cube
@@ -190,7 +196,15 @@ struct cube
                              // see documentation jpgs for more info.
         uint faces[3];       // 4 edges of each dimension together representing 2 perpendicular faces
     };
-    ushort texture[6];       // one for each face. same order as orient.
+    union
+    {
+        ushort texture[6];       // one for each face. same order as orient.
+        struct
+        {
+            uchar clipmask, vismask;
+            uchar vismasks[8];
+        };
+    };
     cubeext *ext;            // extended info for the cube
 };
 
@@ -217,12 +231,24 @@ struct editinfo
 };
 
 struct undoent   { int i; entity e; };
-struct undoblock { int ts; int *g, n; block3 *b; undoent *e; undoblock() : g(NULL), n(0), b(NULL), e(NULL) { extern int totalmillis; ts = totalmillis; } };
+struct undoblock // undo header, all data sits in payload
+{
+    undoblock *prev, *next;
+    int size, timestamp, numents; // if numents is 0, is a cube undo record, otherwise an entity undo record
+
+    block3 *block() { return (block3 *)(this + 1); }
+    int *gridmap()
+    {
+        block3 *ub = block();
+        return (int *)(ub->c() + ub->size());
+    }
+    undoent *ents() { return (undoent *)(this + 1); }
+};
 
 extern cube *worldroot;             // the world data. only a ptr to 8 cubes (ie: like cube.children above)
 extern ivec lu;
 extern int lusize;
-extern int wtris, wverts, vtris, vverts, glde, rplanes;
+extern int wtris, wverts, vtris, vverts, glde, gbatches, rplanes;
 extern int allocnodes, allocva, selchildcount;
 
 const uint F_EMPTY = 0;             // all edges in the range (0,0)
@@ -244,6 +270,7 @@ const uint F_SOLID = 0x80808080;    // all edges in the range (0,8)
 #define octacoord(d, i)     (((i)&octadim(d))>>(d))
 #define oppositeocta(d, i)  ((i)^octadim(D[d]))
 #define octaindex(d,x,y,z)  (octadim(D[d])*(z)+octadim(C[d])*(y)+octadim(R[d])*(x))
+#define octastep(x, y, z, scale) (((((z)>>(scale))&1)<<2) | ((((y)>>(scale))&1)<<1) | (((x)>>(scale))&1))
 
 #define loopoctabox(c, size, o, s) uchar possible = octantrectangleoverlap(c, size, o, s); loopi(8) if(possible&(1<<i))
 
@@ -266,6 +293,9 @@ enum
     VFC_FULL_VISIBLE = 0,
     VFC_PART_VISIBLE,
     VFC_FOGGED,
-    VFC_NOT_VISIBLE
+    VFC_NOT_VISIBLE,
+    PVS_FULL_VISIBLE,
+    PVS_PART_VISIBLE,
+    PVS_FOGGED
 };
 
