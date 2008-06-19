@@ -1,0 +1,213 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1"><title>p2pmud - Parser Tutorial</title><style type="text/css">
+<!--
+body {  text-decoration: none;
+            color: #cccccc;
+            font-family: "arial";
+            font-size: 12pt;
+            font-weight: medium; }
+.cmd {  text-decoration: none;
+            color: #FF9900;
+            font-family: "arial";
+            font-size: 16pt;
+            font-weight: medium; }
+a:link {  text-decoration: none;
+             color: #FF9900; 
+             font-family: "arial";
+             font-size: 12pt;
+             font-weight: heavy; }         
+a:visited {  text-decoration: none;
+             color: #FF9900; 
+             font-family: "arial";
+             font-size: 12pt;
+             font-weight: heavy; }         
+-->
+</style>
+</head><body bgcolor="#282619">
+<h2>p2pmud - Parser Tutorial</h2>
+
+<h2>Introduction</h2><p>
+p2pmud includes a natural language parser for interpreting the player's
+input. This parser supports verbs, nouns, adjectives, prepositional
+phrases, and ambiguous words via backtracking.</p><p>
+By default, the parser will pretty much handle everything for you
+automatically. You don't have to do a lot to customize the parsing if
+you don't want to when creating your own adventures.
+Many of the most common things you will want to do (like define your
+own words) can be done without any coding at all! Well explain more of
+this shortly.</p><p>
+Most commands are of the two simple forms "verb" and "verb now" For
+example, the user can say "look" or "look here" Lots of times verbs can
+accept optional nouns or "arguments" to the verb aka "command". If you
+use the help command, you can see exactly what the parser is looking
+for.</p><p>
+
+<span class="cmd">
+Type: help look<br>
+</span></p><p>
+
+</p><pre>Usage: look [object]
+   object (Thing) - The object is the item you would like to see. This will default to your current location.
+
+Synonyms: spy see examine glance peer study read
+</pre>
+This tells you that the look verb is expecting one noun, but that it is
+optional. It will default to the current room if not defined. If you
+create your own commands,
+you will supply this information to the parser so it can parse your new
+command for you. Also you will see that any verb can have synonyms
+defined. The parser knows that "spy" is a synonym for "look" but it
+will retain the fact that the user used the word spy and not look. In
+the resulting output, the synonym spy will be referenced for you
+automatically.<p>
+
+<span class="cmd">
+Type: spy me<br>
+</span></p><p>
+
+</p><pre>You spy at admin and see: Nothing out of the ordinary. admin looks to be in perfect health! (100%) 
+</pre>
+
+<h2>Special words and characters</h2><p>
+There are two special words "here" and "me". The parser assigns special
+meaning to these two words to be your current room and yourself
+respectively. Also, there
+are several shortcuts the parser understands. If a line starts with a
+quote('), it knows you want to say something outloud, a colon(:), it
+will issue a emote command,
+for authors an exclamation mark (!)will let you evaluate any Javascript
+expression on the fly, and a question mark (?) is a shortcut for help.</p><p>
+
+<span class="cmd">
+Type: :scratches his head<br>
+Type: "hey this parser is really neat!<br>
+Type: !5<br>
+Type: ?get<br>
+</span></p><p>
+
+</p><h2>Shortcuts</h2><p>
+The parser already knows about common abbreviations players like to
+use, for example, nw to mean northwest. You won't have to set any of
+these up by hand. Also,
+all things in the game have a default verb attached to them. If the
+user double clicks the image, or just types the name of the object in,
+it will assume the user
+wanted to take this default action. For Thing objects, the default is
+to look, for Exit objects, the default is to travel through it, etc.
+You can override this
+for a particular object if you like!</p><p>
+
+<span class="cmd">
+Type: create apple Food<br>
+Type: setprop apple defaultVerb /eat<br>
+Type: get apple<br>
+Type: apple<br>
+</span></p><p>
+
+</p><h2>Learning words</h2><p>
+Also, the parser automatically knows all of words used by the name's of
+every item in the current room. So if there is a "red ball" in the
+current room, you don't
+have to teach the parser that "red" is an adjective and "ball" is a
+noun, it will infer that automatically!</p><p>
+However, sometimes you will want to teach the parser a new word. There
+is a command just for this called "bind". You specify the word, the
+type that it is,
+and optionally another word it references. Make sure you remember to
+snapshot your work or else the parser won't remember your new words
+once you restart!! Let's say you want to teach the parser a new
+Preposition, a new Modifier (adjective) a new Quantifier (numerical
+adjective) and a new Synonym.</p><p>
+
+<span class="cmd">
+Type: bind within Preposition<br>
+Type: bind purple Modifier<br>
+Type: bind twelve Quantifier 12<br>
+Type: bind bellow Synonym /say<br>
+</span></p><p>
+The parser now recognizes that 'within' is a preposition, 'purple' is
+an adjective, 'twelve' is a numerical adjective, and 'bellow' is the
+equivalent of 'say'. Here
+you have to preceed say with a forward slash or use quotes around it so
+the parser gets the word 'say' and not the verb say. We don't give an
+example of making an entirely new verb here,
+because you have to actually create a command object for it, and that's
+a later tutorial. However, you can now:</p><p>
+
+<span class="cmd">
+Type: bellow "you fool!<br>
+</span></p><p>
+It's actually pretty rare you will have to bind your own Verbs,
+Modifiers, or Nouns, since these are done automatically. Usually you'll
+just want to make up synonyms for words the parser already knows. If
+you want the parser to forget a word you already taught it, there is an
+unbind command. This takes a single argument, the word
+you want to unbind. Don't forget if it is a verb (or a synonym for one)
+you will have to put a leading slash in front of it.</p><p>
+
+<span class="cmd">
+Type: unbind within<br>
+Type: unbind /bellow<br>
+</span></p><p>
+
+</p><h2>Abbreviations and Ambigous words</h2><p>
+The parser handles abbreviated words, and ambiguous words for you.  Try the following sequence of commands:</p><p>
+<span class="cmd">
+Type: create "red ball"<br>
+Type: look ba<br>
+Type: create "blue ball"<br>
+Type: get ba<br>
+Do: Click the 'blue ball' link<br>
+</span></p><p>
+What's going on here? First, we created an item called "red ball". The
+object was created with 'red' as an adjective and 'ball' as a noun.
+When you said 'look ba'
+the parser realized there is only one object in the room that matches
+'ba' so you look at it. Now when you created the blue ball and wanted
+to get it, the parser saw
+that two potential items could match and generated a question back to
+the user. You can either type in the answer, or to make it easier, you
+can click one of the links
+provided by the parser to answer the question. The parser knows that it
+posed a question back to the user and if the user answers it, will
+continue on with the action!
+Now try this:</p><p>
+
+<span class="cmd">
+Type: drop ba<br>
+</span></p><p>
+You should drop the blue ball you are carrying! How come the parser
+didn't ask which ball this time? Commands can give contextual hints to
+the parser, the Drop
+command tells the parser that it prefers objects carried by the user
+over objects in the same room as the user. The parser used this
+knowledge to automatically
+decide that you must have meant to drop the blue ball since you aren't
+carrying the red ball! Clever, eh?</p><p>
+
+</p><h2>Autospawns</h2><p>
+What's an autospawn you might ask? Well, we always thought it was
+annoying that you could be in the middle of a forest and type 'get
+leaf' and a
+game would come back and say either "What is leaf?" or "I don't see
+leaf here!" To remedy this, we created autospawns. These are used to
+teach the game/parser
+about common objects for a particular room. Everytime a player
+references one of these words, and there isn't already one present, it
+will create a new object for you automatically!! Try it out!</p><p>
+
+<span class="cmd">
+Type: name here "Tropical Jungle"<br>
+Type: autospawn plant<br>
+Type: autospawn coconut<br>
+Type: get coconut<br>
+</span></p><p>
+
+
+</p><h2>Congratulations! This completes the p2pmud parser tutorial!</h2><p>
+</p><p>
+
+</p><center>© Copyright 2005 <a href="http://www.teamcthulhu.com/" target="_blank">TEAM CTHULHU</a></center><p>
+
+
+</p></body></html>
