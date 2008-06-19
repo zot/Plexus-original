@@ -42,7 +42,7 @@ DAMAGE.
 <link rel='alternate' type='application/rss+xml' title='RSS' href='index.xml'/>
 <!--}}}-->
 <!--PRE-HEAD-END-->
-<title> P2PMud Reloaded - The Killer App of the Future! </title>
+<title> P2PMud Reloaded - TEAM CHTULHU's Killer App of the Future! </title>
 <style id="styleArea" type="text/css">
 #saveTest {display:none;}
 #messageArea {display:none;}
@@ -498,8 +498,11 @@ Also see AdvancedOptions</pre>
 </div>
 <!--POST-SHADOWAREA-->
 <div id="storeArea">
-<div title="DefaultTiddlers" modifier="Zot" created="200806171607" modified="200806171607" changecount="2">
-<pre>ToDo
+<div title="DefaultTiddlers" modifier="Zot" created="200806171607" modified="200806190728" changecount="8">
+<pre>P2PMud
+[[News]]
+ReadMe
+ToDo
 [[Commands]]</pre>
 </div>
 <div title="MainMenu" modifier="Zot" created="200806171608" modified="200806171608" changecount="2">
@@ -509,14 +512,36 @@ Also see AdvancedOptions</pre>
 MainMenu
 DefaultTiddlers</pre>
 </div>
-<div title="SiteSubtitle" modifier="Zot" created="200806171609" changecount="1">
-<pre>The Killer App of the Future!</pre>
+<div title="News" modifier="Zot" created="200806190726" changecount="1">
+<pre>!2008 6/19 Capture the Flag
+Well, a new version of Sauerbraten is out: Capture the Flag (http://www.cubeengine.com/forum.php4?action=display_thread&amp;thread_id=1782).  I made a &quot;dist&quot; branch and put it in there and tagged the assassin version and that one (with date tags).  I'll have to merge that into the main branch now.  Let's see how well git's famous merging capabilities work...</pre>
 </div>
-<div title="SiteTitle" modifier="Zot" created="200806171608" changecount="1">
-<pre>P2PMud Reloaded</pre>
+<div title="P2PMud" modifier="Zot" created="200806171636" modified="200806190733" changecount="7">
+<pre>![[TEAM CTHULHU's|http://teamcthulhu.com]] Killer App of the Future!
+
+P2PMud is a peer-to-peer multiuser dungeon with a [[long history|Reloaded]]</pre>
 </div>
-<div title="ToDo" modifier="Zot" created="200806171610" changecount="1">
-<pre>!Extensions
+<div title="ReadMe" modifier="Zot" created="200806171620" modified="200806190739" changecount="9">
+<pre>This part of the //''P2PMud [[Reloaded]]''// project adds support to the fantastic ''[[Sauerbraten|http://sauerbraten.org]]'' engine to allow remote scripting and hooking in at deep levels, with the goal of minimizing changes to the Sauerbraten source code.
+
+Part of this is putting in hooks for moderated play, for instance, chain of command-style hooks for weapon hits.  You can register a hook that Sauerbraten calls instead of the normal hit code.  The hook may invoke the &quot;defaulthit&quot; command to proceed with normal damage.
+
+[[Here|http://repo.or.cz/w/SauerbratenRemote.git?a=blob_plain;f=index.html;hb=HEAD]] is the latest version of this document and [[here|http://repo.or.cz/w/SauerbratenRemote.git]] is the source code repository.</pre>
+</div>
+<div title="Reloaded" modifier="Zot" created="200806171638" modified="200806190736" changecount="3">
+<pre>P2PMud traces its roots back to the murky depths history in 1988 when Roy Riggs first built a tiny C-based multi-user dungeon, one of the earliest multiuser, real-time Internet games.  It took only a matter of days, or perhaps even hours, for Bill Burdick to join Roy to form the sinister TEAM CTHULHU!</pre>
+</div>
+<div title="SiteSubtitle" modifier="Zot" created="200806171609" modified="200806190731" changecount="3">
+<pre>''[[TEAM CHTULHU's|http://teamcthulhu.com]]'' Killer App of the Future!</pre>
+</div>
+<div title="SiteTitle" modifier="Zot" created="200806171608" modified="200806171638" changecount="2">
+<pre>P2PMud [[Reloaded]]</pre>
+</div>
+<div title="ToDo" modifier="Zot" created="200806171610" modified="200806190737" changecount="2">
+<pre>!Upgrade
+Upgrade to latest code base (2008 6/19)
+
+!Extensions
 browser plugin
 
 !Moderation
@@ -557,6 +582,9 @@ die roll
 !Network
 slaverequest req
 mastercommand cmd</pre>
+</div>
+<div title="Zot" modifier="Zot" created="200806171649" changecount="1">
+<pre>Zot is one of the founding members of [[TEAM CTHULHU|http://teamcthulhu.com]]</pre>
 </div>
 </div>
 <!--POST-STOREAREA-->
