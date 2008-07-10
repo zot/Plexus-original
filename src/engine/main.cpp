@@ -685,6 +685,7 @@ int main(int argc, char **argv)
         if(lastmillis) cl->updateworld(worldpos, curtime, lastmillis);
 #ifdef TC
         extern void remotetick();remotetick();
+        extern int appmouse;
 #endif
        
         menuprocess();
@@ -714,7 +715,7 @@ int main(int argc, char **argv)
         int lasttype = 0, lastbut = 0;
         while(SDL_PollEvent(&event))
         {
-            switch(event.type)
+       		switch(event.type)
             {
                 case SDL_QUIT:
                     quit();
@@ -740,6 +741,9 @@ int main(int argc, char **argv)
                     break;
 
                 case SDL_MOUSEMOTION:
+#ifdef TC
+                	if (appmouse) break;
+#endif
                     if(ignore) { ignore--; break; }
                     #ifndef WIN32
                     if(!(screen->flags&SDL_FULLSCREEN) && grabmouse)

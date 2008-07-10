@@ -1,0 +1,32 @@
+appmouse 1
+map fal
+remoteallow localhost 9090
+remoteconnect
+hidehud 1
+hudgun 0
+
+////// HOOKS //////
+changeweaponhook = [echo current weapon is now (currentweapon)]
+
+
+////// OVERRIDES //////
+override weapon _weapon [
+	_weapon  $arg1 $arg2 $arg3
+	changeweaponhook	
+]
+override setweapon _setweapon [
+	_setweapon $arg1
+	changeweaponhook	
+]
+override nextweapon _nextweapon [
+	_nextweapon
+	changeweaponhook	
+]
+mainmaps = [@mainmaps wake6]
+exec particlemenus.cfg
+//onrayhit [echo RAY HIT BY: (hit.shooter)]
+onrayhit defaulthit
+//onprojectilehit [echo PROJECTILE HIT BY: (hit.shooter)]
+onprojectilehit defaulthit
+//watch p0 [echo (ent.x p0)]
+watch p0 [remotesend position (ent.x p0) (ent.y p0) (ent.z p0)]

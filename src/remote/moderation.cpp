@@ -6,6 +6,7 @@
 #include "remote.h"
 
 typedef hashtable<const char *, ident> identtable;
+VAR(appmouse, 0, 0, 1);
 
 static vec tmp;
 
