@@ -1,7 +1,9 @@
 // plug in to fps.cpp
-extern fpsclient *cl;
+extern igameclient *cl;
 struct moderation moderator;
 char idbuf[1024];
+
+#define fpscl ((fpsclient *)cl)
 
 /////
 // MEMBERS FOR: dynent
@@ -41,15 +43,15 @@ int enttype(int index) {
 		return TC_PLAYER;
 	}
 	index--;
-	if (index < cl->players.length()) {
+	if (index < fpscl->players.length()) {
 		return TC_PLAYER;
 	}
-	index -= cl->players.length();
-	if (index < cl->ms.monsters.length()) {
+	index -= fpscl->players.length();
+	if (index < fpscl->ms.monsters.length()) {
 		return TC_MONSTER;
 	}
-	index -= cl->ms.monsters.length();
-	if (index < cl->mo.movables.length()) {
+	index -= fpscl->ms.monsters.length();
+	if (index < fpscl->mo.movables.length()) {
 		return TC_ITEM;
 	}
 	return TC_ERROR;
@@ -67,8 +69,8 @@ char *idfor(void *ent, char *buf, int buflen) {
 			if (type == TC_PLAYER) {
 				id = i;
 			} else {
-				i -= cl->players.length() + 1;
-				id = type == TC_MONSTER ? i : i - cl->ms.monsters.length();
+				i -= fpscl->players.length() + 1;
+				id = type == TC_MONSTER ? i : i - fpscl->ms.monsters.length();
 			}
 			snprintf(buf, buflen, "%c%d", type, id);
 			return buf;
@@ -83,11 +85,11 @@ fpsent *getplayer(char *id) {
 		int i = atoi(id + 1);
 
 		if (!i) {
-			return cl->player1;
+			return fpscl->player1;
 		}
 		i--;
-		if (i >= 0 && i < cl->players.length()) {
-			return cl->players[i];
+		if (i >= 0 && i < fpscl->players.length()) {
+			return fpscl->players[i];
 		}
 	}
 	return NULL;
@@ -97,8 +99,8 @@ fpsclient::monsterset::monster *getmonster(char *id) {
 	if (id[0] == TC_MONSTER) {
 		int i = atoi(id + 1);
 
-		if (i >= 0 && i < cl->ms.monsters.length()) {
-			return cl->ms.monsters[i];
+		if (i >= 0 && i < fpscl->ms.monsters.length()) {
+			return fpscl->ms.monsters[i];
 		}
 	}
 	return NULL;
@@ -108,8 +110,8 @@ fpsclient::movableset::movable *getitem(char *id) {
 	if (id[0] == TC_ITEM) {
 		int i = atoi(id + 1);
 
-		if (i >= 0 && i < cl->mo.movables.length()) {
-			return cl->mo.movables[i];
+		if (i >= 0 && i < fpscl->mo.movables.length()) {
+			return fpscl->mo.movables[i];
 		}
 	}
 	return NULL;
@@ -183,7 +185,7 @@ ICOMMAND(dumpents, "", (),
 );
 
 ICOMMAND(currentweapon, "", (), {
-	intret(cl->player1->gunselect);
+	intret(fpscl->player1->gunselect);
 });
 
 /////

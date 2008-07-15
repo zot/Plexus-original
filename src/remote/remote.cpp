@@ -1,12 +1,5 @@
 #include "pch.h"
-#include "cube.h"
-#include "iengine.h"
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#include <unistd.h>
+#include "engine.h"
 #include <fcntl.h>
 #include <errno.h>
 #include "remote.h"
@@ -18,17 +11,15 @@
 static int initialized = UNSET;
 static int remotePort = -1;
 static char *remoteHost;
-static int mysocket = -1;
+static ENetSocket mysocket = -1;
 static vector<char> input;
 static vector<char> output;
-//static int inputLinesPending = 0;
 
 static char *remotedisconnect(char *msg) {
 	if (mysocket != -1) {
-		close(mysocket);
+		enet_socket_destroy(mysocket); //close(mysocket);
 		mysocket = -1;
 		conoutf("Disconnected from remote host: %s", msg ? msg : "");
-//		inputLinesPending = 0;
 		output.setsize(0);
 		input.setsize(0);
 		perror(msg ? msg : "");
@@ -41,6 +32,7 @@ ICOMMAND(remotedisable, "", (),
 	if (initialized == SET) {
 		remotedisconnect("remote connections disabled");
 		delete[] remoteHost;
+		enet_deinitialize();
 	}
 	initialized = NOT_ALLOWED;
 );
@@ -70,6 +62,7 @@ static char *remoteallow(char *host, int *port) {
 			break;
 		case UNSET:
 			initialized = SET;
+			enet_initialize();
 			remoteHost = newstring(host);
 			remotePort = *port;
 			conoutf("Allowing remote connections to %s:%d", remoteHost, remotePort);
@@ -93,29 +86,31 @@ static char *remoteconnect() {
 		conoutf("REMOTE SECURITY VIOLATION: attempt to connect when remote connections have been disabled");
 		break;
 	case SET:
-		struct sockaddr_in pin;
-		struct hostent *hp;
+		static ENetAddress address;
 
-		if ((hp = gethostbyname(remoteHost)) == 0) {
-			perror("gethostbyname");
-			conoutf("Could not find host: %s", remoteHost);
+		address.port = remotePort;
+		address.host = 0;
+        conoutf("attempting to connect to %s", remoteHost);
+        if(!resolverwait(remoteHost, &address))
+        {
+            conoutf("REMOTE ERROR: could not resolve server %s", remoteHost);
+            break;
+        }
+
+		if (-1 == (mysocket = enet_socket_create(ENET_SOCKET_TYPE_STREAM, NULL)))
+		{
+			conoutf("REMOTE ERROR: Could not create remote socket");
 			break;
 		}
-		memset(&pin, 0, sizeof(pin));
-		pin.sin_family = AF_INET;
-		pin.sin_addr.s_addr = ((struct in_addr *)(hp->h_addr))->s_addr;
-		pin.sin_port = htons(remotePort);
-		if ((mysocket = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-			perror("socket");
-			conoutf("Could not create remote socket");
-			break;
-		}
-		if (connect(mysocket, (struct sockaddr *) &pin, sizeof(pin)) == -1) {
-			perror("connect");
-			conoutf("Could not connect to remote host %s:%d", remoteHost, remotePort);
+
+		if (enet_socket_connect(mysocket, &address))
+		{
+			conoutf("REMOTE ERROR: Could not connect to remote host %s:%d", remoteHost, remotePort);
 			mysocket = -1;
 			break;
 		}
+
+		enet_socket_set_option(mysocket, ENET_SOCKOPT_NONBLOCK, 1);
 		conoutf("Connected to %s:%d", remoteHost, remotePort);
 		break;
 	}
@@ -124,51 +119,54 @@ static char *remoteconnect() {
 ICOMMAND(remoteconnect, "", (), remoteconnect(););
 
 ICOMMAND(remotesend, "C", (char *line),
-//	inputLinesPending++;
-	output.put(line, strlen(line));
-	output.add('\n');
+	if (mysocket != -1) {
+		output.put(line, strlen(line));
+		output.add('\n');
+	}
 );
 
 static void readChunk() {
-//	if (inputLinesPending) {
-		ssize_t bytesRead;
-		databuf<char> buf = input.reserve(1000);
+	databuf<char> buf = input.reserve(1000);
+	ENetBuffer buffer;
+	buffer.data = buf.buf;
+	buffer.dataLength = 1000;
 
-		bytesRead = recv(mysocket, buf.buf, 1000, MSG_DONTWAIT);
-		if (bytesRead < 0 && errno != EAGAIN && bytesRead != EAGAIN) {
-			remotedisconnect("connection closed while reading");
-		} else if (bytesRead > 0) {
-			int lastNl = -1;
+	int bytesRead = enet_socket_receive(mysocket, NULL, &buffer,1); // recv(mysocket, buf.buf, 1000, MSG_DONTWAIT);
+	if (bytesRead < 0 && errno != EAGAIN && bytesRead != EAGAIN) {
+		remotedisconnect("connection closed while reading");
+	} else if (bytesRead > 0) {
+		int lastNl = -1;
 
-			buf.len = bytesRead;
-			input.addbuf(buf);
-			for (int i = 0; i < bytesRead; i++) {
-				if (buf.buf[i] == '\n') {
-//					inputLinesPending--;
-					buf.buf[i] = ';';
-					lastNl = i;
-				}
-			}
-			if (lastNl > -1) {
-				input.last() = 0;
-				if (input.length() > 1) {
-					executeret(input.getbuf());
-				}
-				if (lastNl + 1 < input.length()) {
-					input.remove(0, lastNl + 1);
-				} else {
-					input.setsize(0);
-				}
+		buf.len = bytesRead;
+		input.addbuf(buf);
+		for (int i = 0; i < bytesRead; i++) {
+			if (buf.buf[i] == '\n') {
+				buf.buf[i] = ';';
+				lastNl = i;
 			}
 		}
-//	}
+		if (lastNl > -1) {
+			input.last() = 0;
+			if (input.length() > 1) {
+				executeret(input.getbuf());
+			}
+			if (lastNl + 1 < input.length()) {
+				input.remove(0, lastNl + 1);
+			} else {
+				input.setsize(0);
+			}
+		}
+	}
 }
 
 static void writeChunk() {
 	if (output.length()) {
-		ssize_t written;
+		int written;
 
-		written = send(mysocket, output.getbuf(), output.length(), MSG_DONTWAIT);
+		ENetBuffer buffer;
+		buffer.data = output.getbuf();
+		buffer.dataLength = output.length();
+		written = enet_socket_send(mysocket, NULL, &buffer, 1);
 		if (written == EOF) {
 			remotedisconnect("connection closed while writing");
 		} else {

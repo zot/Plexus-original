@@ -67,9 +67,11 @@ def start() {
 def dumpCommands() {
 	if (output) {
 		synchronized (pendingCommands) {
-			output << pendingCommands.collect{it.value}.join(";") + '\n'
-			println "SENT: ${pendingCommands.collect{it.value}.join(';') + '\n'}"
-			pendingCommands = [:]
+			if (!pendingCommands.isEmpty()) {
+				output << pendingCommands.collect{it.value}.join(";") + '\n'
+				println "SENT: ${pendingCommands.collect{it.value}.join(';') + '\n'}"
+				pendingCommands = [:]
+			}
 		}
 		output.flush()
 	}
