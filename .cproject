@@ -15,11 +15,11 @@
 </extensions>
 </storageModule>
 <storageModule moduleId="cdtBuildSystem" version="4.0.0">
-<configuration artifactExtension="" artifactName="SauerGroovy" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug,org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="rm -rf" description="" id="cdt.managedbuild.config.gnu.exe.debug.327053915" name="Debug" parent="cdt.managedbuild.config.gnu.exe.debug">
+<configuration artifactExtension="" artifactName="SauerbratenRemote" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug,org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="rm -rf" description="" id="cdt.managedbuild.config.gnu.exe.debug.327053915" name="Debug" parent="cdt.managedbuild.config.gnu.exe.debug">
 <folderInfo id="cdt.managedbuild.config.gnu.exe.debug.327053915." name="/" resourcePath="">
 <toolChain id="cdt.managedbuild.toolchain.gnu.exe.debug.2071326121" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.exe.debug">
 <targetPlatform id="cdt.managedbuild.target.gnu.platform.exe.debug.1416451030" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.exe.debug"/>
-<builder autoBuildTarget="all" buildPath="${workspace_loc:/SauerGroovy/Debug}" cleanBuildTarget="clean" enableAutoBuild="true" enableCleanBuild="true" enabledIncrementalBuild="true" id="cdt.managedbuild.target.gnu.builder.exe.debug.990602755" incrementalBuildTarget="all" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.exe.debug"/>
+<builder autoBuildTarget="all" buildPath="${workspace_loc:/SauerbratenRemote/Debug}" cleanBuildTarget="clean" enableAutoBuild="true" enableCleanBuild="true" enabledIncrementalBuild="true" id="cdt.managedbuild.target.gnu.builder.exe.debug.990602755" incrementalBuildTarget="all" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.exe.debug"/>
 <tool id="cdt.managedbuild.tool.gnu.archiver.base.976771970" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
 <tool id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.874747634" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug">
 <option id="gnu.cpp.compiler.exe.debug.option.optimization.level.1183808210" name="Optimization Level" superClass="gnu.cpp.compiler.exe.debug.option.optimization.level" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
@@ -549,11 +549,11 @@
 </extensions>
 </storageModule>
 <storageModule moduleId="cdtBuildSystem" version="4.0.0">
-<configuration artifactName="SauerGroovy" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.release,org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="rm -rf" description="" id="cdt.managedbuild.config.gnu.exe.release.1154034625" name="Release" parent="cdt.managedbuild.config.gnu.exe.release">
+<configuration artifactName="SauerbratenRemote" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.release,org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="rm -rf" description="" id="cdt.managedbuild.config.gnu.exe.release.1154034625" name="Release" parent="cdt.managedbuild.config.gnu.exe.release">
 <folderInfo id="cdt.managedbuild.config.gnu.exe.release.1154034625." name="/" resourcePath="">
 <toolChain id="cdt.managedbuild.toolchain.gnu.exe.release.642793513" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.exe.release">
 <targetPlatform id="cdt.managedbuild.target.gnu.platform.exe.release.1752336605" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.exe.release"/>
-<builder buildPath="${workspace_loc:/SauerGroovy/Release}" id="cdt.managedbuild.target.gnu.builder.exe.release.2004005487" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.exe.release"/>
+<builder buildPath="${workspace_loc:/SauerbratenRemote/Release}" id="cdt.managedbuild.target.gnu.builder.exe.release.2004005487" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.exe.release"/>
 <tool id="cdt.managedbuild.tool.gnu.archiver.base.332452844" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
 <tool id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.1129720298" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release">
 <option id="gnu.cpp.compiler.exe.release.option.optimization.level.105160644" name="Optimization Level" superClass="gnu.cpp.compiler.exe.release.option.optimization.level" value="gnu.cpp.compiler.optimization.level.most" valueType="enumerated"/>
@@ -629,7 +629,7 @@
 </inputType>
 </tool>
 <tool id="cdt.managedbuild.tool.gnu.assembler.exe.release.2099493859" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.release">
-<option id="gnu.both.asm.option.include.paths.1240618781" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
+<option id="gnu.both.asm.option.include.paths.1240618781" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
 <listOptionValue builtIn="false" value="&quot;${JAVA_HOME}/include/linux&quot;"/>
 <listOptionValue builtIn="false" value="&quot;${JAVA_HOME}/include&quot;"/>
 </option>
@@ -1073,6 +1073,6 @@
 </cconfiguration>
 </storageModule>
 <storageModule moduleId="cdtBuildSystem" version="4.0.0">
-<project id="SauerGroovy.cdt.managedbuild.target.gnu.exe.699534033" name="Executable" projectType="cdt.managedbuild.target.gnu.exe"/>
+<project id="SauerbratenRemote.cdt.managedbuild.target.gnu.exe.699534033" name="Executable" projectType="cdt.managedbuild.target.gnu.exe"/>
 </storageModule>
 </cproject>
