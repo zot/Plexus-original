@@ -1,0 +1,82 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1"><title>p2pmud - Parser Tutorial</title><style type="text/css">
+<!--
+body {  text-decoration: none;
+            color: #cccccc;
+            font-family: "arial";
+            font-size: 12pt;
+            font-weight: medium; }
+.cmd {  text-decoration: none;
+            color: #FF9900;
+            font-family: "arial";
+            font-size: 16pt;
+            font-weight: medium; }
+a:link {  text-decoration: none;
+             color: #FF9900; 
+             font-family: "arial";
+             font-size: 12pt;
+             font-weight: heavy; }         
+a:visited {  text-decoration: none;
+             color: #FF9900; 
+             font-family: "arial";
+             font-size: 12pt;
+             font-weight: heavy; }         
+-->
+</style>
+</head>
+<body bgcolor="#282619">
+<p><h2>Basic design goals and philosophy behind the p2pmud project</h2>
+<p>Read this if you're interested in developing with p2pmud
+
+<p>p2pmud is written in a combination of XUL and Javascript. XUL is an XML based language used for describing UI
+ (user interface) and if you are a coding/scripting type of person you've surely heard of Javascript. Odds are
+  however, you probably don't really know today's Javascript.
+
+<p>Javascript has silently evolved over the last few years. While it started out as a clunkly little scripting 
+language, it has blossomed into a very dynamic, full-featured language. Java may have gotten the spotlight 
+for a long time, but its going to have to move over and make way for Javascript sometime soon.
+
+<h2>p2pmud is a layered system</h2>
+Each layer builds or relies on the previous layers beneath them. You can choose 
+to pitch in and help out on the project at any layer(s) that suit you. There is a core layer, Level I, which 
+provides a foundation layer. The next layer implementing actual game mechanics, is called Level II. Sometimes 
+people are referred to by their Level, where Level here describes what they like to do. Someone who likes to 
+create adventures and populate them with monsters and treasure is referred to Level III. They may or may not 
+write anything in Javascript, they may just use what was provided by Level II. Level IV is considered a player 
+who doesn't code or build at all, they just want to play. Level IV's are not to be looked down upon, after all, 
+they are ultimately the ones we went to all this trouble for!
+
+<h2 class="cmd">Level I</h2>
+P2PMud at its heart implements mechanism, NOT policy. P2PMud is an enabling technology to provide the framework 
+to make distributed MUDs work. It provides the ability for each local mud to discover other MUDs and create dynamic 
+portals between them. We're not talking just instant messages here either. When your character steps through a portal, 
+they and all their inventory are streamed across the virtual network so they actually appear in the other MUD. It also 
+affords transaction base world persistence, meaning it continuously saves the state of your local MUD so it is *always* 
+backed up and can be restored from any point. No matter whatever happens out there, you are safe in knowing you can always 
+put things back the way they were on your own MUD. p2pmud provides access to all of this from a Javascript interface.
+
+<h2 class="cmd">Level II</h2>
+Since just a framework by itself is not very interesting, p2pmud provides a default game mechanics system (GMS) 
+written in Javascript. This reference layer can be used as is to create your own world, or you can modify it as you see 
+fit to build your own GMS! This is where all of the game mechanics are described and game policy is implemented. Love d20 
+rules? Start a project to implement d20!
+
+<h2 class="cmd">Level III</h2>
+Even a GMS by itself is not too useful to players. If your love is building worlds and adventures, just pick a 
+GMS that suits you and start building away. Each GMS will have a set of tools or commands you can use to create rooms, 
+spaceships, weapons, monsters, or whatever. They likely will come will entire libraries of objects you can use to build with. 
+If you get bit by the scripting bug, you too can use Javascript to implement that +20 flaming broadsword with whatever special 
+powers you can dream up! Whichever GMS you choose will provide an interface for game interactions your scripts can build on.
+
+<h2 class="cmd">Level IV</h2>
+If you're screaming that you just want to play already, the intent is that each GMS comes with a default world 
+that consists of a single house your character can live in. Install p2pmud and your GMS of choice. Once you've launched it, 
+you can use the peer discovery to create portals to worlds created by other people. Venture out through a portal into the virtual 
+world, kill the baddies and get the girl! Maybe some day you'll learn to understand why others love to build so much and choose 
+to expand your own little corner of the world!
+
+<p>Objects created in one GMS are not likely to work in another, so we expect to see a number of different virtual worlds spring 
+up around each GMS. Since the GMS layers implement policy, these will likely start to develop around particular themes. For 
+example, one GMS might be more suited for space adventures, one for ancient worlds, etc.
+</body>
+</html>

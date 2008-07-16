@@ -1,4 +1,0 @@
-#Tue May 27 07:50:06 CDT 2008
-eclipse.preferences.version=1
-environment/project/cdt.managedbuild.config.gnu.exe.debug.327053915=<?xml version\="1.0" encoding\="UTF-8" standalone\="no"?>\n<environment append\="true" appendContributed\="true">\n<variable delimiter\=";" name\="JAVA_HOME" operation\="append" value\="/home/bill/apps/jdk1.6.0_06"/>\n</environment>\n
-environment/project/cdt.managedbuild.config.gnu.exe.release.1154034625=<?xml version\="1.0" encoding\="UTF-8" standalone\="no"?>\n<environment append\="true" appendContributed\="true">\n<variable delimiter\=";" name\="JAVA_HOME" operation\="append" value\="/home/bill/apps/jdk1.6.0_06"/>\n</environment>\n

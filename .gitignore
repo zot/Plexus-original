@@ -2,6 +2,7 @@
 *.a
 *.so
 *.dll
+*.class
 config.log
 config.status
 sauer_client

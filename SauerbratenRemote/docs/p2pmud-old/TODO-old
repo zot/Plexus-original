@@ -1,0 +1,12 @@
+porting Lua mods to Groovy (comparing Sauer with base)
+
+ported
+	client.h
+	ents.h
+	pch.h
+
+add commands in groovy/
+
+FLOW
+	for any event, sauer calls MAIN.handle(event args), which returns a command that sauer evals
+	every tick generates an event
