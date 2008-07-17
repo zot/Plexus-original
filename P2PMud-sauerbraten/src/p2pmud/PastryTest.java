@@ -8,7 +8,7 @@ import java.net.NetworkInterface;
 import java.util.Collection;
 import java.util.Enumeration;
 
-import javolution.util.FastMap;
+import javolution.util.FastTable;
 import rice.Continuation;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Application;
@@ -23,7 +23,6 @@ import rice.p2p.scribe.ScribeMultiClient;
 import rice.p2p.scribe.Topic;
 import rice.pastry.NodeIdFactory;
 import rice.pastry.PastryNode;
-import rice.pastry.PastryNodeFactory;
 import rice.pastry.commonapi.PastryIdFactory;
 import rice.pastry.socket.SocketPastryNodeFactory;
 import rice.pastry.standard.RandomNodeIdFactory;
@@ -34,9 +33,7 @@ import rice.persistence.Storage;
 import rice.persistence.StorageManagerImpl;
 
 public class PastryTest implements Application, ScribeMultiClient {
-	private static int mode;
 	protected PastryNode node;
-	protected FastMap sourceSockets = new FastMap();
 	private Endpoint endpoint;
 	private ScribeImpl myScribe;
 	private Topic myTopic;
@@ -44,7 +41,9 @@ public class PastryTest implements Application, ScribeMultiClient {
 	private PastImpl past;
 	private PastryIdFactory idFactory;
 	private InetAddress outgoingAddress;
-	
+
+	private static int mode;
+
 	private static final PastryTest test = new PastryTest();
 	private static final int SCRIBE = 0;
 	private static final int PAST = 1;
@@ -70,7 +69,7 @@ public class PastryTest implements Application, ScribeMultiClient {
 					
 					if (addr.isAnyLocalAddress()) {
 						break;
-					} else if (addr instanceof Inet4Address) {
+					} else if (addr instanceof Inet4Address && !addr.isLoopbackAddress()) {
 						test.outgoingAddress = addr;
 						System.out.println("Using interface: " + addr);
 						break faces;
@@ -84,7 +83,7 @@ public class PastryTest implements Application, ScribeMultiClient {
 			int bootport = Integer.parseInt(args[2]);
 			InetSocketAddress bootaddress = new InetSocketAddress(bootaddr,bootport);
 			// launch our node!
-			test.connect(bindport, bootaddress);
+			test.connect(args, bindport, bootaddress);
 			if (args.length > 3) {
 				new Thread() {
 					public void run() {
@@ -131,16 +130,32 @@ public class PastryTest implements Application, ScribeMultiClient {
 	 * @param bindport the local port to bind to 
 	 * @param bootaddress the IP:port of the node to boot from
 	 */
-	public void connect(int bindport, InetSocketAddress bootaddress) throws Exception {
+	public void connect(String args[], int bindport, InetSocketAddress bootaddress) throws Exception {
 		env = new Environment();
+//		env.getParameters().setInt("loglevel", Logger.FINE);
 		// disable the UPnP setting (in case you are testing this on a NATted LAN)
 		env.getParameters().setString("nat_search_policy", "never");
+		env.getParameters().setString("probe_for_external_address", "true");
+		String probeHost = null;
+		int probePort = 0;
+		for (int i = 3; i < args.length; i++) {
+			if (args[i].equals("-external")) {
+				int col = args[++i].indexOf(':');
+
+				probeHost = args[i].substring(0, col);
+				probePort = Integer.parseInt(args[i].substring(col + 1));
+				env.getParameters().setString("external_address", args[i]);
+			}
+		}
 		NodeIdFactory nidFactory = new RandomNodeIdFactory(env);
-		PastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, bindport, env);
-		// This will return null if we there is no node at that location
-//		NodeHandle bootHandle = ((SocketPastryNodeFactory) factory).getNodeHandle(bootaddress);
-		// construct a node, passing the null boothandle on the first loop will cause the node to start its own ring
-		node = factory.newNode();
+		FastTable<InetSocketAddress> boots = new FastTable<InetSocketAddress>();
+		FastTable<InetSocketAddress> probes = new FastTable<InetSocketAddress>();
+		boots.add(bootaddress);
+		if (probeHost != null) {
+			probes.add(new InetSocketAddress(probeHost, probePort));
+		}
+		SocketPastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, outgoingAddress, bindport, env);
+		node = factory.newNode(probes.get(0));
 		node.boot(bootaddress);
 		startScribe();
 		startPast();
