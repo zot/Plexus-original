@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launchConfiguration type="org.codehaus.groovy.eclipse.groovyLaunchConfiguration">
+<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
+<listEntry value="/P2PMud-sauerbraten"/>
+</listAttribute>
+<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
+<listEntry value="4"/>
+</listAttribute>
+<booleanAttribute key="org.eclipse.debug.core.appendEnvironmentVariables" value="true"/>
+<stringAttribute key="org.eclipse.debug.core.source_locator_id" value="org.codehaus.groovy.eclipse.editor.groovySourceLocator"/>
+<booleanAttribute key="org.eclipse.jdt.debug.ui.ATTR_FIND_ALL_SOURCE_ELEMENTS" value="true"/>
+<stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="Test"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="12345 zot 9090 - 9090"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="P2PMud-sauerbraten"/>
+</launchConfiguration>

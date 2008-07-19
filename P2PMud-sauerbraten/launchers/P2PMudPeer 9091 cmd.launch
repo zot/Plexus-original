@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launchConfiguration type="org.codehaus.groovy.eclipse.groovyLaunchConfiguration">
 <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
-<listEntry value="/P2PMud-sauerbraten/src/p2pmud/PastryTest.java"/>
+<listEntry value="/P2PMud-sauerbraten/src/p2pmud/P2PMudPeer.java"/>
 </listAttribute>
 <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
 <listEntry value="1"/>
 </listAttribute>
 <booleanAttribute key="org.eclipse.debug.core.appendEnvironmentVariables" value="true"/>
 <stringAttribute key="org.eclipse.debug.core.source_locator_id" value="org.codehaus.groovy.eclipse.editor.groovySourceLocator"/>
-<stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="p2pmud.PastryTest"/>
-<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="9090 - 9090"/>
+<stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="p2pmud.P2PMudPeer"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="9091 10.0.0.139 9090 -cmd &quot;login fur 1767.317383 1573.154175 2062.089600 -0.000789 -4.363634 194.909088&quot;"/>
 <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="P2PMud-sauerbraten"/>
 </launchConfiguration>

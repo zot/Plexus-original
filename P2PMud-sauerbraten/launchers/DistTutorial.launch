@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launchConfiguration type="org.eclipse.jdt.launching.localJavaApplication">
+<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
+<listEntry value="/P2PMud-sauerbraten/src/p2pmud/DistTutorial.java"/>
+</listAttribute>
+<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
+<listEntry value="1"/>
+</listAttribute>
+<booleanAttribute key="org.eclipse.debug.core.appendEnvironmentVariables" value="true"/>
+<stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="p2pmud.DistTutorial"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="9090 69.138.62.234 9090 75.13.72.30:9090"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="P2PMud-sauerbraten"/>
+</launchConfiguration>

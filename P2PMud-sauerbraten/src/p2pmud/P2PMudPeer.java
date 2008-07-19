@@ -9,13 +9,12 @@ import java.util.Collection;
 import java.util.Enumeration;
 
 import javolution.util.FastTable;
-import rice.Continuation;
 import rice.environment.Environment;
+import rice.environment.logging.Logger;
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.RouteMessage;
-import rice.p2p.past.PastContent;
 import rice.p2p.past.PastImpl;
 import rice.p2p.scribe.ScribeContent;
 import rice.p2p.scribe.ScribeImpl;
@@ -32,7 +31,7 @@ import rice.persistence.PersistentStorage;
 import rice.persistence.Storage;
 import rice.persistence.StorageManagerImpl;
 
-public class PastryTest implements Application, ScribeMultiClient {
+public class P2PMudPeer implements Application, ScribeMultiClient {
 	protected PastryNode node;
 	private Endpoint endpoint;
 	private ScribeImpl myScribe;
@@ -41,13 +40,20 @@ public class PastryTest implements Application, ScribeMultiClient {
 	private PastImpl past;
 	private PastryIdFactory idFactory;
 	private InetAddress outgoingAddress;
+	private Id other;
 
 	private static int mode;
+	private static P2PMudCommandHandler cmdHandler;
 
-	private static final PastryTest test = new PastryTest();
+	private static final P2PMudPeer test = new P2PMudPeer();
 	private static final int SCRIBE = 0;
 	private static final int PAST = 1;
-	
+	private static final int CMD = 2;
+
+	public static void main(P2PMudCommandHandler handler, String args[]) throws Exception {
+		cmdHandler = handler;
+		main(args);
+	}
 	/**
 	 * Usage: 
 	 * java [-cp FreePastry-<version>.jar] rice.tutorial.lesson1.DistTutorial localbindport bootIP bootPort
@@ -60,7 +66,7 @@ public class PastryTest implements Application, ScribeMultiClient {
 			// build the bootaddress from the command line args
 			String host = args[1];
 			InetAddress bootaddr = null;
-			
+
 			faces: for (Enumeration interfaces = NetworkInterface.getNetworkInterfaces(); interfaces.hasMoreElements(); ) {
 				NetworkInterface face = (NetworkInterface) interfaces.nextElement();
 				
@@ -81,7 +87,7 @@ public class PastryTest implements Application, ScribeMultiClient {
 				throw new RuntimeException("Could not find interface");
 			}
 			int bootport = Integer.parseInt(args[2]);
-			InetSocketAddress bootaddress = new InetSocketAddress(bootaddr,bootport);
+			InetSocketAddress bootaddress = host.equals("-") ? null : new InetSocketAddress(bootaddr,bootport);
 			// launch our node!
 			test.connect(args, bindport, bootaddress);
 			if (args.length > 3) {
@@ -95,6 +101,8 @@ public class PastryTest implements Application, ScribeMultiClient {
 									mode = SCRIBE;
 								} else if (args[i].equals("-past")) {
 									mode = PAST;
+								} else if (args[i].equals("-cmd")) {
+									mode = CMD;
 								} else {
 									switch (mode) {
 									case SCRIBE:
@@ -102,6 +110,17 @@ public class PastryTest implements Application, ScribeMultiClient {
 										break;
 									case PAST:
 										test.storeData(args[i]);
+										break;
+									case CMD:
+										cmdHandler = new P2PMudCommandHandler() {
+											public void handleCommand(P2PMudCommand cmd) {
+												System.out.println("Received " + cmd.msgs.length + " commands...");
+												for (String m : cmd.msgs) {
+													System.out.println(m);
+												}
+											}
+										};
+										test.sendCmds(new String[]{args[i]});
 										break;
 									}
 								}
@@ -148,17 +167,20 @@ public class PastryTest implements Application, ScribeMultiClient {
 			}
 		}
 		NodeIdFactory nidFactory = new RandomNodeIdFactory(env);
-		FastTable<InetSocketAddress> boots = new FastTable<InetSocketAddress>();
 		FastTable<InetSocketAddress> probes = new FastTable<InetSocketAddress>();
-		boots.add(bootaddress);
 		if (probeHost != null) {
 			probes.add(new InetSocketAddress(probeHost, probePort));
 		}
 		SocketPastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, outgoingAddress, bindport, env);
-		node = factory.newNode(probes.get(0));
+		if (probes.isEmpty()) {
+			node = factory.newNode();
+		} else {
+			node = factory.newNode(probes.get(0));
+		}
 		node.boot(bootaddress);
 		startScribe();
 		startPast();
+		System.out.println("Waiting to join ring...");
 		// the node may require sending several messages to fully boot into the ring
 		synchronized (node) {
 			while (!node.isReady() && !node.joinFailed()) {
@@ -171,6 +193,13 @@ public class PastryTest implements Application, ScribeMultiClient {
 			}
 		}
 		System.out.println("Finished creating new node " + node + ", count: " + node.getLeafSet().getUniqueCount());
+	}
+	private void getOther() {
+		if (other == null) {
+			if (node.getLeafSet().iterator().hasNext()) {
+				other = node.getLeafSet().iterator().next().getId();
+			}
+		}
 	}
 	private void startScribe() {
 		endpoint = node.buildEndpoint(this, "myinstance");
@@ -198,7 +227,12 @@ public class PastryTest implements Application, ScribeMultiClient {
 		};
 	}
 	public void deliver(Id id, rice.p2p.commonapi.Message message) {
-		System.out.println("received message: " + message);
+		if (message instanceof P2PMudMessage) {
+			other = ((P2PMudMessage)message).cmd.from;
+			handleCommand(((P2PMudMessage)message).cmd);
+		} else {
+			System.out.println("received message: " + message);
+		}
 	}
 	public boolean forward(RouteMessage message) {
 		System.out.println("forward message: " + message);
@@ -220,8 +254,14 @@ public class PastryTest implements Application, ScribeMultiClient {
 	public void deliver(Topic topic, ScribeContent content) {
 		if (content instanceof P2PMudScribeContent) {
 			System.out.println("Received p2pmud update: " + content);
+			handleCommand(((P2PMudScribeContent)content).cmd);
 		} else {
 			System.out.println("Received update: " + content);
+		}
+	}
+	protected void handleCommand(P2PMudCommand mudCommand) {
+		if (cmdHandler != null) {
+			cmdHandler.handleCommand(mudCommand);
 		}
 	}
 	public void subscribeFailed(Topic topic) {
@@ -231,27 +271,39 @@ public class PastryTest implements Application, ScribeMultiClient {
 		System.err.println("ERROR: Failed to subscribe to topics: " + topics);
 	}
 	public void subscribeSuccess(Collection arg0) {}
+	public void sendCmds(String cmds[]) {
+		getOther();
+		if (other != null) {
+			sendCmds(other, cmds);
+		}
+	}
+	public void sendCmds(Id id, String cmds[]) {
+		endpoint.route(id, new P2PMudMessage(new P2PMudCommand(endpoint.getId(), cmds)), null);
+	}
+	public void broadcastCmds(String cmds[]) {
+		myScribe.publish(myTopic, new P2PMudScribeContent(new P2PMudCommand(node.getId(), cmds))); 
+	}
 	public void sendMulticast(String msg) throws IOException {
 		System.out.println("Node "+endpoint.getLocalNodeHandle()+" broadcasting " + msg);
-		myScribe.publish(myTopic, new P2PMudScribeContent(msg)); 
+		myScribe.publish(myTopic, new P2PMudScribeContent(new P2PMudCommand(node.getId(), msg))); 
 	}
 	public void storeData(String handle) throws IOException {
-		final PastContent myContent = new P2PMudPastContent(idFactory.buildId(handle), handle);
-	
-		past.insert(myContent, new Continuation() {
-			public void receiveResult(Object result) {          
-				Boolean[] results = ((Boolean[]) result);
-				int numSuccessfulStores = 0;
-				for (int ctr = 0; ctr < results.length; ctr++) {
-					if (results[ctr].booleanValue()) 
-						numSuccessfulStores++;
-				}
-				System.out.println(myContent + " successfully stored at " + numSuccessfulStores + " locations.");
-			}
-			public void receiveException(Exception result) {
-				System.out.println("Error storing "+myContent);
-				result.printStackTrace();
-			}
-		});
+//		final PastContent myContent = new P2PMudPastContent(idFactory.buildId(handle), new handle);
+//	
+//		past.insert(myContent, new Continuation() {
+//			public void receiveResult(Object result) {          
+//				Boolean[] results = ((Boolean[]) result);
+//				int numSuccessfulStores = 0;
+//				for (int ctr = 0; ctr < results.length; ctr++) {
+//					if (results[ctr].booleanValue()) 
+//						numSuccessfulStores++;
+//				}
+//				System.out.println(myContent + " successfully stored at " + numSuccessfulStores + " locations.");
+//			}
+//			public void receiveException(Exception result) {
+//				System.out.println("Error storing "+myContent);
+//				result.printStackTrace();
+//			}
+//		});
 	}
 }

@@ -296,3 +296,13 @@ static bool initfpsplug() {
 }
 
 bool plug_fpspluginitialized = initfpsplug();
+
+ICOMMAND(psay, "ss", (char *ent, char *txt), {
+	fpsent *d = (fpsent*)getdynent(ent);
+
+	if (d) {
+		s_sprintfd(ds)("@%s", txt);
+		particle_text(d->abovehead(), ds, 16, 10000);
+		conoutf("%s:\f0 %s", fpscl->colorname(d), txt);
+	}
+});

@@ -136,6 +136,7 @@ static void readChunk() {
 		remotedisconnect("connection closed while reading");
 	} else if (bytesRead > 0) {
 		int lastNl = -1;
+		int oldLen = input.length();
 
 		buf.len = bytesRead;
 		input.addbuf(buf);
@@ -146,7 +147,8 @@ static void readChunk() {
 			}
 		}
 		if (lastNl > -1) {
-			input.last() = 0;
+			lastNl += oldLen;
+			input[lastNl] = 0;
 			if (input.length() > 1) {
 				executeret(input.getbuf());
 			}

@@ -9,6 +9,7 @@ PLATFORM_PREFIX=native
 REMOTE_OBJS= \
 	remote/remote.o \
 	remote/moderation.o
+	
 
 CLIENT_LIBS=-Lenet -lenet -L/usr/X11R6/lib `sdl-config --libs` -lSDL_image -lSDL_mixer -lz -lGL -lGLU 
 CLIENT_OBJS_SUB= \
