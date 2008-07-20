@@ -1,19 +1,36 @@
 public class SauerCmds {
-	def main;
+	def main
+	def args
 
-	def SauerCmds(main) {
+	public SauerCmds(main) {
 		this.main = main
 	}
-	def position(ent, x, y, z, String... orientation) {
-		main.swing.edt {
-			xField.text = x
-			yField.text = y
-			zField.text = z
-		}
-		println "SENDING: update $ent $x $y $z $roll}"
-//		main.pastryCmds.invokeMethod('update', [name, x, y, z] + orientation)
+	def invoke(cmdString) {
+		args = cmdString.split()
+		def name = args[0]
+		args = args[1..-1]
+		println "EXECUTING: $args"
+		invokeMethod(name, null)
 	}
-	def login(String... args) {
-//		main.pastryCmds.invokeMethod('login', args)
+	def login() {
+		main.pastry([
+			"login $name ${args.join(' ')}"
+		])
+	}
+	def chat() {
+		main.pastry([
+			"chat ${args.join(' ')}"
+		])
+	}
+	def position() {
+		if (main.names[args[0]] == main.name) {
+			main.swing.edt {
+				main.xField.text = args[1]
+				main.yField.text = args[2]
+				main.zField.text = args[3]
+			}
+			println "SENDING: update ${args[1..-1].join(' ')}"
+			main.pastry(["update ${main.name} ${args[1..-1].join(' ')}"])
+		}
 	}
 }

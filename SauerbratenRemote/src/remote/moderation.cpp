@@ -5,6 +5,10 @@
 #include <sys/types.h>
 #include "remote.h"
 
+//Millisecond value updated before each tick
+int tickmillis;
+int updateresolution = 200;
+
 typedef hashtable<const char *, ident> identtable;
 VAR(appmouse, 0, 0, 1);
 
@@ -20,8 +24,9 @@ struct watcher {
 	float lastYaw;
 	float moveRes;
 	float rotRes;
+	int lastupdate;
 	
-	watcher(char *id, char *code, float _moveRes, float _rotRes): moveRes(_moveRes), rotRes(_rotRes) {
+	watcher(char *id, char *code, float _moveRes, float _rotRes): moveRes(_moveRes), rotRes(_rotRes), lastupdate(0) {
 		entity = getdynent(id);
 		if (entity) {
 			this->id = newstring(id);
@@ -44,8 +49,12 @@ struct watcher {
 			lastPitch = entity->pitch;
 			lastYaw = entity->yaw;
 		}
+		lastupdate = tickmillis;
 	}
 	bool changed() {
+		if (tickmillis - lastupdate < updateresolution) {
+			return false;
+		}
 		if (moveRes > 0) {
 			tmp = entity->o;
 			tmp.sub(lastPosition);
@@ -60,6 +69,14 @@ struct watcher {
 	}
 };
 
+ICOMMAND(updateperiod, "i", (int *i), {
+	if (i) {
+		updateresolution = *i;
+	} else {
+		intret(updateresolution);
+	}
+});
+
 extern identtable *idents;        // contains ALL vars/commands/aliases
 
 static char buf[1024];
@@ -70,7 +87,7 @@ ICOMMAND(listidents, "", (),
     enumerate(*idents, ident, id,
     	switch (id.type) {
     	case ID_VAR:
-   			printf("var: %s %d\n", id.name, id.val);
+   			printf("var: %s %d\n", id.name, id.val.i);
    			break;
     	case ID_COMMAND:
    			printf("command: %s(%s)\n", id.name, id.narg);

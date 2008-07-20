@@ -39,61 +39,58 @@ void dynent::rendermovable(fpsclient &cl, vec dir, const char *suggestion) {
 
 enum ENT_TYPE {TC_ERROR = 'e', TC_PLAYER = 'p', TC_MONSTER = 'm', TC_ITEM = 'i'};
 
-int enttype(int index) {
-	if (index < 0) {
-		return TC_ERROR;
-	}
-	if (!index) {
-		return TC_PLAYER;
-	}
-	index--;
-	if (index < fpscl->players.length()) {
-		return TC_PLAYER;
-	}
-	index -= fpscl->players.length();
-	if (index < fpscl->ms.monsters.length()) {
-		return TC_MONSTER;
-	}
-	index -= fpscl->ms.monsters.length();
-	if (index < fpscl->mo.movables.length()) {
-		return TC_ITEM;
-	}
-	return TC_ERROR;
-}
 
 char *idfor(void *ent, char *buf, int buflen) {
-	int id = -1;
+	if (ent == fpscl->player1)
+	{
+		snprintf(buf, buflen, "p%d", fpscl->player1->tc_id);
+		return buf;
+	}
 
-	loopi(cl->numdynents()) {
-		dynent *o = cl->iterdynents(i);
-
-		if (o == ent) {
-			int type = enttype(i);
-			
-			if (type == TC_PLAYER) {
-				id = i;
-			} else {
-				i -= fpscl->players.length() + 1;
-				id = type == TC_MONSTER ? i : i - fpscl->ms.monsters.length();
-			}
-			snprintf(buf, buflen, "%c%d", type, id);
+	for (int i = 0; i < fpscl->players.length(); ++i)
+	{
+		fpsent *p = fpscl->players[i];
+		if (ent == p)
+		{
+			snprintf(buf, buflen, "p%d", p->tc_id);
 			return buf;
 		}
 	}
+
+	for (int j = 0; j < fpscl->ms.monsters.length(); ++j)
+	{
+		fpsclient::monsterset::monster *m = fpscl->ms.monsters[j];
+		if (ent == m)
+		{
+			snprintf(buf, buflen, "m%d", m->tc_id);
+			return buf;
+		}
+	}
+
+	for (int k = 0; k < fpscl->mo.movables.length(); ++k) {
+		fpsclient::movableset::movable *mv = fpscl->mo.movables[k];
+		if (ent == mv)
+		{
+			snprintf(buf, buflen, "i%d", mv->tc_id);
+			return buf;
+		}
+	}
+
 	strncpy(buf, "error", buflen);
 	return buf;
 }
 
+
 fpsent *getplayer(char *id) {
 	if (id[0] == TC_PLAYER) {
-		int i = atoi(id + 1);
+		int tc_id = atoi(id + 1);
 
-		if (!i) {
-			return fpscl->player1;
-		}
-		i--;
-		if (i >= 0 && i < fpscl->players.length()) {
-			return fpscl->players[i];
+		if (fpscl->player1->tc_id == tc_id) return fpscl->player1;
+
+		for (int i = 0; i < fpscl->players.length(); ++i)
+		{
+			fpsent *p = fpscl->players[i];
+			if (p->tc_id == tc_id) return p;
 		}
 	}
 	return NULL;
@@ -101,10 +98,11 @@ fpsent *getplayer(char *id) {
 
 fpsclient::monsterset::monster *getmonster(char *id) {
 	if (id[0] == TC_MONSTER) {
-		int i = atoi(id + 1);
-
-		if (i >= 0 && i < fpscl->ms.monsters.length()) {
-			return fpscl->ms.monsters[i];
+		int tc_id = atoi(id + 1);
+		for (int i = 0; i < fpscl->ms.monsters.length(); ++i)
+		{
+			fpsclient::monsterset::monster *m = fpscl->ms.monsters[i];
+			if (m->tc_id == tc_id) return m;
 		}
 	}
 	return NULL;
@@ -112,10 +110,11 @@ fpsclient::monsterset::monster *getmonster(char *id) {
 
 fpsclient::movableset::movable *getitem(char *id) {
 	if (id[0] == TC_ITEM) {
-		int i = atoi(id + 1);
+		int tc_id = atoi(id + 1);
 
-		if (i >= 0 && i < fpscl->mo.movables.length()) {
-			return fpscl->mo.movables[i];
+		for (int i = 0; i < fpscl->mo.movables.length(); ++i) {
+			fpsclient::movableset::movable *mv = fpscl->mo.movables[i];
+			if (mv->tc_id == tc_id) return mv;
 		}
 	}
 	return NULL;
@@ -168,7 +167,7 @@ void dumpent(char *id) {
 			}
 			break;
 		default:
-			conoutf("unknown entity type: %c", id[0]);
+			conoutf("unknown entity type: %c, should start with p, m, or i", id[0]);
 			break;
 		}
 	} else {
@@ -179,12 +178,33 @@ ICOMMAND(dumpent, "s", (char *id), dumpent(id));
 
 ICOMMAND(dumpents, "", (),
 	printf("Entities...\n");
-	loopi(cl->numdynents()) {
-		dynent *o = cl->iterdynents(i);
-		char id[1024];
-		
-		idfor(o, id, 1024);
-		dumpent(id);
+
+	char buf[25];
+
+	snprintf(buf, sizeof(buf), "p%d", fpscl->player1->tc_id);
+	dumpent(buf);
+
+	for (int i = 0; i < fpscl->players.length(); ++i)
+	{
+		fpsent *p = fpscl->players[i];
+		snprintf(buf, sizeof(buf), "p%d", p->tc_id);
+
+		dumpent(buf);
+	}
+
+	for (int j = 0; j < fpscl->ms.monsters.length(); ++j)
+	{
+		fpsclient::monsterset::monster *m = fpscl->ms.monsters[j];
+		snprintf(buf, sizeof(buf), "m%d", m->tc_id);
+
+		dumpent(buf);
+	}
+
+	for (int k = 0; k < fpscl->mo.movables.length(); ++k) {
+		fpsclient::movableset::movable *mv = fpscl->mo.movables[k];
+		snprintf(buf, sizeof(buf), "i%d", mv->tc_id);
+
+		dumpent(buf);
 	}
 );
 
@@ -265,6 +285,54 @@ ICOMMAND(psay, "ss", (char *ent, char *txt), {
        }
 });
 
+ICOMMAND(mfreeze, "s", (char *ent), {
+       if (ent && ent[0] == 'm') {
+               fpsclient::monsterset::monster *m = getmonster(ent);
+
+               if (m) {
+                       m->monsterstate = M_NONE;
+               }
+       }
+});
+
+ICOMMAND(createplayer, "s", (char *ent), {
+	if (ent && ent[0] == 'p') {
+		// if we try to recreate a new player of the same id, just reuse the existing one
+		fpsent *p = getplayer(ent);
+		if (p == fpscl->player1) {
+			conoutf("/createplayer error: cannot recreate original player");
+			return;
+		}
+		if (NULL == p) fpscl->newclient(fpscl->players.length());
+		else conoutf("/createplayer warning: reusing existing player %s", ent);
+		fpscl->spawnplayer(p);
+        //findplayerspawn(p, -1, 0);
+        //fpscl.spawnstate(p);
+		p->tc_id = atoi(ent + 1);
+
+    }
+});
+
+ICOMMAND(createmonster, "s", (char *ent), {
+	if (ent && ent[0] == 'm') {
+		fpsent *p = new fpsent();
+        findplayerspawn(p, -1, 0);
+        //spawnstate(p);
+		p->tc_id = atoi(ent + 1);
+
+    }
+});
+ICOMMAND(monsterstate, "s", (char *ent), {
+	if (ent && ent[0] == 'm') {
+		fpsclient::monsterset::monster *m = getmonster(ent);
+
+		if (m) {
+			sprintf(idbuf, "%d", m->monsterstate);
+			result(idbuf);
+		}
+	}
+});
+
 static void hit_shooter() {
 	if (moderator.hittype != NONE) {
 		result(idfor(moderator.shooter, idbuf, sizeof (idbuf)));
@@ -310,23 +378,3 @@ static bool initfpsplug() {
 }
 
 bool plug_fpspluginitialized = initfpsplug();
-
-ICOMMAND(mfreeze, "s", (char *ent), {
-	if (ent && ent[0] == 'm') {
-		fpsclient::monsterset::monster *m = getmonster(ent);
-			
-		if (m) {
-			m->monsterstate = M_NONE;
-		}
-	}
-});
-ICOMMAND(monsterstate, "s", (char *ent), {
-	if (ent && ent[0] == 'm') {
-		fpsclient::monsterset::monster *m = getmonster(ent);
-
-		if (m) {
-			sprintf(idbuf, "%d", m->monsterstate);
-			result(idbuf);
-		}
-	}
-});

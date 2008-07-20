@@ -169,12 +169,12 @@ struct dynent : physent                         // animated characters, or chara
     int occluded, lastrendered;
 #ifdef TC
     char *modelname;
-
+	int tc_id;
 	void renderplayer(fpsclient &cl, void *mdl, int team);
 	void rendermonster(fpsclient &cl);
 	void rendermovable(fpsclient &cl, vec o, const char *suggestion);
 
-    dynent() : query(NULL), occluded(0), lastrendered(0), modelname(0)
+    dynent() : query(NULL), occluded(0), lastrendered(0), modelname(0), tc_id(0)
 #else
     dynent() : query(NULL), occluded(0), lastrendered(0)
 #endif

@@ -2,7 +2,6 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry exported="true" kind="lib" path="lib/groovy-all-1.6-beta-1.jar" sourcepath="lib/groovy-src-1.6-beta-1.zip"/>
 	<classpathentry kind="lib" path="lib/bouncycastle.jar"/>
 	<classpathentry kind="lib" path="lib/commons-jxpath-1.1.jar"/>
 	<classpathentry kind="lib" path="lib/commons-logging.jar"/>
@@ -13,5 +12,6 @@
 	<classpathentry kind="lib" path="lib/miglayout-3.5.5-swing.jar" sourcepath="lib/miglayout-3.5.5-sources.jar"/>
 	<classpathentry kind="lib" path="lib/egit-20080715.jar" sourcepath="lib/egit-20080715-src.zip"/>
 	<classpathentry kind="lib" path="lib/javolution-5.2.6.jar" sourcepath="lib/javolution-5.2.6-src.zip"/>
+	<classpathentry kind="con" path="GROOVY_SUPPORT"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

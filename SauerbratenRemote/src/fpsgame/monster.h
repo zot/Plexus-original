@@ -29,9 +29,7 @@ struct monsterset
     
         int mtype;                          // see monstertypes table
         fpsent *enemy;                      // monster wants to kill this entity
-#ifndef TC
-        float targetyaw;                    // monster wants to look in this direction
-#endif
+        //float targetyaw;                    // monster wants to look in this direction
         int trigger;                        // millis at which transition to another monsterstate takes place
         vec attacktarget;                   // delayed attacks
         int anger;                          // how many times already hit by fellow monster

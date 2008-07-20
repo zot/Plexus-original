@@ -260,6 +260,12 @@ void saycommand(char *init)                         // turns input to the comman
     SDL_EnableUNICODE(saycommandon = (init!=NULL));
     if(!editmode) keyrepeat(saycommandon);
     s_strcpy(commandbuf, init ? init : "");
+#ifdef TC
+	int len = strlen(commandbuf);
+	if (len > 2 && commandbuf[len-1] == '"' && commandbuf[len-2] == '"' ) {
+		commandbuf[len-1] = '\0';
+	}
+#endif
     DELETEA(commandaction);
     DELETEA(commandprompt);
     commandpos = -1;
