@@ -1,11 +1,14 @@
+Makefile
 *.o
 *.a
 *.so
 *.dll
 *.class
 *.Po
+*.lib
 *.cache/
-.deps
+.deps/
+scratch/
 config.log
 config.status
 sauer_client
