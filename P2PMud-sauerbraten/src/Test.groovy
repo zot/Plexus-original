@@ -27,7 +27,6 @@ public class Test {
 	def pendingCommands = [:]
 	def sauerCmds = new SauerCmds(this)
 	def pastryCmds = [:]
-	def sauerFilters = new SauerFilters(this)
 	def queueRunTime = Long.MAX_VALUE
 	def queueBatchPeriod = 200
 	def swing

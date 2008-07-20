@@ -1,0 +1,8 @@
+*.[ch] -crlf
+*.cpp -crlf
+*.java -crlf
+*.groovy -crlf
+*.html -crlf
+Makefile -crlf
+*.cfg -crlf
+*.dsp -crlf
