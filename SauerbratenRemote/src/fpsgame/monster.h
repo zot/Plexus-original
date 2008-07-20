@@ -6,8 +6,10 @@ struct monsterset
     vector<extentity *> &ents;
     vector<int> teleports;
 
-    static const int TOTMFREQ = 13;
-    static const int NUMMONSTERTYPES = 8;
+    static const int TOTMFREQ = 14;
+    static const int NUMMONSTERTYPES = 9;
+
+    IVAR(killsendsp, 0, 1, 1);
 
     struct monstertype      // see docs for how these values modify behaviour
     {
@@ -27,7 +29,9 @@ struct monsterset
     
         int mtype;                          // see monstertypes table
         fpsent *enemy;                      // monster wants to kill this entity
+#ifndef TC
         float targetyaw;                    // monster wants to look in this direction
+#endif
         int trigger;                        // millis at which transition to another monsterstate takes place
         vec attacktarget;                   // delayed attacks
         int anger;                          // how many times already hit by fellow monster
@@ -38,7 +42,7 @@ struct monsterset
             respawn();
             if(_type>=NUMMONSTERTYPES || _type < 0)
             {
-                conoutf("warning: unknown monster in spawn: %d", _type);
+                conoutf(CON_WARN, "warning: unknown monster in spawn: %d", _type);
                 _type = 0;
             }
             monstertype *t = monstertypes+(mtype = _type);
@@ -198,7 +202,7 @@ struct monsterset
                     if(dist<16) cl.et.teleport(ms->teleports[i], this);
                 }
 
-                moveplayer(this, 2, false);        // use physics to move monster
+                moveplayer(this, 1, true);        // use physics to move monster
             }
         }
 
@@ -249,11 +253,14 @@ struct monsterset
             { GUN_SG,        13, 120, 1, 100, 300, 400, 4, 14, 115, S_PAINE, S_DEATHE, "ratamahatta", "monster/rat",        "monster/rat/vwep"},
             { GUN_RIFLE,     14, 200, 1, 80,  400, 300, 4, 18, 145, S_PAINS, S_DEATHS, "a slith",     "monster/slith",      "monster/slith/vwep"},
             { GUN_RL,        12, 500, 1, 0,   200, 200, 6, 24, 210, S_PAINB, S_DEATHB, "bauul",       "monster/bauul",      "monster/bauul/vwep"},
-            { GUN_BITE,      22,  50, 3, 0,   100, 400, 1, 15,  75, S_PAINP, S_PIGGR2, "a hellpig",   "monster/hellpig",    NULL},
+            { GUN_BITE,      24,  50, 3, 0,   100, 400, 1, 15,  75, S_PAINP, S_PIGGR2, "a hellpig",   "monster/hellpig",    NULL},
             { GUN_ICEBALL,   11, 250, 1, 0,    10, 400, 6, 18, 160, S_PAINH, S_DEATHH, "a knight",    "monster/knight",     "monster/knight/vwep"},
             { GUN_SLIMEBALL, 15, 100, 1, 0,   200, 400, 2, 10,  60, S_PAIND, S_DEATHD, "a goblin",    "monster/goblin",     "monster/goblin/vwep"},
+            { GUN_GL,        22,  50, 1, 0,   200, 400, 1, 10,  40, S_PAIND, S_DEATHD, "a spider",    "monster/spider",      NULL }, 
         };
         monstertypes = _monstertypes;
+
+        CCOMMAND(endsp, "", (monsterset *self), self->endsp(false));
     }
    
     void preloadmonsters()
@@ -302,6 +309,7 @@ struct monsterset
                 monsters.add(m);
                 m->o = ents[i]->o;
                 entinmap(m);
+                updatedynentcache(m);
                 monstertotal++;
             }
         }
@@ -314,7 +322,7 @@ struct monsterset
 
     void endsp(bool allkilled)
     {
-        conoutf(allkilled ? "\f2you have cleared the map!" : "\f2you reached the exit!");
+        conoutf(CON_GAMEINFO, allkilled ? "\f2you have cleared the map!" : "\f2you reached the exit!");
         monstertotal = 0;
         cl.cc.addmsg(SV_FORCEINTERMISSION, "r");
     }
@@ -324,19 +332,19 @@ struct monsterset
         numkilled++;
         cl.player1->frags = numkilled;
         remain = monstertotal-numkilled;
-        if(remain>0 && remain<=5) conoutf("\f2only %d monster(s) remaining", remain);
+        if(remain>0 && remain<=5) conoutf(CON_GAMEINFO, "\f2only %d monster(s) remaining", remain);
     }
 
     void monsterthink(int curtime, int gamemode)
     {
         if(m_dmsp && spawnremain && cl.lastmillis>nextmonster)
         {
-            if(spawnremain--==monstertotal) { conoutf("\f2The invasion has begun!"); playsound(S_V_FIGHT); }
+            if(spawnremain--==monstertotal) { conoutf(CON_GAMEINFO, "\f2The invasion has begun!"); playsound(S_V_FIGHT); }
             nextmonster = cl.lastmillis+1000;
             spawnmonster();
         }
         
-        if(monstertotal && !spawnremain && numkilled==monstertotal) endsp(true);
+        if(killsendsp() && monstertotal && !spawnremain && numkilled==monstertotal) endsp(true);
         
         bool monsterwashurt = monsterhurt;
         
@@ -349,7 +357,7 @@ struct monsterset
                 {
                     //monsters[i]->move = 0;
                     monsters[i]->move = monsters[i]->strafe = 0;
-                    moveplayer(monsters[i], 2, false);
+                    moveplayer(monsters[i], 1, true);
                 }
             }
         }
@@ -367,7 +375,7 @@ struct monsterset
 #ifdef TC
             	m.rendermonster(cl);
 #else
-                modelattach vwep[] = { { monstertypes[m.mtype].vwepname, MDL_ATTACH_VWEP, ANIM_VWEP|ANIM_LOOP, 0 }, { NULL } };
+                modelattach vwep[] = { { monstertypes[m.mtype].vwepname, "tag_weapon", ANIM_VWEP|ANIM_LOOP, 0 }, { NULL } };
                 renderclient(&m, monstertypes[m.mtype].mdlname, vwep, m.monsterstate==M_ATTACKING ? -ANIM_SHOOT : 0, 300, m.lastaction, m.lastpain);
 #endif
             }

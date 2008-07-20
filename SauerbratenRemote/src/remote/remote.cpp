@@ -131,7 +131,7 @@ static void readChunk() {
 	buffer.data = buf.buf;
 	buffer.dataLength = 1000;
 
-	int bytesRead = enet_socket_receive(mysocket, NULL, &buffer,1); // recv(mysocket, buf.buf, 1000, MSG_DONTWAIT);
+	int bytesRead = enet_socket_receive(mysocket, NULL, &buffer,1); //recv(mysocket, buf.buf, 1000, MSG_DONTWAIT);
 	if (bytesRead < 0 && errno != EAGAIN && bytesRead != EAGAIN) {
 		remotedisconnect("connection closed while reading");
 	} else if (bytesRead > 0) {
@@ -150,7 +150,9 @@ static void readChunk() {
 			lastNl += oldLen;
 			input[lastNl] = 0;
 			if (input.length() > 1) {
-				executeret(input.getbuf());
+				char *command = input.getbuf();
+				//fprintf(stderr, "Zot (%d):%s\n", lastNl, command);
+				executeret(command);
 			}
 			if (lastNl + 1 < input.length()) {
 				input.remove(0, lastNl + 1);
@@ -160,6 +162,7 @@ static void readChunk() {
 		}
 	}
 }
+
 
 static void writeChunk() {
 	if (output.length()) {

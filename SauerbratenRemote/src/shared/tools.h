@@ -22,13 +22,33 @@ typedef unsigned int uint;
 #define ASSERT(c) if(c) {}
 #endif
 
-#define swap(t,a,b) { t m=a; a=b; b=m; }
-#ifndef max
-#define max(a,b) (((a) > (b)) ? (a) : (b))
+#ifdef swap
+#undef swap
 #endif
-#ifndef min
-#define min(a,b) (((a) < (b)) ? (a) : (b))
+template<class T>
+static inline void swap(T &a, T &b)
+{
+    T t = a;
+    a = b;
+    b = t;
+}
+#ifdef max
+#undef max
 #endif
+#ifdef min
+#undef min
+#endif
+template<class T>
+static inline T max(T a, T b)
+{
+    return a > b ? a : b;
+}
+template<class T>
+static inline T min(T a, T b)
+{
+    return a < b ? a : b;
+}
+
 #define clamp(a,b,c) (max(b, min(a, c)))
 #define rnd(x) ((int)(randomMT()&0xFFFFFF)%(x))
 #define detrnd(s, x) ((int)(((((uint)(s))*1103515245+12345)>>16)%(x)))
@@ -73,13 +93,13 @@ typedef unsigned int uint;
 
 // easy safe strings
 
-#define _MAXDEFSTR 260
-typedef char string[_MAXDEFSTR];
+#define MAXSTRLEN 260
+typedef char string[MAXSTRLEN];
 
-inline void formatstring(char *d, const char *fmt, va_list v) { _vsnprintf(d, _MAXDEFSTR, fmt, v); d[_MAXDEFSTR-1] = 0; }
+inline void formatstring(char *d, const char *fmt, va_list v) { _vsnprintf(d, MAXSTRLEN, fmt, v); d[MAXSTRLEN-1] = 0; }
 inline char *s_strncpy(char *d, const char *s, size_t m) { strncpy(d,s,m); d[m-1] = 0; return d; }
-inline char *s_strcpy(char *d, const char *s) { return s_strncpy(d,s,_MAXDEFSTR); }
-inline char *s_strcat(char *d, const char *s) { size_t n = strlen(d); return s_strncpy(d+n,s,_MAXDEFSTR-n); }
+inline char *s_strcpy(char *d, const char *s) { return s_strncpy(d,s,MAXSTRLEN); }
+inline char *s_strcat(char *d, const char *s) { size_t n = strlen(d); return s_strncpy(d+n,s,MAXSTRLEN-n); }
 
 
 struct s_sprintf_f
@@ -99,8 +119,6 @@ struct s_sprintf_f
 #define s_sprintfd(d) string d; s_sprintf(d)
 #define s_sprintfdlv(d,last,fmt) string d; { va_list ap; va_start(ap, last); formatstring(d, fmt, ap); va_end(ap); }
 #define s_sprintfdv(d,fmt) s_sprintfdlv(d,fmt,fmt)
-
-template <class T> void _swap(T &a, T &b) { T t = a; a = b; b = t; }
 
 #define loopv(v)    if(false) {} else for(int i = 0; i<(v).length(); i++)
 #define loopvj(v)   if(false) {} else for(int j = 0; j<(v).length(); j++)
@@ -177,50 +195,47 @@ typedef databuf<uchar> ucharbuf;
 
 template <class T> struct vector
 {
-    T *buf;
-    int alen;
-    int ulen;
+    static const int MINSIZE = 8;
 
-    vector()
+    T *buf;
+    int alen, ulen;
+
+    vector() : buf(NULL), alen(0), ulen(0)
     {
-        alen = 8;
-        buf = (T *)new uchar[alen*sizeof(T)];
-        ulen = 0;
     }
-    vector(const vector<T> &v)
+
+    vector(const vector &v) : buf(NULL), alen(0), ulen(0)
     {
-        alen = v.length();
-        buf = (T *)new uchar[alen*sizeof(T)];
-        ulen = 0;
         *this = v;
     }
 
-    ~vector() { setsize(0); delete[] (uchar *)buf; }
+    ~vector() { setsize(0); if(buf) delete[] (uchar *)buf; }
 
     vector<T> &operator=(const vector<T> &v)
     {
         setsize(0);
+        if(v.length() > alen) vrealloc(v.length());
         loopv(v) add(v[i]);
         return *this;
     }
 
     T &add(const T &x)
     {
-        if(ulen==alen) vrealloc();
+        if(ulen==alen) vrealloc(ulen+1);
         new (&buf[ulen]) T(x);
         return buf[ulen++];
     }
 
     T &add()
     {
-        if(ulen==alen) vrealloc();
+        if(ulen==alen) vrealloc(ulen+1);
         new (&buf[ulen]) T;
         return buf[ulen++];
     }
 
     T &dup()
     {
-        if(ulen==alen) vrealloc();
+        if(ulen==alen) vrealloc(ulen+1);
         new (&buf[ulen]) T(buf[ulen-1]);
         return buf[ulen++];
     }
@@ -229,14 +244,14 @@ template <class T> struct vector
     {
         if(!ulen)
         {
-            swap(T *, buf, v.buf);
-            swap(int, ulen, v.ulen);
-            swap(int, alen, v.alen);
+            swap(buf, v.buf);
+            swap(ulen, v.ulen);
+            swap(alen, v.alen);
         }
         else
         {
-            while(alen-ulen<v.ulen) vrealloc();
-            memcpy(&buf[ulen], v.buf, v.ulen*sizeof(T));
+            vrealloc(ulen+v.ulen);
+            if(v.ulen) memcpy(&buf[ulen], v.buf, v.ulen*sizeof(T));
             ulen += v.ulen;
             v.ulen = 0;
         }
@@ -264,31 +279,40 @@ template <class T> struct vector
     const T *getbuf() const { return buf; }
 
     template<class ST>
-    void sort(int (__cdecl *cf)(ST *, ST *), int i = 0, int n = -1) { qsort(&buf[i], n<0?ulen:n, sizeof(T), (int (__cdecl *)(const void *,const void *))cf); }
-
-    void *_realloc(void *p, int oldsize, int newsize)
-    {
-        void *np = new uchar[newsize];
-        memcpy(np, p, newsize>oldsize ? oldsize : newsize);
-        delete[] (uchar *)p;
-        return np;
+    void sort(int (__cdecl *cf)(ST *, ST *), int i = 0, int n = -1) 
+    { 
+        qsort(&buf[i], n<0 ? ulen : n, sizeof(T), (int (__cdecl *)(const void *,const void *))cf); 
     }
-    
-    void vrealloc()
+
+    void vrealloc(int sz)
     {
         int olen = alen;
-        buf = (T *)_realloc(buf, olen*sizeof(T), (alen *= 2)*sizeof(T));
+        if(!alen) alen = max(MINSIZE, sz);
+        else while(alen < sz) alen *= 2;
+        if(alen <= olen) return;
+        uchar *newbuf = new uchar[alen*sizeof(T)];
+        if(olen > 0)
+        {
+            memcpy(newbuf, buf, olen*sizeof(T));
+            delete[] (uchar *)buf;
+        }
+        buf = (T *)newbuf;
     }
 
     databuf<T> reserve(int sz)
     {
-        while(alen-ulen<sz) vrealloc();
+        if(ulen+sz > alen) vrealloc(ulen+sz);
         return databuf<T>(&buf[ulen], sz);
+    }
+
+    void advance(int sz)
+    {
+        ulen += sz;
     }
 
     void addbuf(const databuf<T> &p)
     {
-        ulen += p.length();
+        advance(p.length());
     }
 
     void put(const T *v, int n)
@@ -312,7 +336,8 @@ template <class T> struct vector
         return e;
     }
 
-    int find(const T &o)
+    template<class U>
+    int find(const U &o)
     {
         loopi(ulen) if(buf[i]==o) return i;
         return -1;
@@ -343,6 +368,7 @@ template <class T> struct vector
 
     T *insert(int i, const T *e, int n)
     {
+        if(ulen+n>alen) vrealloc(ulen+n);
         loopj(n) add(T());
         for(int p = ulen-1; p>=i+n; p--) buf[p] = buf[p-n];
         loopj(n) buf[i+j] = e[j];
@@ -351,7 +377,7 @@ template <class T> struct vector
 
     void reverse()
     {
-        loopi(ulen/2) swap(T, buf[i], buf[ulen-1-i]);
+        loopi(ulen/2) swap(buf[i], buf[ulen-1-i]);
     }
 };
 
@@ -388,7 +414,7 @@ template <class K, class T> struct hashtable
     typedef T value;
     typedef const T const_value;
 
-    enum { CHUNKSIZE = 16 };
+    enum { CHUNKSIZE = 64 };
 
     struct chain      { T data; K key; chain *next; };
     struct chainchunk { chain chains[CHUNKSIZE]; chainchunk *next; };
@@ -470,8 +496,8 @@ template <class K, class T> struct hashtable
                 *p = c->next;
                 c->data.~T();
                 c->key.~K();
-                new (&c->data) T();
-                new (&c->key) K();
+                new (&c->data) T;
+                new (&c->key) K;
                 c->next = unused;
                 unused = c->next;
                 numelems--;
@@ -483,6 +509,7 @@ template <class K, class T> struct hashtable
 
     void clear()
     {
+        if(!numelems) return;
         loopi(size) table[i] = NULL;
         numelems = 0;
         unused = NULL;
@@ -537,10 +564,57 @@ struct unionfind
     }
 };
 
+template <class T, int SIZE> struct ringbuf
+{
+    int index, len;
+    T data[SIZE];
+
+    ringbuf() { clear(); }
+
+    void clear()
+    {
+        index = len = 0;
+    }
+
+    bool empty() const { return !len; }
+
+    const int length() const { return len; }
+
+    T &add(const T &e)
+    {
+        T &t = data[index];
+        t = e;
+        index++;
+        if(index>=SIZE) index = 0;
+        if(len<SIZE) len++;
+        return t;
+    }
+
+    T &add() { return add(T()); }
+
+    T &operator[](int i)
+    {
+        int start = index - len;
+        if(start < 0) start += SIZE;
+        i += start;
+        if(i >= SIZE) i -= SIZE;
+        return data[i];
+    }
+
+    const T &operator[](int i) const
+    {
+        int start = index - len;
+        if(start < 0) start += SIZE;
+        i += start;
+        if(i >= SIZE) i -= SIZE;
+        return data[i];
+    }
+};
+
 inline char *newstring(size_t l)                { return new char[l+1]; }
 inline char *newstring(const char *s, size_t l) { return s_strncpy(newstring(l), s, l+1); }
 inline char *newstring(const char *s)           { return newstring(s, strlen(s));          }
-inline char *newstringbuf(const char *s)        { return newstring(s, _MAXDEFSTR-1);       }
+inline char *newstringbuf(const char *s)        { return newstring(s, MAXSTRLEN-1);       }
 
 #if defined(WIN32) && !defined(__GNUC__)
 #ifdef _DEBUG
@@ -552,6 +626,7 @@ inline void __cdecl operator delete(void *p, const char *fn, int l) { ::operator
 #endif 
 #endif
 
+extern char *makerelpath(const char *dir, const char *file, const char *prefix = NULL);
 extern char *path(char *s);
 extern char *path(const char *s, bool copy);
 extern const char *parentdir(const char *directory);

@@ -90,7 +90,7 @@ struct rpgclient : igameclient, g3d_callback
     
     void initclient() {}
         
-    void physicstrigger(physent *d, bool local, int floorlevel, int waterlevel)
+    void physicstrigger(physent *d, bool local, int floorlevel, int waterlevel, int material)
     {
         if     (waterlevel>0) playsoundname("free/splash1", d==&player1 ? NULL : &d->o);
         else if(waterlevel<0) playsoundname("free/splash2", d==&player1 ? NULL : &d->o);
@@ -132,24 +132,20 @@ struct rpgclient : igameclient, g3d_callback
                                             
         glLoadIdentity();
         glOrtho(0, w, h, 0, -1, 1);
-        settexture("data/hud_rpg.png", true);
+        settexture("packages/hud/hud_rpg.png", true);
         
-        glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         quad(0, h-128, 768, 128);        
-        settexture("data/hbar.png", true);
+        settexture("packages/hud/hbar.png", true);
         glColor4f(1, 0, 0, 0.5f);
         quad(130, h-128+57, 193*os.playerobj->s_hp/os.playerobj->eff_maxhp(), 17);        
         glColor4f(0, 0, 1, 0.5f);
         quad(130, h-128+87, 193*os.playerobj->s_mana/os.playerobj->eff_maxmana(), 17);        
-        glDisable(GL_BLEND);
     }
     
     void drawhudmodel(int anim, float speed = 0, int base = 0)
     {
-        vec color, dir;
-        lightreaching(player1.o, color, dir);
-        rendermodel(color, dir, "hudguns/fist", anim, 0, 0, player1.o, player1.yaw+90, player1.pitch, speed, base, NULL, 0);
+        rendermodel(NULL, "hudguns/fist", anim, player1.o, player1.yaw+90, player1.pitch, MDL_LIGHT, NULL, NULL, base, speed);
     }
 
     void drawhudgun()
@@ -178,7 +174,7 @@ struct rpgclient : igameclient, g3d_callback
         os.render();
     }
     
-    void g3d_gamemenus() { os.g3d_npcmenus(); if(menutime) g3d_addgui(this, menupos); }
+    void g3d_gamemenus() { os.g3d_npcmenus(); if(menutime) g3d_addgui(this, menupos, GUI_2D); }
 
     void writegamedata(vector<char> &extras) {}
     void readgamedata (vector<char> &extras) {}

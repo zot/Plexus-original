@@ -7,6 +7,7 @@ struct scoreboard : g3d_callback
     int menustart;
     fpsclient &cl;
 
+    IVARP(scoreboard2d, 0, 1, 1);
     IVARP(showclientnum, 0, 0, 1);
     IVARP(showpj, 0, 1, 1);
     IVARP(showping, 0, 1, 1);
@@ -36,7 +37,7 @@ struct scoreboard : g3d_callback
         const char *team;
         int score;
         teamscore() {}
-        teamscore(char *s, int n) : team(s), score(n) {}
+        teamscore(const char *s, int n) : team(s), score(n) {}
     };
 
     static int teamscorecmp(const teamscore *x, const teamscore *y)
@@ -77,6 +78,19 @@ struct scoreboard : g3d_callback
         {
             loopv(cl.cpc.scores) teamscores.add(teamscore(cl.cpc.scores[i].team, cl.cpc.scores[i].total));
         }
+        else if(m_ctf) 
+        {
+            loopv(cl.ctf.flags) if(cl.ctf.flags[i].score)
+            {
+                const char *team = ctfflagteam(cl.ctf.flags[i].team);
+                if(!team) continue;
+                teamscore *ts = NULL;
+                loopv(teamscores) if(!strcmp(teamscores[i].team, team)) { ts = &teamscores[i]; break; } 
+                if(!ts) teamscores.add(teamscore(team, cl.ctf.flags[i].score));
+                else ts->score += cl.ctf.flags[i].score;
+            }
+        }
+
         loopi(cl.numdynents())
         {
             fpsent *o = (fpsent *)cl.iterdynents(i);
@@ -84,8 +98,8 @@ struct scoreboard : g3d_callback
             {
                 teamscore *ts = NULL;
                 loopv(teamscores) if(!strcmp(teamscores[i].team, o->team)) { ts = &teamscores[i]; break; }
-                if(!ts) teamscores.add(teamscore(o->team, m_capture ? 0 : o->frags));
-                else if(!m_capture) ts->score += o->frags;
+                if(!ts) teamscores.add(teamscore(o->team, m_capture || m_ctf ? 0 : o->frags));
+                else if(!m_capture && !m_ctf) ts->score += o->frags;
             }
         }
         teamscores.sort(teamscorecmp);
@@ -135,7 +149,7 @@ struct scoreboard : g3d_callback
             {
                 scoregroup &g = *groups[j];
                 if(team!=g.team && (!team || !g.team || strcmp(team, g.team))) continue;
-                if(team && !m_capture) g.score += o->frags;
+                if(team && !m_capture && !m_ctf) g.score += o->frags;
                 g.players.add(o);
                 found = true;
             }
@@ -143,7 +157,14 @@ struct scoreboard : g3d_callback
             if(numgroups>=groups.length()) groups.add(new scoregroup);
             scoregroup &g = *groups[numgroups++];
             g.team = team;
-            g.score = team ? (m_capture ? cl.cpc.findscore(o->team).total : o->frags) : 0;
+            if(!team) g.score = 0;
+            else if(m_capture) g.score = cl.cpc.findscore(o->team).total;
+            else if(m_ctf) 
+            {
+                g.score = 0;
+                loopv(cl.ctf.flags) if(cl.ctf.flags[i].team==ctfteamflag(o->team)) g.score += cl.ctf.flags[i].score;
+            }
+            else g.score = o->frags;
             g.players.setsize(0);
             g.players.add(o);
         }
@@ -169,14 +190,15 @@ struct scoreboard : g3d_callback
             }
         }
         g.text(modemapstr, 0xFFFF80, "server");
-
+    
+        const playermodelinfo &mdl = cl.fr.getplayermodelinfo();
         int numgroups = groupplayers();
         loopk(numgroups)
         {
             if((k%2)==0) g.pushlist(); // horizontal
             
             scoregroup &sg = *groups[k];
-            const char *icon = cl.fr.ogro() ? "ogro" : (sg.team && m_teammode ? (isteam(cl.player1->team, sg.team) ? "player_blue" : "player_red") : "player");
+            const char *icon = sg.team && m_teammode ? (isteam(cl.player1->team, sg.team) ? mdl.blueicon : mdl.redicon) : mdl.ffaicon;
             int bgcolor = sg.team && m_teammode ? (isteam(cl.player1->team, sg.team) ? 0x3030C0 : 0xC03030) : 0,
                 fgcolor = 0xFFFF80;
 
@@ -207,11 +229,11 @@ struct scoreboard : g3d_callback
                     g.background(0x808080, numgroups>1 ? 3 : 5);
                 }
                 const char *oicon = icon;
-                if(!cl.fr.ogro() && m_assassin)
+                if(m_assassin)
                 {
-                    if(cl.asc.targets.find(o)>=0) oicon = "player_red";
-                    else if(cl.asc.hunters.find(o)>=0) oicon = "player";
-                    else oicon = "player_blue";
+                    if(cl.asc.targets.find(o)>=0) oicon = mdl.redicon;
+                    else if(cl.asc.hunters.find(o)>=0) oicon = mdl.ffaicon;
+                    else oicon = mdl.blueicon;
                 }
                 g.text("", 0, oicon);
                 if(o==cl.player1 && highlightscore() && (multiplayer(false) || cl.cc.demoplayback)) g.poplist();
@@ -228,7 +250,7 @@ struct scoreboard : g3d_callback
                 g.pushlist(); // horizontal
             }
 
-            if(!m_capture)
+            if(!m_capture && !m_ctf)
             { 
                 g.pushlist();
                 g.strut(7);
@@ -311,7 +333,7 @@ struct scoreboard : g3d_callback
                         g.pushlist();
                         g.background(0x808080, 3);
                     }
-                    g.text(cl.colorname(o), 0xFFFFDD, cl.fr.ogro() ? "ogro" : "player");
+                    g.text(cl.colorname(o), 0xFFFFDD, mdl.ffaicon);
                     if(o==cl.player1 && highlightscore()) g.poplist();
                 }
                 g.poplist();
@@ -332,7 +354,7 @@ struct scoreboard : g3d_callback
                     if((i%3)==0) 
                     {
                         g.pushlist();
-                        g.text("", 0xFFFFDD, cl.fr.ogro() ? "ogro" : "player");
+                        g.text("", 0xFFFFDD, mdl.ffaicon);
                     }
                     fpsent *o = spectators[i];
                     int status = 0xFFFFDD;
@@ -357,7 +379,7 @@ struct scoreboard : g3d_callback
     {
         if(scoreson) 
         {
-            g3d_addgui(this, menupos, true);
+            g3d_addgui(this, menupos, scoreboard2d() ? GUI_FORCE_2D : GUI_2D | GUI_FOLLOW);
         }
     }
 };

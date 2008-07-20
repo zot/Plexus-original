@@ -24,9 +24,9 @@ void gengrasssample(vtxarray *va, const vec &o, float tu, float tv, LightMap *lm
 {
     grasssample &g = va->grasssamples->add();
 
-    g.x = ushort(o.x-va->x) | GRASS_SAMPLE;
-    g.y = ushort(o.y-va->y);
-    g.z = ushort(4*(o.z-va->z));
+    g.x = ushort(o.x-va->o.x) | GRASS_SAMPLE;
+    g.y = ushort(o.y-va->o.y);
+    g.z = ushort(4*(o.z-va->o.z));
 
     if(lm)
     {
@@ -51,9 +51,9 @@ bool gengrassheader(vtxarray *va, const vec *v)
     if(radius < grassgrid*2) return false;
 
     grassbounds &g = *(grassbounds *)&va->grasssamples->add();
-    g.x = ushort(center.x-va->x) | GRASS_BOUNDS;
-    g.y = ushort(center.y-va->y);
-    g.z = ushort(4*(center.z-va->z));
+    g.x = ushort(center.x-va->o.x) | GRASS_BOUNDS;
+    g.y = ushort(center.y-va->o.y);
+    g.z = ushort(4*(center.z-va->o.z));
     g.radius = ushort(radius + grasswidth);
     g.numsamples = 0;
     return true;
@@ -66,11 +66,11 @@ void gengrasssamples(vtxarray *va, const vec *v, float *tc, LightMap *lm)
     else u = v[0].y < v[2].y ? 0 : 2;
     l = (u+2)%3;
     r = (u+1)%3;
-    if(v[l].x > v[r].x) swap(int, l, r);
+    if(v[l].x > v[r].x) swap(l, r);
     if(v[u].y == v[l].y)
     {
-        if(v[l].x <= v[u].x) swap(int, u, l);
-        swap(int, l, r);
+        if(v[l].x <= v[u].x) swap(u, l);
+        swap(l, r);
     }
     vec o1 = v[u], dl = v[l];
     dl.sub(o1);
@@ -214,7 +214,7 @@ void gengrasssamples(vtxarray *va)
         loopk(4)
         {
             int j = remap[k];
-            v[k] = g.v[j].tovec(va->x, va->y, va->z);
+            v[k] = g.v[j].tovec(va->o);
             if(g.surface)
             {
                 tc[2*k] = float(g.surface->x + (g.surface->texcoords[j*2] / 255.0f) * (g.surface->w - 1) + 0.5f);
@@ -239,8 +239,8 @@ float loddist(const vec &o)
 {
     float dx = o.x - camera1->o.x, dy = o.y - camera1->o.y, dz = camera1->o.z - o.z;
     float dist = sqrt(dx*dx + dy*dy);
-    dist -= grasslodz/100.0f * max(dz, 0);
-    return max(dist, 0);
+    dist -= grasslodz/100.0f * max(dz, 0.0f);
+    return max(dist, 0.0f);
 }
 
 VAR(grassrand, 0, 30, 90);
@@ -324,13 +324,13 @@ void rendergrasssamples(vtxarray *va, const vec &dir)
     {
         grasssample &g = (*va->grasssamples)[i];
 
-        vec o((g.x&~GRASS_TYPE)+va->x, g.y+va->y, g.z/4.0f+va->z), tograss;
+        vec o((g.x&~GRASS_TYPE)+va->o.x, g.y+va->o.y, g.z/4.0f+va->o.z), tograss;
         switch(g.x&GRASS_TYPE)
         {
             case GRASS_BOUNDS:
             {
                 grassbounds &b = *(grassbounds *)&g;
-                if(reflecting && (refracting ? o.z-b.radius>=refracting : o.z+b.radius<reflecting))
+                if(reflecting || refracting>0 ? o.z+b.radius<reflectz : o.z-b.radius>=reflectz)
                 {
                     i += b.numsamples;
                     continue;
@@ -349,7 +349,7 @@ void rendergrasssamples(vtxarray *va, const vec &dir)
                 {
                     glEnd();
                     if(!s.grasstex) s.grasstex = textureload(s.autograss, 2);
-                    glBindTexture(GL_TEXTURE_2D, s.grasstex->gl);
+                    glBindTexture(GL_TEXTURE_2D, s.grasstex->id);
                     glBegin(GL_QUADS);
                     grasstex = s.grasstex;
                 }
@@ -358,14 +358,14 @@ void rendergrasssamples(vtxarray *va, const vec &dir)
 
             case GRASS_SAMPLE:
             {
-                if(reflecting && (refracting ? o.z>=reflecting : o.z+grassheight<=reflecting)) continue;
+                if(reflecting || refracting>0 ? o.z+grassheight<=reflectz : o.z>=reflectz) continue;
                 float dist = o.dist(camera1->o, tograss);
                 if(dist > grassdist || (dir.dot(tograss)<0 && dist > grasswidth/2 + 2*(grassgrid + player->eyeheight))) continue;
 
                 float ld = loddist(o);
                 int numsamples = int(grasssamples/100.0f*max(grassgrid - ld/grasslod, 100.0f/grasssamples));
                 float height = 1 - (dist + grasstaper - grassdist) / (grasstaper ? grasstaper : 1);
-                height = min(height, 1);
+                height = min(height, 1.0f);
                 loopj(2*numsamples)
                 {
                     rendergrasssample(g, o, dist, j, height, numsamples);
@@ -413,7 +413,7 @@ void cleanupgrass()
     glEnable(GL_CULL_FACE);
 }
 
-VARP(grass, 0, 1, 1);
+VARP(grass, 0, 0, 1);
 
 void rendergrass()
 {
@@ -426,9 +426,9 @@ void rendergrass()
     extern vtxarray *visibleva;
     for(vtxarray *va = visibleva; va; va = va->next)
     {
-        if(!va->grasstris || va->occluded >= OCCLUDE_GEOM || va->curlod) continue;
+        if(!va->grasstris || va->occluded >= OCCLUDE_GEOM) continue;
         if(va->distance > grassdist) continue;
-        if(reflecting && (refracting ? va->z>=refracting : va->z+va->size<reflecting)) continue;
+        if(reflecting || refracting>0 ? va->o.z+va->size<reflectz : va->o.z>=reflectz) continue;
         if(!va->grasssamples) gengrasssamples(va);
         if(!rendered++) setupgrass();
         rendergrasssamples(va, dir);

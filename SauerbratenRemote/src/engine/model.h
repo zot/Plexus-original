@@ -1,8 +1,8 @@
-enum { MDL_MD2 = 1, MDL_MD3 };
+enum { MDL_MD2 = 1, MDL_MD3, MDL_MD5, MDL_OBJ };
 
 struct model
 {
-    float spin;
+    float spin, offsetyaw, offsetpitch;
     bool collide, ellipsecollide, cullface, shadow;
     float scale;
     vec translate;
@@ -11,15 +11,14 @@ struct model
     float eyeheight, collideradius, collideheight;
     int batch;
 
-    model() : spin(0), collide(true), ellipsecollide(false), cullface(true), shadow(true), scale(1.0f), translate(0, 0, 0), bih(0), bbcenter(0, 0, 0), bbradius(0, 0, 0), eyeheight(0.9f), collideradius(0), collideheight(0), batch(-1) {}
+    model() : spin(0), offsetyaw(0), offsetpitch(0), collide(true), ellipsecollide(false), cullface(true), shadow(true), scale(1.0f), translate(0, 0, 0), bih(0), bbcenter(0, 0, 0), bbradius(0, 0, 0), eyeheight(0.9f), collideradius(0), collideheight(0), batch(-1) {}
     virtual ~model() { DELETEP(bih); }
     virtual void calcbb(int frame, vec &center, vec &radius) = 0;
     virtual void extendbb(int frame, vec &center, vec &radius, modelattach &a) {}
-    virtual void render(int anim, int varseed, float speed, int basetime, const vec &o, float yaw, float pitch, dynent *d, modelattach *a = NULL, const vec &color = vec(0, 0, 0), const vec &dir = vec(0, 0, 0)) = 0;
-    virtual void setskin(int tex = 0) = 0;
+    virtual void render(int anim, float speed, int basetime, const vec &o, float yaw, float pitch, dynent *d, modelattach *a = NULL, const vec &color = vec(0, 0, 0), const vec &dir = vec(0, 0, 0)) = 0;
     virtual bool load() = 0;
     virtual char *name() = 0;
-    virtual int type() = 0;
+    virtual int type() const = 0;
     virtual BIH *setBIH() { return 0; }
     virtual bool envmapped() { return false; }
 
@@ -28,10 +27,13 @@ struct model
     virtual void setspec(float spec) {}
     virtual void setambient(float ambient) {}
     virtual void setglow(float glow) {}
+    virtual void setglare(float specglare, float glowglare) {}
     virtual void setalphatest(float alpha) {}
     virtual void setalphablend(bool blend) {}
     virtual void settranslucency(float translucency) {}
     virtual void setfullbright(float fullbright) {}
+
+    virtual void cleanup() {}
 
     virtual void startrender() {}
     virtual void endrender() {}

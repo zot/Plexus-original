@@ -8,7 +8,7 @@ enum                            // hardcoded texture numbers
     DEFAULT_CEIL
 };
 
-#define MAPVERSION 24           // bump if map format changes, see worldio.cpp
+#define MAPVERSION 27           // bump if map format changes, see worldio.cpp
 
 struct header                   // map file format header
 {
@@ -17,7 +17,7 @@ struct header                   // map file format header
     int headersize;             // sizeof(header)
     int worldsize;
     int numents;
-    int waterlevel;
+    int numpvs;
     int lightmaps;
     int mapprec, maple, mapllod;
     uchar ambient;
@@ -27,20 +27,9 @@ struct header                   // map file format header
     uchar mapbe;
     uchar skylight[3];
     uchar lavacolour[3];
-    uchar reserved[1+12];
+    uchar waterfallcolour[3];
+    uchar reserved[10];
     char maptitle[128];
-};
-
-enum                            // cube empty-space materials
-{
-    MAT_AIR = 0,                // the default, fill the empty space with air
-    MAT_WATER,                  // fill with water, showing waves at the surface
-    MAT_CLIP,                   // collisions always treat cube as solid
-    MAT_GLASS,                  // behaves like clip but is blended blueish
-    MAT_NOCLIP,                 // collisions always treat cube as empty
-    MAT_LAVA,                   // fill with lava
-    MAT_AICLIP,                 // clip monsters only
-    MAT_EDIT                    // basis for the edit volumes of the above materials
 };
 
 #define WATER_AMPLITUDE 0.8f
@@ -54,11 +43,12 @@ enum
 };
 
 #define isliquid(mat) ((mat)==MAT_WATER || (mat)==MAT_LAVA)
-#define isclipped(mat) ((mat) >= MAT_CLIP && (mat) < MAT_NOCLIP)
+#define isclipped(mat) ((mat)==MAT_GLASS)
+#define isdeadly(mat) ((mat)==MAT_LAVA)
 
 // VVEC_FRAC must be between 0..3
-#define VVEC_FRAC 1
-#define VVEC_INT (15-VVEC_FRAC)
+#define VVEC_FRAC 3
+#define VVEC_INT (16-VVEC_FRAC)
 #define VVEC_BITS (VVEC_INT + VVEC_FRAC)
 
 #define VVEC_INT_MASK     ((1<<(VVEC_INT-1))-1)
@@ -67,7 +57,7 @@ enum
 struct vvec : svec
 {
     vvec() {}
-    vvec(short x, short y, short z) : svec(x, y, z) {}
+    vvec(ushort x, ushort y, ushort z) : svec(x, y, z) {}
     vvec(int x, int y, int z) : svec(VVEC_INT_COORD(x), VVEC_INT_COORD(y), VVEC_INT_COORD(z)) {}
     vvec(const int *i) : svec(VVEC_INT_COORD(i[0]), VVEC_INT_COORD(i[1]), VVEC_INT_COORD(i[2])) {}
 
@@ -82,7 +72,7 @@ struct vvec : svec
     vec tovec(const ivec &o) const       { return tovec(o.x, o.y, o.z); }
 };
 
-struct vertexffc : vvec {};
+struct vertexffc : vvec { short reserved; };
 struct fvertexffc : vec {};
 struct vertexff : vertexffc { short u, v; };
 struct fvertexff : fvertexffc { short u, v; };

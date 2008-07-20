@@ -11,7 +11,7 @@ void backup(char *name, char *backupname)
     rename(findfile(name, "wb"), backupfile);
 }
 
-string cgzname, bakname, pcfname, mcfname, picname;
+string ogzname, bakname, pcfname, mcfname, picname;
 
 VARP(savebak, 0, 2, 2);
 
@@ -21,10 +21,10 @@ void cutogz(char *s)
     if(ogzp) *ogzp = '\0';
 }
 
-void setnames(const char *fname, const char *cname = 0)
+void getnames(const char *fname, const char *cname, char *pakname, char *mapname, char *cfgname)
 {
     if(!cname) cname = fname;
-    string name, pakname, mapname, cfgname;
+    string name;
     s_strncpy(name, cname, 100);
     cutogz(name);
     char *slash = strpbrk(name, "/\\");
@@ -41,18 +41,38 @@ void setnames(const char *fname, const char *cname = 0)
     if(strpbrk(fname, "/\\")) s_strcpy(mapname, fname);
     else s_sprintf(mapname)("base/%s", fname);
     cutogz(mapname);
+}
 
-    s_sprintf(cgzname)("packages/%s.ogz", mapname);
+void setnames(const char *fname, const char *cname = 0)
+{
+    string pakname, mapname, cfgname;
+    getnames(fname, cname, pakname, mapname, cfgname);
+
+    s_sprintf(ogzname)("packages/%s.ogz", mapname);
     if(savebak==1) s_sprintf(bakname)("packages/%s.BAK", mapname);
     else s_sprintf(bakname)("packages/%s_%d.BAK", mapname, lastmillis);
     s_sprintf(pcfname)("packages/%s/package.cfg", pakname);
-    s_sprintf(mcfname)("packages/%s/%s.cfg",      pakname, cfgname);
+    s_sprintf(mcfname)("packages/%s/%s.cfg", pakname, cfgname);
     s_sprintf(picname)("packages/%s.jpg", mapname);
 
-    path(cgzname);
+    path(ogzname);
     path(bakname);
     path(picname);
 }
+
+void mapcfgname()
+{
+    const char *mname = cl->getclientmap();
+    if(!*mname) mname = "untitled";
+
+    string pakname, mapname, cfgname;
+    getnames(mname, NULL, pakname, mapname, cfgname);
+    s_sprintfd(mcfname)("packages/%s/%s.cfg", pakname, cfgname);
+    path(mcfname);
+    result(mcfname);
+}
+
+COMMAND(mapcfgname, "");
 
 ushort readushort(gzFile f)
 {
@@ -174,7 +194,16 @@ void loadc(gzFile f, cube &c)
     else
     {
         uchar mask = gzgetc(f);
-        if(mask & 0x80) ext(c).material = gzgetc(f);
+        if(mask & 0x80) 
+        {
+            int mat = gzgetc(f);
+            if(hdr.version < 27)
+            {
+                static uchar matconv[] = { MAT_AIR, MAT_WATER, MAT_CLIP, MAT_GLASS|MAT_CLIP, MAT_NOCLIP, MAT_LAVA|MAT_DEATH, MAT_AICLIP, MAT_DEATH };
+                mat = size_t(mat) < sizeof(matconv)/sizeof(matconv[0]) ? matconv[mat] : MAT_AIR;
+            }
+            ext(c).material = mat;
+        }
         if(mask & 0x3F)
         {
             uchar lit = 0, bright = 0;
@@ -224,8 +253,17 @@ void loadc(gzFile f, cube &c)
                         c.ext->merges = new mergeinfo[nummerges];
                         loopi(nummerges)
                         {
-                            gzread(f, &c.ext->merges[i], sizeof(mergeinfo));
-                            endianswap(&c.ext->merges[i], sizeof(ushort), 4);
+                            mergeinfo *m = &c.ext->merges[i];
+                            gzread(f, m, sizeof(mergeinfo));
+                            endianswap(m, sizeof(ushort), 4);
+                            if(hdr.version <= 25)
+                            {
+                                int uorigin = m->u1 & 0xE000, vorigin = m->v1 & 0xE000;
+                                m->u1 = (m->u1 - uorigin) << 2;
+                                m->u2 = (m->u2 - uorigin) << 2;
+                                m->v1 = (m->v1 - vorigin) << 2;
+                                m->v2 = (m->v2 - vorigin) << 2;
+                            }
                         }
                     }
                 }
@@ -243,17 +281,18 @@ cube *loadchildren(gzFile f)
     return c;
 }
 
-void save_world(char *mname, bool nolms)
+bool save_world(const char *mname, bool nolms)
 {
     if(!*mname) mname = cl->getclientmap();
     setnames(*mname ? mname : "untitled");
-    if(savebak) backup(cgzname, bakname);
-    gzFile f = opengzfile(cgzname, "wb9");
-    if(!f) { conoutf("could not write map to %s", cgzname); return; }
+    if(savebak) backup(ogzname, bakname);
+    gzFile f = opengzfile(ogzname, "wb9");
+    if(!f) { conoutf(CON_WARN, "could not write map to %s", ogzname); return false; }
     hdr.version = MAPVERSION;
     hdr.numents = 0;
     const vector<extentity *> &ents = et->getents();
-    loopv(ents) if(ents[i]->type!=ET_EMPTY) hdr.numents++;
+    loopv(ents) if(ents[i]->type!=ET_EMPTY || nolms) hdr.numents++;
+    hdr.numpvs = nolms ? 0 : getnumviewcells();
     hdr.lightmaps = nolms ? 0 : lightmaps.length();
     header tmp = hdr;
     endianswap(&tmp.version, sizeof(int), 9);
@@ -273,7 +312,7 @@ void save_world(char *mname, bool nolms)
     char *ebuf = new char[et->extraentinfosize()];
     loopv(ents)
     {
-        if(ents[i]->type!=ET_EMPTY)
+        if(ents[i]->type!=ET_EMPTY || nolms)
         {
             entity tmp = *ents[i];
             endianswap(&tmp.o, sizeof(int), 3);
@@ -286,54 +325,69 @@ void save_world(char *mname, bool nolms)
     delete[] ebuf;
 
     savec(worldroot, f, nolms);
-    if(!nolms) loopv(lightmaps)
+    if(!nolms) 
     {
-        LightMap &lm = lightmaps[i];
-        gzputc(f, lm.type | (lm.unlitx>=0 ? 0x80 : 0));
-        if(lm.unlitx>=0)
+        loopv(lightmaps)
         {
-            writeushort(f, ushort(lm.unlitx));
-            writeushort(f, ushort(lm.unlity));
+            LightMap &lm = lightmaps[i];
+            gzputc(f, lm.type | (lm.unlitx>=0 ? 0x80 : 0));
+            if(lm.unlitx>=0)
+            {
+                writeushort(f, ushort(lm.unlitx));
+                writeushort(f, ushort(lm.unlity));
+            }
+            gzwrite(f, lm.data, sizeof(lm.data));
         }
-        gzwrite(f, lm.data, sizeof(lm.data));
+        if(getnumviewcells()>0) savepvs(f);
     }
 
     gzclose(f);
-    conoutf("wrote map file %s", cgzname);
+    conoutf("wrote map file %s", ogzname);
+    return true;
 }
 
-void swapXZ(cube *c)
+static void swapXZ(cube *c)
 {	
 	loopi(8) 
 	{
-		swap(uint,   c[i].faces[0],   c[i].faces[2]);
-		swap(ushort, c[i].texture[0], c[i].texture[4]);
-		swap(ushort, c[i].texture[1], c[i].texture[5]);
+		swap(c[i].faces[0],   c[i].faces[2]);
+		swap(c[i].texture[0], c[i].texture[4]);
+		swap(c[i].texture[1], c[i].texture[5]);
 		if(c[i].ext && c[i].ext->surfaces)
 		{
-			swap(surfaceinfo, c[i].ext->surfaces[0], c[i].ext->surfaces[4]);
-			swap(surfaceinfo, c[i].ext->surfaces[1], c[i].ext->surfaces[5]);
+			swap(c[i].ext->surfaces[0], c[i].ext->surfaces[4]);
+			swap(c[i].ext->surfaces[1], c[i].ext->surfaces[5]);
 		}
 		if(c[i].children) swapXZ(c[i].children);
 	}
 }
 
-void load_world(const char *mname, const char *cname)        // still supports all map formats that have existed since the earliest cube betas!
+static void fixoversizedcubes(cube *c, int size)
+{
+    if(size <= VVEC_INT_MASK+1) return;
+    loopi(8)
+    {
+        if(!c[i].children) subdividecube(c[i], true, false);
+        fixoversizedcubes(c[i].children, size>>1);
+    }
+}
+
+bool load_world(const char *mname, const char *cname)        // still supports all map formats that have existed since the earliest cube betas!
 {
     int loadingstart = SDL_GetTicks();
     setnames(mname, cname);
-    gzFile f = opengzfile(cgzname, "rb9");
-    if(!f) { conoutf("could not read map %s", cgzname); return; }
+    gzFile f = opengzfile(ogzname, "rb9");
+    if(!f) { conoutf(CON_ERROR, "could not read map %s", ogzname); return false; }
     header newhdr;
     gzread(f, &newhdr, sizeof(header));
     endianswap(&newhdr.version, sizeof(int), 9);
-    if(strncmp(newhdr.head, "OCTA", 4)!=0) { conoutf("map %s has malformatted header", cgzname); gzclose(f); return; }
-    if(newhdr.version>MAPVERSION) { conoutf("map %s requires a newer version of cube 2", cgzname); gzclose(f); return; }
+    if(strncmp(newhdr.head, "OCTA", 4)!=0) { conoutf(CON_ERROR, "map %s has malformatted header", ogzname); gzclose(f); return false; }
+    if(newhdr.version>MAPVERSION) { conoutf(CON_ERROR, "map %s requires a newer version of cube 2", ogzname); gzclose(f); return false; }
     hdr = newhdr;
     resetmap();
     Texture *mapshot = textureload(picname, 0, true, false);
-    computescreen(mname, mapshot!=notexture ? mapshot : NULL);
-    if(hdr.version<=20) conoutf("loading older / less efficient map format, may benefit from \"calclight 2\", then \"savecurrentmap\"");
+    computescreen("loading...", mapshot!=notexture ? mapshot : NULL, mname);
+    if(hdr.version<=20) conoutf(CON_WARN, "loading older / less efficient map format, may benefit from \"calclight 2\", then \"savecurrentmap\"");
     if(!hdr.ambient) hdr.ambient = 25;
     if(!hdr.lerpsubdivsize)
     {
@@ -364,7 +418,7 @@ void load_world(const char *mname, const char *cname)        // still supports a
     if(strcmp(gametype, cl->gameident())!=0)
     {
         samegame = false;
-        conoutf("WARNING: loading map from %s game, ignoring entities except for lights/mapmodels)", gametype);
+        conoutf(CON_WARN, "WARNING: loading map from %s game, ignoring entities except for lights/mapmodels)", gametype);
     }
     if(hdr.version>=16)
     {
@@ -436,13 +490,13 @@ void load_world(const char *mname, const char *cname)        // still supports a
         {
             if(e.type != ET_LIGHT && e.type != ET_SPOTLIGHT)
             {
-                conoutf("warning: ent outside of world: enttype[%s] index %d (%f, %f, %f)", et->entname(e.type), i, e.o.x, e.o.y, e.o.z);
+                conoutf(CON_WARN, "warning: ent outside of world: enttype[%s] index %d (%f, %f, %f)", et->entname(e.type), i, e.o.x, e.o.y, e.o.z);
             }
         }
         if(hdr.version <= 14 && e.type == ET_MAPMODEL)
         {
             e.o.z += e.attr3;
-            if(e.attr4) conoutf("warning: mapmodel ent (index %d) uses texture slot %d", i, e.attr4);
+            if(e.attr4) conoutf(CON_WARN, "warning: mapmodel ent (index %d) uses texture slot %d", i, e.attr4);
             e.attr3 = e.attr4 = 0;
         }
     }
@@ -457,8 +511,14 @@ void load_world(const char *mname, const char *cname)        // still supports a
     if(hdr.version <= 8)
         converttovectorworld();
 
+    if(hdr.version <= 25 && hdr.worldsize > VVEC_INT_MASK+1)
+        fixoversizedcubes(worldroot, hdr.worldsize>>1);
+
     show_out_of_renderloop_progress(0, "validating...");
     validatec(worldroot, hdr.worldsize>>1);
+
+    worldscale = 0;
+    while(1<<worldscale < hdr.worldsize) worldscale++;
 
     if(hdr.version >= 7) loopi(hdr.lightmaps)
     {
@@ -478,16 +538,21 @@ void load_world(const char *mname, const char *cname)        // still supports a
         lm.finalize();
     }
 
+    if(hdr.version >= 25 && hdr.numpvs > 0) loadpvs(f);
+
     gzclose(f);
 
-    conoutf("read map %s (%.1f seconds)", cgzname, (SDL_GetTicks()-loadingstart)/1000.0f);
-    conoutf("%s", hdr.maptitle);
+    conoutf("read map %s (%.1f seconds)", ogzname, (SDL_GetTicks()-loadingstart)/1000.0f);
+    if(hdr.maptitle[0]) conoutf(CON_ECHO, "%s", hdr.maptitle);
 
     overrideidents = true;
     execfile("data/default_map_settings.cfg");
     execfile(pcfname);
     execfile(mcfname);
     overrideidents = false;
+   
+    extern void fixlightmapnormals();
+    if(hdr.version <= 25) fixlightmapnormals();
 
     loopv(ents)
     {
@@ -495,8 +560,8 @@ void load_world(const char *mname, const char *cname)        // still supports a
         if(e.type==ET_MAPMODEL && e.attr2 >= 0)
         {
             mapmodelinfo &mmi = getmminfo(e.attr2);
-            if(!&mmi) conoutf("could not find map model: %d", e.attr2);
-            else if(!loadmodel(NULL, e.attr2, true)) conoutf("could not load model: %s", mmi.name);
+            if(!&mmi) conoutf(CON_WARN, "could not find map model: %d", e.attr2);
+            else if(!loadmodel(NULL, e.attr2, true)) conoutf(CON_WARN, "could not load model: %s", mmi.name);
         }
     }
 
@@ -505,10 +570,11 @@ void load_world(const char *mname, const char *cname)        // still supports a
     initlights();
     allchanged(true);
 
-    computescreen(mname, mapshot!=notexture ? mapshot : NULL);
+    computescreen("loading...", mapshot!=notexture ? mapshot : NULL, mname);
     attachentities();
 
     startmap(cname ? cname : mname);
+    return true;
 }
 
 void savecurrentmap() { save_world(cl->getclientmap()); }
@@ -519,9 +585,6 @@ COMMAND(savecurrentmap, "");
 
 void writeobj(char *name)
 {
-    bool oldVBO = hasVBO;
-    hasVBO = false;
-    allchanged();
     s_sprintfd(fname)("%s.obj", name);
     FILE *f = openfile(path(fname), "w"); 
     if(!f) return;
@@ -530,32 +593,33 @@ void writeobj(char *name)
     loopv(valist)
     {
         vtxarray &va = *valist[i];
-        uchar *verts = (uchar *)va.vbuf;
-        if(!verts) continue;
+        ushort *edata = NULL;
+        uchar *vdata = NULL;
+        if(!readva(&va, edata, vdata)) continue;
         int vtxsize = VTXSIZE;
+        uchar *vert = vdata;
         loopj(va.verts) 
         {
-            vvec vv;
-            if(floatvtx) { vec &f = *(vec *)verts; loopk(3) vv[k] = short(f[k]); }
-            else vv = *(vvec *)verts;
-            vec v = vv.tovec(va.x, va.y, va.z);
-            if(vv.x&((1<<VVEC_FRAC)-1)) fprintf(f, "v %.3f ", v.x); else fprintf(f, "v %d ", int(v.x));
-            if(vv.y&((1<<VVEC_FRAC)-1)) fprintf(f, "%.3f ", v.y); else fprintf(f, "%d ", int(v.y));
-            if(vv.z&((1<<VVEC_FRAC)-1)) fprintf(f, "%.3f\n", v.z); else fprintf(f, "%d\n", int(v.z));
-            verts += vtxsize;
+            vec v;
+            if(floatvtx) (v = *(vec *)vert).div(1<<VVEC_FRAC); 
+            else v = ((vvec *)vert)->tovec(va.o).add(0x8000>>VVEC_FRAC);
+            if(v.x != floor(v.x)) fprintf(f, "v %.3f ", v.x); else fprintf(f, "v %d ", int(v.x));
+            if(v.y != floor(v.y)) fprintf(f, "%.3f ", v.y); else fprintf(f, "%d ", int(v.y));
+            if(v.z != floor(v.z)) fprintf(f, "%.3f\n", v.z); else fprintf(f, "%d\n", int(v.z));
+            vert += vtxsize;
         }
-        ushort *ebuf = va.l0.ebuf;
-        loopi(va.l0.tris)
+        ushort *tri = edata;
+        loopi(va.tris)
         {
             fprintf(f, "f");
-            for(int k = 0; k<3; k++) fprintf(f, " %d", ebuf[k]-va.verts);
-            ebuf += 3;
+            for(int k = 0; k<3; k++) fprintf(f, " %d", tri[k]-va.verts-va.voffset);
+            tri += 3;
             fprintf(f, "\n");
         }
+        delete[] edata;
+        delete[] vdata;
     }
     fclose(f);
-    hasVBO = oldVBO;
-    allchanged();
 }  
     
 COMMAND(writeobj, "s"); 

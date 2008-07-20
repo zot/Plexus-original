@@ -8,29 +8,33 @@ char idbuf[1024];
 /////
 // MEMBERS FOR: dynent
 /////
-void dynent::renderplayer(fpsclient &cl, int mdl, const char **modelnames, bool fiddlies) {
+void dynent::renderplayer(fpsclient &cl, void *void_mdl, int team) {
+	fpsclient::playermodelinfo &mdl = *((fpsclient::playermodelinfo *) void_mdl);
 	fpsent *d = (fpsent *)this;
-	const char *model = modelname ? modelname : modelnames[mdl];
+	//const char *model = modelname ? modelname : modelnames[mdl];
 
 //	printf("render player (%s) %s\n", name, suggestion);
 	if(d->state!=CS_DEAD || d->superdamage<50) {
-		cl.fr.renderplayer((fpsent*)this, model);
+		cl.fr.renderplayer((fpsent*)this, mdl, team);
 	}
-	if (fiddlies) {
-		s_strcpy(d->info, cl.colorname(d, NULL, "@"));
-		if(d->maxhealth>100) { s_sprintfd(sn)(" +%d", d->maxhealth-100); s_strcat(d->info, sn); }
-		if(d->state!=CS_DEAD) particle_text(d->abovehead(), d->info, mdl ? (mdl==1 ? 16 : 13) : 11, 1);
-	}
+	//if (fiddlies) {
+	//	s_strcpy(d->info, cl.colorname(d, NULL, "@"));
+	//	if(d->maxhealth>100) { s_sprintfd(sn)(" +%d", d->maxhealth-100); s_strcat(d->info, sn); }
+	//	if(d->state!=CS_DEAD) particle_text(d->abovehead(), d->info, mdl ? (mdl==1 ? 16 : 13) : 11, 1);
+	//}
 }
 
 void dynent::rendermonster(fpsclient &cl) {
 	fpsclient::monsterset::monster *m = (fpsclient::monsterset::monster *)this;
 
-    modelattach vwep[] = { { m->monstertypes[m->mtype].vwepname, MDL_ATTACH_VWEP, ANIM_VWEP|ANIM_LOOP, 0 }, { NULL } };
+	modelattach vwep[] = { { m->monstertypes[m->mtype].vwepname, "tag_weapon", ANIM_VWEP|ANIM_LOOP, 0 }, { NULL } };
     renderclient(m, m->monstertypes[m->mtype].mdlname, vwep, m->monsterstate==M_ATTACKING ? -ANIM_SHOOT : 0, 300, m->lastaction, m->lastpain);
+    //modelattach vwep[] = { { m->monstertypes[m->mtype].vwepname, MDL_ATTACH_VWEP, ANIM_VWEP|ANIM_LOOP, 0 }, { NULL } };
+    //renderclient(m, m->monstertypes[m->mtype].mdlname, vwep, m->monsterstate==M_ATTACKING ? -ANIM_SHOOT : 0, 300, m->lastaction, m->lastpain);
 }
-void dynent::rendermovable(fpsclient &cl, vec o, vec color, vec dir, const char *suggestion) {
-	rendermodel(color, dir, suggestion, ANIM_MAPMODEL|ANIM_LOOP, 0, 0, o, yaw, 0, 0, 0, this, MDL_SHADOW | MDL_CULL_VFC | MDL_CULL_DIST | MDL_CULL_OCCLUDED, NULL);
+void dynent::rendermovable(fpsclient &cl, vec dir, const char *suggestion) {
+	rendermodel(NULL, suggestion, ANIM_MAPMODEL|ANIM_LOOP, o, this->yaw, 0, MDL_LIGHT | MDL_SHADOW | MDL_CULL_VFC | MDL_CULL_DIST | MDL_CULL_OCCLUDED, this);
+	//rendermodel(color, dir, suggestion, ANIM_MAPMODEL|ANIM_LOOP, 0, 0, o, yaw, 0, 0, 0, this, MDL_SHADOW | MDL_CULL_VFC | MDL_CULL_DIST | MDL_CULL_OCCLUDED, NULL);
 }
 
 enum ENT_TYPE {TC_ERROR = 'e', TC_PLAYER = 'p', TC_MONSTER = 'm', TC_ITEM = 'i'};
@@ -251,6 +255,16 @@ ICOMMAND(onprojectilehit, "s", (char *code),
 	moderator.projectilehitcode = code[0] ? newstring(code) : NULL;
 );
 
+ICOMMAND(psay, "ss", (char *ent, char *txt), {
+       fpsent *d = (fpsent*)getdynent(ent);
+
+       if (d) {
+               s_sprintfd(ds)("@%s", txt);
+               particle_text(d->abovehead(), ds, 16, 10000);
+               conoutf("%s:\f0 %s", fpscl->colorname(d), txt);
+       }
+});
+
 static void hit_shooter() {
 	if (moderator.hittype != NONE) {
 		result(idfor(moderator.shooter, idbuf, sizeof (idbuf)));
@@ -297,12 +311,22 @@ static bool initfpsplug() {
 
 bool plug_fpspluginitialized = initfpsplug();
 
-ICOMMAND(psay, "ss", (char *ent, char *txt), {
-	fpsent *d = (fpsent*)getdynent(ent);
+ICOMMAND(mfreeze, "s", (char *ent), {
+	if (ent && ent[0] == 'm') {
+		fpsclient::monsterset::monster *m = getmonster(ent);
+			
+		if (m) {
+			m->monsterstate = M_NONE;
+		}
+	}
+});
+ICOMMAND(monsterstate, "s", (char *ent), {
+	if (ent && ent[0] == 'm') {
+		fpsclient::monsterset::monster *m = getmonster(ent);
 
-	if (d) {
-		s_sprintfd(ds)("@%s", txt);
-		particle_text(d->abovehead(), ds, 16, 10000);
-		conoutf("%s:\f0 %s", fpscl->colorname(d), txt);
+		if (m) {
+			sprintf(idbuf, "%d", m->monsterstate);
+			result(idbuf);
+		}
 	}
 });

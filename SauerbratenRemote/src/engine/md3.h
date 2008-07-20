@@ -52,9 +52,9 @@ struct md3 : vertmodel
 {
     md3(const char *name) : vertmodel(name) {}
 
-    int type() { return MDL_MD3; }
+    int type() const { return MDL_MD3; }
 
-    struct md3meshgroup : meshgroup
+    struct md3meshgroup : vertmeshgroup
     {
         bool load(char *path)
         {
@@ -86,20 +86,39 @@ struct md3 : vertmodel
                     fread(&tag, sizeof(md3tag), 1, f);
                     endianswap(&tag.pos, sizeof(float), 12);
                     if(tag.name[0] && i<header.numtags) tags[i].name = newstring(tag.name);
+                    matrix3x4 &m = tags[i].transform;
+                    tag.pos.y *= -1;
+                    // undo the -y
+                    loopj(3) tag.rotation[1][j] *= -1;
+                    // then restore it
+                    loopj(3) tag.rotation[j][1] *= -1;
+                    m.X.w = tag.pos.x;
+                    m.Y.w = tag.pos.y;
+                    m.Z.w = tag.pos.z;
+                    loopj(3) 
+                    {
+                        m.X[j] = tag.rotation[j][0];
+                        m.Y[j] = tag.rotation[j][1];
+                        m.Z[j] = tag.rotation[j][2];
+                    }
+#if 0
                     tags[i].pos = vec(tag.pos.x, -tag.pos.y, tag.pos.z);
                     memcpy(tags[i].transform, tag.rotation, sizeof(tag.rotation));
                     // undo the -y
                     loopj(3) tags[i].transform[1][j] *= -1;
                     // then restore it
                     loopj(3) tags[i].transform[j][1] *= -1;
+#endif
                 }
             }
 
             int mesh_offset = header.ofs_meshes;
             loopi(header.nummeshes)
             {
-                mesh &m = *meshes.add(new mesh);
+                vertmesh &m = *new vertmesh;
                 m.group = this;
+                meshes.add(&m);
+
                 md3meshheader mheader;
                 fseek(f, mesh_offset, SEEK_SET);
                 fread(&mheader, sizeof(md3meshheader), 1, f);
@@ -151,36 +170,6 @@ struct md3 : vertmodel
         }
     };
     
-    void render(int anim, int varseed, float speed, int basetime, float pitch, const vec &axis, dynent *d, modelattach *a, const vec &dir, const vec &campos, const plane &fogplane)
-    {
-        if(!loaded) return;
-
-        if(a) for(int i = 0; a[i].name; i++)
-        {
-            md3 *m = (md3 *)a[i].m;
-            if(!m) continue;
-            part *p = m->parts[0];
-            switch(a[i].type)
-            {
-                case MDL_ATTACH_VWEP: if(link(p, "tag_weapon", a[i].anim, a[i].basetime)) p->index = parts.length()+i; break;
-                case MDL_ATTACH_SHIELD: if(link(p, "tag_shield", a[i].anim, a[i].basetime)) p->index = parts.length()+i; break;
-                case MDL_ATTACH_POWERUP: if(link(p, "tag_powerup", a[i].anim, a[i].basetime)) p->index = parts.length()+i; break;
-            }
-        }
-
-        parts[0]->render(anim, varseed, speed, basetime, pitch, axis, d, dir, campos, fogplane);
-
-        if(a) for(int i = 0; a[i].name; i++)
-        {
-            switch(a[i].type)
-            {
-                case MDL_ATTACH_VWEP: link(NULL, "tag_weapon"); break;
-                case MDL_ATTACH_SHIELD: link(NULL, "tag_shield"); break;
-                case MDL_ATTACH_POWERUP: link(NULL, "tag_powerup"); break;
-            }
-        }
-    }
-
     void extendbb(int frame, vec &center, vec &radius, modelattach &a)
     {
         vec acenter, aradius;
@@ -190,9 +179,9 @@ struct md3 : vertmodel
         radius.y += margin;
     }   
 
-    meshgroup *loadmeshes(char *name)
+    meshgroup *loadmeshes(char *name, va_list args)
     {
-        md3meshgroup *group = new md3meshgroup();
+        md3meshgroup *group = new md3meshgroup;
         if(!group->load(name)) { delete group; return NULL; }
         return group;
     }
@@ -226,13 +215,16 @@ struct md3 : vertmodel
         s_sprintfd(cfgname)("packages/models/%s/md3.cfg", loadname);
 
         loadingmd3 = this;
+        persistidents = false;
         if(execfile(cfgname) && parts.length()) // configured md3, will call the md3* commands below
         {
+            persistidents = true;
             loadingmd3 = NULL;
             loopv(parts) if(!parts[i]->meshes) return false;
         }
         else // md3 without configuration, try default tris and skin
         {
+            persistidents = true;
             loadingmd3 = NULL;
             if(!loaddefaultparts()) return false;
         }
@@ -274,29 +266,28 @@ void md3pitch(float *pitchscale, float *pitchoffset, float *pitchmin, float *pit
     }
 }
 
-#define loopmd3skins(meshname, s, body) \
+#define loopmd3meshes(meshname, m, body) \
     if(!loadingmd3 || loadingmd3->parts.empty()) { conoutf("not loading an md3"); return; } \
     md3::part &mdl = *loadingmd3->parts.last(); \
     if(!mdl.meshes) return; \
     loopv(mdl.meshes->meshes) \
     { \
-        md3::mesh &m = *mdl.meshes->meshes[i]; \
+        md3::vertmesh &m = *(md3::vertmesh *)mdl.meshes->meshes[i]; \
         if(!strcmp(meshname, "*") || !strcmp(m.name, meshname)) \
         { \
-            md3::skin &s = mdl.skins[i]; \
             body; \
         } \
     }
 
+#define loopmd3skins(meshname, s, body) loopmd3meshes(meshname, m, { md3::skin &s = mdl.skins[i]; body; })
+
 void md3skin(char *meshname, char *tex, char *masks, float *envmapmax, float *envmapmin)
 {    
     loopmd3skins(meshname, s,
-        s_sprintfd(spath)("%s/%s", md3dir, tex);
-        s.tex = textureload(spath, 0, true, false);
+        s.tex = textureload(makerelpath(md3dir, tex), 0, true, false);
         if(*masks)
         {
-            s_sprintfd(mpath)("%s%s/%s", renderpath==R_FIXEDFUNCTION ? "<ffmask:25>" : "", md3dir, masks);
-            s.masks = textureload(mpath, 0, true, false);
+            s.masks = textureload(makerelpath(md3dir, masks, "<ffmask:25>"), 0, true, false);
             s.envmapmax = *envmapmax;
             s.envmapmin = *envmapmin;
         }
@@ -327,9 +318,14 @@ void md3glow(char *meshname, int *percent)
     loopmd3skins(meshname, s, s.glow = glow);
 }
 
+void md3glare(char *meshname, float *specglare, float *glowglare)
+{
+    loopmd3skins(meshname, s, { s.specglare = *specglare; s.glowglare = *glowglare; });
+}
+
 void md3alphatest(char *meshname, float *cutoff)
 {
-    loopmd3skins(meshname, s, s.alphatest = max(0, min(1, *cutoff)));
+    loopmd3skins(meshname, s, s.alphatest = max(0.0f, min(1.0f, *cutoff)));
 }
 
 void md3alphablend(char *meshname, int *blend)
@@ -343,14 +339,11 @@ void md3envmap(char *meshname, char *envmap)
     loopmd3skins(meshname, s, s.envmap = tex);
 }
 
-void md3bumpmap(char *meshname, char *skin, char *normalmap)
+void md3bumpmap(char *meshname, char *normalmap, char *skin)
 {
-    if(renderpath==R_FIXEDFUNCTION) return;
-    Texture *skintex, *normalmaptex;
-    s_sprintfd(spath)("%s/%s", md3dir, skin);
-    skintex = textureload(spath, 0, true, false);
-    s_sprintf(spath)("%s/%s", md3dir, normalmap);
-    normalmaptex = textureload(spath, 0, true, false);
+    Texture *normalmaptex = NULL, *skintex = NULL;
+    normalmaptex = textureload(makerelpath(md3dir, normalmap, "<noff>"), 0, true, false);
+    if(skin[0]) skintex = textureload(makerelpath(md3dir, skin, "<noff>"), 0, true, false);
     loopmd3skins(meshname, s, { s.unlittex = skintex; s.normalmap = normalmaptex; m.calctangents(); });
 }
 
@@ -371,7 +364,6 @@ void md3shader(char *meshname, char *shader)
 
 void md3scroll(char *meshname, float *scrollu, float *scrollv)
 {
-    if(renderpath!=R_FIXEDFUNCTION) return;
     loopmd3skins(meshname, s, { s.scrollu = *scrollu; s.scrollv = *scrollv; });
 }
 
@@ -383,7 +375,7 @@ void md3anim(char *anim, int *frame, int *range, float *speed, int *priority)
     if(anims.empty()) conoutf("could not find animation %s", anim);
     else loopv(anims)
     {
-        loadingmd3->parts.last()->setanim(anims[i], *frame, *range, *speed, *priority);
+        loadingmd3->parts.last()->setanim(0, anims[i], *frame, *range, *speed, *priority);
     }
 }
 
@@ -394,12 +386,18 @@ void md3link(int *parent, int *child, char *tagname)
     if(!loadingmd3->parts[*parent]->link(loadingmd3->parts[*child], tagname)) conoutf("could not link model %s", loadingmd3->loadname);
 }
 
+void md3noclip(char *meshname, int *noclip)
+{
+    loopmd3meshes(meshname, m, m.noclip = *noclip!=0);
+}
+
 COMMAND(md3load, "s");
 COMMAND(md3pitch, "ffff");
 COMMAND(md3skin, "sssff");
 COMMAND(md3spec, "si");
 COMMAND(md3ambient, "si");
 COMMAND(md3glow, "si");
+COMMAND(md3glare, "sff");
 COMMAND(md3alphatest, "sf");
 COMMAND(md3alphablend, "si");
 COMMAND(md3envmap, "ss");
@@ -410,4 +408,5 @@ COMMAND(md3shader, "ss");
 COMMAND(md3scroll, "sff");
 COMMAND(md3anim, "siifi");
 COMMAND(md3link, "iis");
+COMMAND(md3noclip, "si");
             

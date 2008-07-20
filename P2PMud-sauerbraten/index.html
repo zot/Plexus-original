@@ -507,6 +507,10 @@ StartingOut
 RoadMap
 [[News]]</pre>
 </div>
+<div title="Done" modifier="WRB" created="200807192043" modified="200807192045" changecount="2">
+<pre>7/18/08 Roy: Upgrade to latest code base (2008 6/19)
+</pre>
+</div>
 <div title="Flow" modifier="Zot" created="200806191220" modified="200806191220" changecount="2">
 <pre>~PCs can only perform limited actions without approval
 * talking
@@ -597,7 +601,7 @@ Since that time, TEAM CTHULHU's MUD has metamophosed many times, each time shedd
 
 You can even see a reference to TEAM CTHULHU in the CREDITS file of [[LPMud|http://www.genesismud.org/]].  We came up with an idea called &quot;forwarders&quot; which became &quot;shadows&quot; in ~LPMud.  There's a fairly early version of ~LPMud [[here|http://ibiblio.net/pub/historic-linux/ftp-archives/sunsite.unc.edu/Nov-06-1994/games/muds/]].</pre>
 </div>
-<div title="RoadMap" modifier="WRB" created="200806191122" modified="200807190920" changecount="13">
+<div title="RoadMap" modifier="BillBurdick" created="200806191122" modified="200807190931" changecount="18">
 <pre>!Milestones
 *[''DONE''] The Wedge
 **Remote scripting
@@ -614,9 +618,17 @@ You can even see a reference to TEAM CTHULHU in the CREDITS file of [[LPMud|http
 *Sharing with Jgit
 **Each world gets a branch off the initial starting directory (a dir with a readme)
 **Git tree objects are stored in PAST, cached in a local Git repo, and extracted into a local directory
-
-!Tools
-*materials for sensors (use var to set material id) (callback set on material id)
+...
+*Game
+**materials for sensors (use var to set material id) (callback set on material id)
+**inventory mgmt (+ gui)
+**stats (gold)
+**shop keeper
+**basic monster
+**dead monsters drop loot
+**wizard guns (create monster, move, talk, paralyze, destroy)
+**propagate map changes
+**saved map chunks
 
 [[Goals]]</pre>
 </div>
@@ -635,9 +647,11 @@ Once you have the stuff, you need to:
 *Start the groovy command server in Eclipse (using the Cmd Server launcher)
 *Start sauer (I find it's much better to start up with the -t option when testing, so it doesn't take over my screen)</pre>
 </div>
-<div title="ToDo" modifier="Zot" created="200806171610" modified="200806191119" changecount="3">
-<pre>!Upgrade
-Upgrade to latest code base (2008 6/19)
+<div title="ToDo" modifier="WRB" created="200806171610" modified="200807192045" changecount="5">
+<pre>[[Done]]
+
+Use Scribe
+fix orientation
 
 !Update
 Update docs to refer to new platform (Groovy/Sauerbraten) instead of old (Javascript/Mozilla)
@@ -679,7 +693,6 @@ blast
 paralyze
 puppet
 die roll
-
 
 !Network
 slaverequest req

@@ -3,6 +3,9 @@
 *.so
 *.dll
 *.class
+*.Po
+*.cache/
+.deps
 config.log
 config.status
 sauer_client

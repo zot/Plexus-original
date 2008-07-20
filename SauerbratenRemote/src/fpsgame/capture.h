@@ -22,10 +22,11 @@ struct capturestate
         vec o;
         string owner, enemy;
 #ifndef CAPTURESERV
+        vec ammopos;
         string name, info;
         extentity *ent;
 #endif
-        int ammotype, ammo, owners, enemies, converted, capturetime;
+        int ammogroup, ammotype, ammo, owners, enemies, converted, capturetime;
 
         baseinfo() { reset(); }
 
@@ -41,6 +42,7 @@ struct capturestate
             noenemy();
             owner[0] = '\0';
             capturetime = -1;
+            ammogroup = 0;
             ammotype = 0;
             ammo = 0;
             owners = 0;
@@ -102,7 +104,7 @@ struct capturestate
         bool addammo(int i)
         {
             if(ammo>=MAXAMMO) return false;
-            ammo = min(ammo+i, MAXAMMO);
+            ammo = min(ammo+i, int(MAXAMMO));
             return true;
         }
 
@@ -151,8 +153,14 @@ struct capturestate
     void addbase(int ammotype, const vec &o)
     {
         baseinfo &b = bases.add();
-        b.ammotype = ammotype ? ammotype : rnd(5)+1;
+        b.ammogroup = min(ammotype, 0);
+        b.ammotype = ammotype > 0 ? ammotype : rnd(5)+1;
         b.o = o;
+
+        if(b.ammogroup) 
+        {
+            loopv(bases) if(b.ammogroup==bases[i].ammogroup) b.ammotype = bases[i].ammotype;
+        }
     }
 
     void initbase(int i, int ammotype, const char *owner, const char *enemy, int converted, int ammo)
@@ -199,10 +207,16 @@ struct capturestate
 
 struct captureclient : capturestate
 {
+    static const int FIREBALLRADIUS = 5;
+
     fpsclient &cl;
     float radarscale;
+    int lastrepammo;
 
-    captureclient(fpsclient &cl) : cl(cl), radarscale(0)
+    IVARP(capturetether, 0, 1, 1);
+    IVARP(autorepammo, 0, 1, 1);
+
+    captureclient(fpsclient &cl) : cl(cl), radarscale(0), lastrepammo(-1)
     {
         CCOMMAND(repammo, "", (captureclient *self), self->replenishammo());
     }
@@ -226,33 +240,118 @@ struct captureclient : capturestate
         cl.et.repammo(cl.player1, type);
     }
 
-    void renderbases()
+    void checkbaseammo(fpsent *d)
     {
         int gamemode = cl.gamemode;
+        if(m_noitems || !autorepammo() || d!=cl.player1 || d->state!=CS_ALIVE) return;
+        vec o = d->o;
+        o.z -= d->eyeheight;
         loopv(bases)
         {
             baseinfo &b = bases[i];
-            const char *flagname = b.owner[0] ? (strcmp(b.owner, cl.player1->team) ? "flags/red" : "flags/blue") : "flags/neutral";
-            rendermodel(b.ent->color, b.ent->dir, flagname, ANIM_MAPMODEL|ANIM_LOOP, 0, 0, b.o, 0, 0, 0, 0, NULL, MDL_SHADOW | MDL_CULL_VFC | MDL_CULL_OCCLUDED);
-            if(b.ammotype>0 && b.ammotype<=I_CARTRIDGES-I_SHELLS+1) loopi(m_noitemsrail ? 0 : (m_noitems ? 1 : b.ammo))
+            if(b.ammotype>0 && b.ammotype<=I_CARTRIDGES-I_SHELLS+1 && insidebase(b, d->o) && !strcmp(b.owner, d->team) && b.o.dist(o) < 12)
             {
-                float angle = 2*M_PI*(cl.lastmillis/4000.0f + i/float(MAXAMMO));
-                vec p(b.o);
-                p.x += 10*cosf(angle);
-                p.y += 10*sinf(angle);
-                p.z += 4;
-                rendermodel(b.ent->color, b.ent->dir, cl.et.entmdlname(I_SHELLS+b.ammotype-1), ANIM_MAPMODEL|ANIM_LOOP, 0, 0, p, 0, 0, 0, 0, NULL, MDL_SHADOW | MDL_CULL_VFC | MDL_CULL_OCCLUDED);
+                if(lastrepammo!=i)
+                {
+                    if(b.ammo > 0 && !cl.player1->hasmaxammo(b.ammotype-1+I_SHELLS)) cl.cc.addmsg(SV_REPAMMO, "r");
+                    lastrepammo = i;
+                }
+                return;
             }
+        }
+        lastrepammo = -1;
+    }    
+        
+    void rendertether(fpsent *d)
+    {
+        int oldbase = d->lastbase;
+        d->lastbase = -1;  
+        vec pos(d->o.x, d->o.y, d->o.z + (d->aboveeye - d->eyeheight)/2);
+        if(d->state==CS_ALIVE) 
+        {
+            loopv(bases)
+            {
+                baseinfo &b = bases[i];
+                if(!insidebase(b, d->o) || (strcmp(b.owner, d->team) && strcmp(b.enemy, d->team))) continue;
+                particle_flare(b.ammopos, pos, 0, strcmp(d->team, cl.player1->team) ? 29 : 30);
+                if(oldbase < 0) 
+                {
+                    particle_fireball(pos, 4, strcmp(d->team, cl.player1->team) ? 31 : 32, 250);
+                    particle_splash(0, 50, 250, pos);
+                }
+                d->lastbase = i;
+            }
+        }
+        if(d->lastbase < 0 && oldbase >= 0)
+        {
+            particle_fireball(pos, 4, strcmp(d->team, cl.player1->team) ? 31 : 32, 250);
+            particle_splash(0, 50, 250, pos);
+        }
+    }
+
+    void preloadbases()
+    {
+        static const char *basemodels[3] = { "base/neutral", "base/red", "base/blue" };
+        loopi(3) loadmodel(basemodels[i], -1, true);
+    }
+
+    void renderbases()
+    {
+        int gamemode = cl.gamemode;
+        extern bool shadowmapping;
+        if(capturetether() && !shadowmapping) 
+        {
+            loopv(cl.players)
+            {
+                fpsent *d = cl.players[i];
+                if(d) rendertether(d);
+            }
+            rendertether(cl.player1);
+        }
+        loopv(bases)
+        {
+            baseinfo &b = bases[i];
+            const char *flagname = b.owner[0] ? (strcmp(b.owner, cl.player1->team) ? "base/red" : "base/blue") : "base/neutral";
+            rendermodel(&b.ent->light, flagname, ANIM_MAPMODEL|ANIM_LOOP, b.o, 0, 0, MDL_SHADOW | MDL_CULL_VFC | MDL_CULL_OCCLUDED);
+            particle_fireball(b.ammopos, 5, b.owner[0] ? (strcmp(b.owner, cl.player1->team) ? 31 : 32) : 33, 0);
+
+            if(!m_noitemsrail && b.ammotype>0 && b.ammotype<=I_CARTRIDGES-I_SHELLS+1) 
+            {
+                const char *ammoname = cl.et.entmdlname(I_SHELLS+b.ammotype-1);
+                if(m_noitems)
+                { 
+                    vec height(0, 0, 0);
+                    abovemodel(height, ammoname);
+                    vec ammopos(b.ammopos);
+                    ammopos.z -= height.z/2 + sinf(cl.lastmillis/100.0f)/20;
+                    rendermodel(&b.ent->light, ammoname, ANIM_MAPMODEL|ANIM_LOOP, ammopos, cl.lastmillis/10.0f, 0, MDL_SHADOW | MDL_CULL_VFC | MDL_CULL_OCCLUDED);
+                }
+                else loopj(b.ammo)
+                {
+                    float angle = 2*M_PI*(cl.lastmillis/4000.0f + j/float(MAXAMMO));
+                    vec ammopos(b.o);
+                    ammopos.x += 10*cosf(angle);
+                    ammopos.y += 10*sinf(angle);
+                    ammopos.z += 4;
+                    rendermodel(&b.ent->light, cl.et.entmdlname(I_SHELLS+b.ammotype-1), ANIM_MAPMODEL|ANIM_LOOP, ammopos, 0, 0, MDL_SHADOW | MDL_CULL_VFC | MDL_CULL_OCCLUDED);
+                }
+            }
+
             int ttype = 11, mtype = -1;
             if(b.owner[0])
             {
                 bool isowner = !strcmp(b.owner, cl.player1->team);
+#if 0
                 if(b.enemy[0])
                 {
                     s_sprintf(b.info)("\f%d%s \f0vs. \f%d%s", isowner ? 3 : 1, b.enemy, isowner ? 1 : 3, b.owner);
                     mtype = isowner ? 19 : 20; 
                 }
                 else { s_sprintf(b.info)("%s", b.owner); ttype = isowner ? 16 : 13; }
+#else
+                if(b.enemy[0]) mtype = isowner ? 19 : 20;
+                s_sprintf(b.info)("%s", b.owner); ttype = isowner ? 16 : 13;
+#endif
             }
             else if(b.enemy[0])
             {
@@ -261,9 +360,9 @@ struct captureclient : capturestate
                 else { ttype = 16; mtype = 18; }
             }
             else b.info[0] = '\0';
-            vec above(b.o);
-            abovemodel(above, flagname);
-            above.z += 2.0f;
+
+            vec above(b.ammopos);
+            above.z += FIREBALLRADIUS+1.0f;
             particle_text(above, b.info, ttype, 1);
             if(mtype>=0)
             {
@@ -281,9 +380,9 @@ struct captureclient : capturestate
         glTexCoord2f(0.0f, 1.0f); glVertex2f(x,   y+s);
     }
    
-    void drawblips(int x, int y, int s, int type, bool skipenemy = false)
+    void drawblips(fpsent *d, int x, int y, int s, int type, bool skipenemy = false)
     {
-        const char *textures[3] = {"data/blip_red.png", "data/blip_grey.png", "data/blip_blue.png"};
+        const char *textures[3] = {"packages/hud/blip_red.png", "packages/hud/blip_grey.png", "packages/hud/blip_blue.png"};
         settexture(textures[max(type+1, 0)]);
         glBegin(GL_QUADS);
         float scale = radarscale<=0 || radarscale>cl.maxradarscale() ? cl.maxradarscale() : radarscale;
@@ -299,51 +398,50 @@ struct captureclient : capturestate
                 case -2: if(!b.enemy[0] || !strcmp(b.enemy, cl.player1->team)) continue; break;
             } 
             vec dir(b.o);
-            dir.sub(cl.player1->o);
+            dir.sub(d->o);
             dir.z = 0.0f;
             float dist = dir.magnitude();
-            if(dist >= scale) dir.mul(scale/dist);
-            dir.rotate_around_z(-cl.player1->yaw*RAD);
-            drawradar(x + s*0.5f*0.95f*(1.0f+dir.x/scale), y + s*0.5f*0.95f*(1.0f+dir.y/scale), 0.05f*s);
+            if(dist >= scale*(1 - 0.05f)) dir.mul(scale*(1 - 0.05f)/dist);
+            dir.rotate_around_z(-d->yaw*RAD);
+            drawradar(x + s*0.5f*(1.0f + dir.x/scale - 0.05f), y + s*0.5f*(1.0f + dir.y/scale - 0.05f), 0.05f*s);
         }
         glEnd();
     }
    
-    int respawnwait()
+    int respawnwait(fpsent *d)
     {
         int gamemode = cl.gamemode;
         if(m_regencapture) return -1;
-        return max(0, (m_noitemsrail ? RESPAWNSECS/2 : RESPAWNSECS)-(cl.lastmillis-cl.player1->lastpain)/1000);
+        return max(0, (m_noitemsrail ? RESPAWNSECS/2 : RESPAWNSECS)-(cl.lastmillis-d->lastpain)/1000);
     }
 
-    void capturehud(int w, int h)
+    void capturehud(fpsent *d, int w, int h)
     {
-        glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         int x = 1800*w/h*34/40, y = 1800*1/40, s = 1800*w/h*5/40;
         glColor3f(1, 1, 1);
-        settexture("data/radar.png");
+        settexture("packages/hud/radar.png");
         glBegin(GL_QUADS);
         drawradar(float(x), float(y), float(s));
         glEnd();
         bool showenemies = cl.lastmillis%1000 >= 500;
-        drawblips(x, y, s, 1, showenemies);
-        drawblips(x, y, s, 0, showenemies);
-        drawblips(x, y, s, -1, showenemies);
-        if(showenemies) drawblips(x, y, s, -2);
-        if(cl.player1->state == CS_DEAD)
+        drawblips(d, x, y, s, 1, showenemies);
+        drawblips(d, x, y, s, 0, showenemies);
+        drawblips(d, x, y, s, -1, showenemies);
+        if(showenemies) drawblips(d, x, y, s, -2);
+        if(d->state == CS_DEAD)
         {
-            int wait = respawnwait();
+            int wait = respawnwait(d);
             if(wait>=0)
             {
                 glPushMatrix();
                 glLoadIdentity();
                 glOrtho(0, w*900/h, 900, 0, -1, 1);
-                draw_textf("%d", (x+s/2)/2-(wait>=10 ? 28 : 16), (y+s/2)/2-32, wait);
+                bool flash = wait>0 && d==cl.player1 && cl.lastspawnattempt>=d->lastpain && cl.lastmillis < cl.lastspawnattempt+100;
+                draw_textf("%s%d", (x+s/2)/2-(wait>=10 ? 28 : 16), (y+s/2)/2-32, flash ? "\f3" : "", wait);
                 glPopMatrix();
             }
         }
-        glDisable(GL_BLEND);
     }
 
     void setupbases()
@@ -355,6 +453,9 @@ struct captureclient : capturestate
             if(e->type!=BASE) continue; 
             baseinfo &b = bases.add();
             b.o = e->o;
+            b.ammopos = b.o;
+            abovemodel(b.ammopos, "base/neutral");
+            b.ammopos.z += FIREBALLRADIUS-2;
             b.ammotype = e->attr1;
             s_sprintfd(alias)("base_%d", e->attr2);
             const char *name = getalias(alias);
@@ -366,20 +467,21 @@ struct captureclient : capturestate
         center.div(bases.length());
         radarscale = 0;
         loopv(bases) radarscale = max(radarscale, 2*center.dist(bases[i].o));
+        lastrepammo = -1;
     }
             
     void sendbases(ucharbuf &p)
     {
         putint(p, SV_BASES);
+        putint(p, bases.length());
         loopv(bases)
         {
             baseinfo &b = bases[i];
-            putint(p, max(b.ammotype, 0));
+            putint(p, b.ammotype);
             putint(p, int(b.o.x*DMF));
             putint(p, int(b.o.y*DMF));
             putint(p, int(b.o.z*DMF));
         }
-        putint(p, -1);
     }
 
     void updatebase(int i, const char *owner, const char *enemy, int converted, int ammo)
@@ -390,15 +492,16 @@ struct captureclient : capturestate
         {
             if(strcmp(b.owner, owner)) 
             { 
-                conoutf("\f2%s captured %s", owner, b.name); 
+                conoutf(CON_GAMEINFO, "\f2%s captured %s", owner, b.name); 
                 if(!strcmp(owner, cl.player1->team)) playsound(S_V_BASECAP); 
             }
         }
         else if(b.owner[0]) 
         { 
-            conoutf("\f2%s lost %s", b.owner, b.name); 
+            conoutf(CON_GAMEINFO, "\f2%s lost %s", b.owner, b.name); 
             if(!strcmp(b.owner, cl.player1->team)) playsound(S_V_BASELOST); 
         }
+        if(strcmp(b.owner, owner)) particle_splash(0, 200, 250, b.ammopos);
         s_strcpy(b.owner, owner);
         s_strcpy(b.enemy, enemy);
         b.converted = converted;
@@ -409,7 +512,7 @@ struct captureclient : capturestate
     void setscore(const char *team, int total)
     {
         findscore(team).total = total;
-        if(total>=10000) conoutf("team %s captured all bases", team);
+        if(total>=10000) conoutf(CON_GAMEINFO, "team %s captured all bases", team);
     }
 
     int closesttoenemy(const char *team, bool noattacked = false, bool farthest = false)
@@ -450,7 +553,7 @@ struct captureclient : capturestate
         loopv(cl.et.ents)
         {
             extentity *e = cl.et.ents[i];
-            if(e->type!=PLAYERSTART) continue;
+            if(e->type!=PLAYERSTART || e->attr2) continue;
             float dist = e->o.dist(b.o);
             if(dist < bestdist)
             {
@@ -634,14 +737,18 @@ struct captureservmode : capturestate, servmode
 
     void initclient(clientinfo *ci, ucharbuf &p, bool connecting)
     {
-        if(connecting) loopv(scores)
+        if(connecting) 
         {
-            score &cs = scores[i];
-            putint(p, SV_TEAMSCORE);
-            sendstring(cs.team, p);
-            putint(p, cs.total);
+            loopv(scores)
+            {
+                score &cs = scores[i];
+                putint(p, SV_TEAMSCORE);
+                sendstring(cs.team, p);
+                putint(p, cs.total);
+            }
         }
         putint(p, SV_BASES);
+        putint(p, bases.length());
         loopv(bases)
         {
             baseinfo &b = bases[i];
@@ -651,7 +758,6 @@ struct captureservmode : capturestate, servmode
             putint(p, b.converted);
             putint(p, b.ammo);
         }
-        putint(p, -1);
     }
 
     void endcheck()
@@ -722,14 +828,15 @@ struct captureservmode : capturestate, servmode
 
     void parsebases(ucharbuf &p)
     {
-        int ammotype;
-        while((ammotype = getint(p))>=0)
+        int numbases = getint(p);
+        loopi(numbases)
         {
+            int ammotype = getint(p);
             vec o;
             o.x = getint(p)/DMF;
             o.y = getint(p)/DMF;
             o.z = getint(p)/DMF;
-            if(notgotbases) addbase(ammotype>=GUN_SG && ammotype<=GUN_PISTOL ? ammotype : 0, o);
+            if(notgotbases) addbase(ammotype>=GUN_SG && ammotype<=GUN_PISTOL ? ammotype : min(ammotype, 0), o);
         }
         if(notgotbases)
         {

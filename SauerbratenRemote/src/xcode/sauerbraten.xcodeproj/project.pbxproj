@@ -16,6 +16,10 @@
 		B90ADD7209B344D800A5B00B /* peer.c in Sources */ = {isa = PBXBuildFile; fileRef = B90ADD3009B344D800A5B00B /* peer.c */; };
 		B90ADD7309B344D800A5B00B /* protocol.c in Sources */ = {isa = PBXBuildFile; fileRef = B90ADD3109B344D800A5B00B /* protocol.c */; };
 		B90ADD7609B344D800A5B00B /* unix.c in Sources */ = {isa = PBXBuildFile; fileRef = B90ADD3409B344D800A5B00B /* unix.c */; };
+		B91D401F0D525FD3004EF78A /* animmodel.h in Headers */ = {isa = PBXBuildFile; fileRef = B91D401E0D525FD3004EF78A /* animmodel.h */; };
+		B91D40210D525FE0004EF78A /* decal.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B91D40200D525FE0004EF78A /* decal.cpp */; };
+		B91D40230D525FE9004EF78A /* md5.h in Headers */ = {isa = PBXBuildFile; fileRef = B91D40220D525FE9004EF78A /* md5.h */; };
+		B91D40250D52600A004EF78A /* skelmodel.h in Headers */ = {isa = PBXBuildFile; fileRef = B91D40240D52600A004EF78A /* skelmodel.h */; };
 		B92DC0FC09D08CF9008219BD /* SDL_image.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B92DC0F909D08CF9008219BD /* SDL_image.framework */; };
 		B92DC0FD09D08CF9008219BD /* SDL_mixer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B92DC0FA09D08CF9008219BD /* SDL_mixer.framework */; };
 		B92DC0FE09D08CF9008219BD /* SDL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B92DC0FB09D08CF9008219BD /* SDL.framework */; };
@@ -23,7 +27,6 @@
 		B930D0D20A3DA92300BDFB85 /* map.icns in Resources */ = {isa = PBXBuildFile; fileRef = B930D0D10A3DA92300BDFB85 /* map.icns */; };
 		B941988C09207E810029DAD1 /* SDLMain.h in Headers */ = {isa = PBXBuildFile; fileRef = F5A47A9D01A0482F01D3D55B /* SDLMain.h */; };
 		B94198A509207E810029DAD1 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
-		B94198A609207E810029DAD1 /* sauerbraten.icns in Resources */ = {isa = PBXBuildFile; fileRef = B97E99CE085F4B3E002F9BC6 /* sauerbraten.icns */; };
 		B94198A809207E810029DAD1 /* SDLMain.m in Sources */ = {isa = PBXBuildFile; fileRef = F5A47A9E01A0483001D3D55B /* SDLMain.m */; };
 		B94198C309207E810029DAD1 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
 		B94198C409207E810029DAD1 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2F67ED704C74A3F00A80002 /* OpenGL.framework */; };
@@ -105,12 +108,22 @@
 		B9CACA13092099DF00A13F04 /* launcher-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = B9CACA12092099DF00A13F04 /* launcher-Info.plist */; };
 		B9CACA15092099E700A13F04 /* sauerbraten-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = B9CACA14092099E700A13F04 /* sauerbraten-Info.plist */; };
 		B9CACA2509209A5800A13F04 /* sauerbraten.icns in Resources */ = {isa = PBXBuildFile; fileRef = B97E99CE085F4B3E002F9BC6 /* sauerbraten.icns */; };
+		D116C0AB0D9F7DB500E8B945 /* rendertarget.h in Headers */ = {isa = PBXBuildFile; fileRef = D116C0AA0D9F7DB500E8B945 /* rendertarget.h */; };
+		D118DEB60D979281000E8C4C /* glare.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D118DEB50D979281000E8C4C /* glare.cpp */; };
+		D123F95B0DA8B312001DB09F /* ctf.h in Headers */ = {isa = PBXBuildFile; fileRef = D123F95A0DA8B312001DB09F /* ctf.h */; };
+		D139B59E0D59A8E600AA994D /* assassin.h in Headers */ = {isa = PBXBuildFile; fileRef = D139B59D0D59A8E600AA994D /* assassin.h */; };
 		D167A1970C493AED007F7D96 /* Nomap.png in Resources */ = {isa = PBXBuildFile; fileRef = D167A1960C493AED007F7D96 /* Nomap.png */; };
+		D16BD00D0D7000EA0053CECE /* dynlight.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D16BD00C0D7000EA0053CECE /* dynlight.cpp */; };
+		D16C16920E04812500A522EB /* obj.h in Headers */ = {isa = PBXBuildFile; fileRef = D16C16900E04812500A522EB /* obj.h */; };
+		D16C16930E04812500A522EB /* textedit.h in Headers */ = {isa = PBXBuildFile; fileRef = D16C16910E04812500A522EB /* textedit.h */; };
 		D17E0F2C0BAF1FA9008BB696 /* Keys.gif in Resources */ = {isa = PBXBuildFile; fileRef = D17E0F280BAF1FA9008BB696 /* Keys.gif */; };
-		D17E0F2D0BAF1FA9008BB696 /* Main.gif in Resources */ = {isa = PBXBuildFile; fileRef = D17E0F290BAF1FA9008BB696 /* Main.gif */; };
 		D17E0F2E0BAF1FA9008BB696 /* Server.gif in Resources */ = {isa = PBXBuildFile; fileRef = D17E0F2A0BAF1FA9008BB696 /* Server.gif */; };
-		D17E0F2F0BAF1FA9008BB696 /* EisenStern.gif in Resources */ = {isa = PBXBuildFile; fileRef = D17E0F2B0BAF1FA9008BB696 /* EisenStern.gif */; };
 		D17E0F310BAF2031008BB696 /* Help.tiff in Resources */ = {isa = PBXBuildFile; fileRef = D17E0F300BAF2031008BB696 /* Help.tiff */; };
+		D18B8FC10DB0AF8200171439 /* explosion.h in Headers */ = {isa = PBXBuildFile; fileRef = D18B8FBE0DB0AF8200171439 /* explosion.h */; };
+		D18B8FC20DB0AF8200171439 /* lensflare.h in Headers */ = {isa = PBXBuildFile; fileRef = D18B8FBF0DB0AF8200171439 /* lensflare.h */; };
+		D18B8FC30DB0AF8200171439 /* lightning.h in Headers */ = {isa = PBXBuildFile; fileRef = D18B8FC00DB0AF8200171439 /* lightning.h */; };
+		D1C660CA0D5467C8002E52C1 /* pvs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D1C660C90D5467C8002E52C1 /* pvs.cpp */; };
+		D1DB53E80D70F1CD003AE25C /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = D1DB53E70D70F1CD003AE25C /* Localizable.strings */; };
 		D1F0AC200BB0688A00CE4E84 /* Maps.gif in Resources */ = {isa = PBXBuildFile; fileRef = D1F0AC1F0BB0688A00CE4E84 /* Maps.gif */; };
 /* End PBXBuildFile section */
 
@@ -138,6 +151,10 @@
 		B90ADD3009B344D800A5B00B /* peer.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = peer.c; sourceTree = "<group>"; };
 		B90ADD3109B344D800A5B00B /* protocol.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = protocol.c; sourceTree = "<group>"; };
 		B90ADD3409B344D800A5B00B /* unix.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = unix.c; sourceTree = "<group>"; };
+		B91D401E0D525FD3004EF78A /* animmodel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = animmodel.h; sourceTree = "<group>"; };
+		B91D40200D525FE0004EF78A /* decal.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = decal.cpp; sourceTree = "<group>"; };
+		B91D40220D525FE9004EF78A /* md5.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = md5.h; sourceTree = "<group>"; };
+		B91D40240D52600A004EF78A /* skelmodel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = skelmodel.h; sourceTree = "<group>"; };
 		B92DC0F909D08CF9008219BD /* SDL_image.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL_image.framework; path = /Library/Frameworks/SDL_image.framework; sourceTree = "<absolute>"; };
 		B92DC0FA09D08CF9008219BD /* SDL_mixer.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL_mixer.framework; path = /Library/Frameworks/SDL_mixer.framework; sourceTree = "<absolute>"; };
 		B92DC0FB09D08CF9008219BD /* SDL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL.framework; path = /Library/Frameworks/SDL.framework; sourceTree = "<absolute>"; };
@@ -225,12 +242,22 @@
 		B9AC7ACE0D06DB44005506F8 /* tools.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tools.h; sourceTree = "<group>"; };
 		B9CACA12092099DF00A13F04 /* launcher-Info.plist */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.xml; path = "launcher-Info.plist"; sourceTree = "<group>"; };
 		B9CACA14092099E700A13F04 /* sauerbraten-Info.plist */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.xml; path = "sauerbraten-Info.plist"; sourceTree = "<group>"; };
+		D116C0AA0D9F7DB500E8B945 /* rendertarget.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rendertarget.h; sourceTree = "<group>"; };
+		D118DEB50D979281000E8C4C /* glare.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = glare.cpp; sourceTree = "<group>"; };
+		D123F95A0DA8B312001DB09F /* ctf.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ctf.h; sourceTree = "<group>"; };
+		D139B59D0D59A8E600AA994D /* assassin.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = assassin.h; sourceTree = "<group>"; };
 		D167A1960C493AED007F7D96 /* Nomap.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Nomap.png; sourceTree = "<group>"; };
+		D16BD00C0D7000EA0053CECE /* dynlight.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = dynlight.cpp; sourceTree = "<group>"; };
+		D16C16900E04812500A522EB /* obj.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = obj.h; sourceTree = "<group>"; };
+		D16C16910E04812500A522EB /* textedit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = textedit.h; sourceTree = "<group>"; };
 		D17E0F280BAF1FA9008BB696 /* Keys.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = Keys.gif; sourceTree = "<group>"; };
-		D17E0F290BAF1FA9008BB696 /* Main.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = Main.gif; sourceTree = "<group>"; };
 		D17E0F2A0BAF1FA9008BB696 /* Server.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = Server.gif; sourceTree = "<group>"; };
-		D17E0F2B0BAF1FA9008BB696 /* EisenStern.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = EisenStern.gif; sourceTree = "<group>"; };
 		D17E0F300BAF2031008BB696 /* Help.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = Help.tiff; sourceTree = "<group>"; };
+		D18B8FBE0DB0AF8200171439 /* explosion.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = explosion.h; sourceTree = "<group>"; };
+		D18B8FBF0DB0AF8200171439 /* lensflare.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lensflare.h; sourceTree = "<group>"; };
+		D18B8FC00DB0AF8200171439 /* lightning.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lightning.h; sourceTree = "<group>"; };
+		D1C660C90D5467C8002E52C1 /* pvs.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = pvs.cpp; sourceTree = "<group>"; };
+		D1DB53E50D70F1C3003AE25C /* English */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/Localizable.strings; sourceTree = "<group>"; };
 		D1F0AC1F0BB0688A00CE4E84 /* Maps.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = Maps.gif; sourceTree = "<group>"; };
 		F5A47A9D01A0482F01D3D55B /* SDLMain.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = SDLMain.h; sourceTree = SOURCE_ROOT; };
 		F5A47A9E01A0483001D3D55B /* SDLMain.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = SDLMain.m; sourceTree = SOURCE_ROOT; };
@@ -332,18 +359,17 @@
 			isa = PBXGroup;
 			children = (
 				D167A1960C493AED007F7D96 /* Nomap.png */,
-				D17E0F290BAF1FA9008BB696 /* Main.gif */,
 				D1F0AC1F0BB0688A00CE4E84 /* Maps.gif */,
 				D17E0F280BAF1FA9008BB696 /* Keys.gif */,
 				D17E0F2A0BAF1FA9008BB696 /* Server.gif */,
-				D17E0F2B0BAF1FA9008BB696 /* EisenStern.gif */,
 				D17E0F300BAF2031008BB696 /* Help.tiff */,
 				B930D0D10A3DA92300BDFB85 /* map.icns */,
 				B9CACA14092099E700A13F04 /* sauerbraten-Info.plist */,
 				B9CACA12092099DF00A13F04 /* launcher-Info.plist */,
+				B97E99CE085F4B3E002F9BC6 /* sauerbraten.icns */,
 				B96D0D5A0920971300B6C936 /* MainMenu.nib */,
 				089C165CFE840E0CC02AAC07 /* InfoPlist.strings */,
-				B97E99CE085F4B3E002F9BC6 /* sauerbraten.icns */,
+				D1DB53E70D70F1CD003AE25C /* Localizable.strings */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -375,13 +401,24 @@
 		B9AC7A830D06DB44005506F8 /* engine */ = {
 			isa = PBXGroup;
 			children = (
+				D16C16900E04812500A522EB /* obj.h */,
+				D16C16910E04812500A522EB /* textedit.h */,
+				D18B8FBE0DB0AF8200171439 /* explosion.h */,
+				D18B8FBF0DB0AF8200171439 /* lensflare.h */,
+				D18B8FC00DB0AF8200171439 /* lightning.h */,
+				D116C0AA0D9F7DB500E8B945 /* rendertarget.h */,
+				D118DEB50D979281000E8C4C /* glare.cpp */,
+				D1C660C90D5467C8002E52C1 /* pvs.cpp */,
+				D16BD00C0D7000EA0053CECE /* dynlight.cpp */,
 				B9AC7A840D06DB44005506F8 /* 3dgui.cpp */,
+				B91D401E0D525FD3004EF78A /* animmodel.h */,
 				B9AC7A850D06DB44005506F8 /* bih.cpp */,
 				B9AC7A860D06DB44005506F8 /* bih.h */,
 				B9AC7A870D06DB44005506F8 /* client.cpp */,
 				B9AC7A880D06DB44005506F8 /* command.cpp */,
 				B9AC7A890D06DB44005506F8 /* console.cpp */,
 				B9AC7A8A0D06DB44005506F8 /* cubeloader.cpp */,
+				B91D40200D525FE0004EF78A /* decal.cpp */,
 				B9AC7A8B0D06DB44005506F8 /* engine.h */,
 				B9AC7A8C0D06DB44005506F8 /* grass.cpp */,
 				B9AC7A8D0D06DB44005506F8 /* lightmap.cpp */,
@@ -390,6 +427,7 @@
 				B9AC7A900D06DB44005506F8 /* material.cpp */,
 				B9AC7A910D06DB44005506F8 /* md2.h */,
 				B9AC7A920D06DB44005506F8 /* md3.h */,
+				B91D40220D525FE9004EF78A /* md5.h */,
 				B9AC7A930D06DB44005506F8 /* menus.cpp */,
 				B9AC7A940D06DB44005506F8 /* model.h */,
 				B9AC7A950D06DB44005506F8 /* normal.cpp */,
@@ -408,6 +446,7 @@
 				B9AC7AA20D06DB44005506F8 /* serverbrowser.cpp */,
 				B9AC7AA30D06DB44005506F8 /* shader.cpp */,
 				B9AC7AA40D06DB44005506F8 /* shadowmap.cpp */,
+				B91D40240D52600A004EF78A /* skelmodel.h */,
 				B9AC7AA50D06DB44005506F8 /* sound.cpp */,
 				B9AC7AA60D06DB44005506F8 /* texture.cpp */,
 				B9AC7AA70D06DB44005506F8 /* texture.h */,
@@ -424,6 +463,8 @@
 		B9AC7AAD0D06DB44005506F8 /* fpsgame */ = {
 			isa = PBXGroup;
 			children = (
+				D123F95A0DA8B312001DB09F /* ctf.h */,
+				D139B59D0D59A8E600AA994D /* assassin.h */,
 				B9AC7AAE0D06DB44005506F8 /* capture.h */,
 				B9AC7AAF0D06DB44005506F8 /* client.h */,
 				B9AC7AB00D06DB44005506F8 /* entities.h */,
@@ -519,6 +560,17 @@
 				B9AC7B120D06DB44005506F8 /* pch.h in Headers */,
 				B9AC7B140D06DB44005506F8 /* sbtrace.h in Headers */,
 				B9AC7B160D06DB44005506F8 /* tools.h in Headers */,
+				B91D401F0D525FD3004EF78A /* animmodel.h in Headers */,
+				B91D40230D525FE9004EF78A /* md5.h in Headers */,
+				B91D40250D52600A004EF78A /* skelmodel.h in Headers */,
+				D139B59E0D59A8E600AA994D /* assassin.h in Headers */,
+				D116C0AB0D9F7DB500E8B945 /* rendertarget.h in Headers */,
+				D123F95B0DA8B312001DB09F /* ctf.h in Headers */,
+				D18B8FC10DB0AF8200171439 /* explosion.h in Headers */,
+				D18B8FC20DB0AF8200171439 /* lensflare.h in Headers */,
+				D18B8FC30DB0AF8200171439 /* lightning.h in Headers */,
+				D16C16920E04812500A522EB /* obj.h in Headers */,
+				D16C16930E04812500A522EB /* textedit.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -587,7 +639,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				B94198A509207E810029DAD1 /* InfoPlist.strings in Resources */,
-				B94198A609207E810029DAD1 /* sauerbraten.icns in Resources */,
 				B9CACA15092099E700A13F04 /* sauerbraten-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -602,12 +653,11 @@
 				B90357B509D09B9D002C9DC7 /* InfoPlist.strings in Resources */,
 				B930D0D20A3DA92300BDFB85 /* map.icns in Resources */,
 				D17E0F2C0BAF1FA9008BB696 /* Keys.gif in Resources */,
-				D17E0F2D0BAF1FA9008BB696 /* Main.gif in Resources */,
 				D17E0F2E0BAF1FA9008BB696 /* Server.gif in Resources */,
-				D17E0F2F0BAF1FA9008BB696 /* EisenStern.gif in Resources */,
 				D17E0F310BAF2031008BB696 /* Help.tiff in Resources */,
 				D1F0AC200BB0688A00CE4E84 /* Maps.gif in Resources */,
 				D167A1970C493AED007F7D96 /* Nomap.png in Resources */,
+				D1DB53E80D70F1CD003AE25C /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -625,7 +675,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 1;
 			shellPath = /bin/sh;
-			shellScript = "echo $TARGET_BUILD_DIR\ncd $TARGET_BUILD_DIR\n\n#make the directory which our disk image will be made of\nmkdir sauerbraten\nmkdir sauerbraten/sauerbraten\n\n#copy sauerbraten there\n/Developer/Tools/CpMac -r $TARGET_BUILD_DIR/sauerbraten.app sauerbraten/sauerbraten\n/Developer/Tools/CpMac -r $TARGET_BUILD_DIR/launcher.app sauerbraten/\nmv sauerbraten/launcher.app sauerbraten/Sauerbraten.app\nstrip -u -r $TARGET_BUILD_DIR/sauerbraten/sauerbraten/sauerbraten.app/Contents/MacOS/sauerbraten -o $TARGET_BUILD_DIR/sauerbraten/sauerbraten/sauerbraten.app/Contents/MacOS/sauerbraten_stripped\nmv $TARGET_BUILD_DIR/sauerbraten/sauerbraten/sauerbraten.app/Contents/MacOS/sauerbraten $TARGET_BUILD_DIR/sauerbraten_nonstripped\nmv $TARGET_BUILD_DIR/sauerbraten/sauerbraten/sauerbraten.app/Contents/MacOS/sauerbraten_stripped $TARGET_BUILD_DIR/sauerbraten/sauerbraten/sauerbraten.app/Contents/MacOS/sauerbraten\n\n\n#install all frameworks into app bundle\nmkdir sauerbraten/sauerbraten/sauerbraten.app/Contents/Frameworks\nfor framework in SDL.framework SDL_mixer.framework SDL_image.framework\ndo\n\tif [ -d $LOCAL_LIBRARY_DIR/Frameworks/$framework/ ] \n\tthen\t\n\t\t/Developer/Tools/CpMac -r $LOCAL_LIBRARY_DIR/Frameworks/$framework/ sauerbraten/sauerbraten/sauerbraten.app/Contents/Frameworks\n\t\trm -rf sauerbraten/sauerbraten/sauerbraten.app/Contents/Frameworks/$framework/Versions/A/Headers\n\telse\n\t\texit 1\n\tfi\ndone\n\n#copy readme and data and remove unneccesary stuff\n/Developer/Tools/CpMac -r $SRCROOT/../../docs sauerbraten/\n/Developer/Tools/CpMac -r $SRCROOT/../../data sauerbraten/sauerbraten/\n/Developer/Tools/CpMac -r $SRCROOT/../../packages sauerbraten/sauerbraten/\n/Developer/Tools/CpMac -r $SRCROOT/../../src sauerbraten/sauerbraten/\n/Developer/Tools/CpMac -r $SRCROOT/../../README.html sauerbraten/\nrm -rf sauerbraten/docs/CVS/\nrm -rf sauerbraten/docs/*/CVS/\nrm -rf sauerbraten/docs/*/*/CVS/\nrm -f sauerbraten/docs/.DS_Store\nrm -f sauerbraten/docs/*/.DS_Store\nrm -f sauerbraten/docs/*/*/.DS_Store\nrm -rf sauerbraten/sauerbraten/packages/CVS/\nrm -rf sauerbraten/sauerbraten/packages/*/CVS/\nrm -rf sauerbraten/sauerbraten/packages/*/*/CVS/\nrm -f sauerbraten/sauerbraten/packages/.DS_Store\nrm -f sauerbraten/sauerbraten/packages/*/.DS_Store\nrm -f sauerbraten/sauerbraten/packages/*/*/.DS_Store\nrm -rf sauerbraten/sauerbraten/data/CVS/\nrm -rf sauerbraten/sauerbraten/data/*/CVS/\nrm -f sauerbraten/sauerbraten/data/.DS_Store\nrm -f sauerbraten/sauerbraten/data/*/.DS_Store\n\n#otherwise dog chases tail\nrm -rf sauerbraten/sauerbraten/src/xcode/build/*\n\n#finally make a disk image out of the stuff\nhdiutil create -srcfolder sauerbraten sauerbraten.dmg\nhdiutil internet-enable -yes sauerbraten.dmg\n\n#cleanup\nrm -r sauerbraten";
+			shellScript = "echo $TARGET_BUILD_DIR\ncd $TARGET_BUILD_DIR\n\n#make the directory which our disk image will be made of\n#use /tmp as a destination because copying ourself (xcode folder) whilst compling causes the dog to chase its tail\nSAUERPKG=`mktemp -d /tmp/sauerpkg.XXXXXX` || exit 1\nmkdir $SAUERPKG/sauerbraten\n\n#leave indicator of where temp directory is in case things break\nln -sf $SAUERPKG $TARGET_BUILD_DIR/sauerpkg\n\n#copy sauerbraten there\n/Developer/Tools/CpMac -r $TARGET_BUILD_DIR/sauerbraten.app $SAUERPKG/sauerbraten\n/Developer/Tools/CpMac -r $TARGET_BUILD_DIR/launcher.app $SAUERPKG/\nmv $SAUERPKG/launcher.app $SAUERPKG/Sauerbraten.app\n\nstrip -u -r $SAUERPKG/sauerbraten/sauerbraten.app/Contents/MacOS/sauerbraten\n\n#install all frameworks into app bundle\nmkdir $SAUERPKG/sauerbraten/sauerbraten.app/Contents/Frameworks\nfor framework in SDL.framework SDL_mixer.framework SDL_image.framework\ndo\n\tif [ -d $LOCAL_LIBRARY_DIR/Frameworks/$framework/ ] \n\tthen\t\n\t\t/Developer/Tools/CpMac -r $LOCAL_LIBRARY_DIR/Frameworks/$framework/ $SAUERPKG/sauerbraten/sauerbraten.app/Contents/Frameworks\n\t\trm -rf $SAUERPKG/sauerbraten/sauerbraten.app/Contents/Frameworks/$framework/Versions/A/Headers\n\telse\n\t\texit 1\n\tfi\ndone\n\n#copy readme and data and remove unneccesary stuff\n/Developer/Tools/CpMac -r $SRCROOT/../../docs $SAUERPKG/\n/Developer/Tools/CpMac -r $SRCROOT/../../data $SAUERPKG/sauerbraten/\n/Developer/Tools/CpMac -r $SRCROOT/../../packages $SAUERPKG/sauerbraten/\n/Developer/Tools/CpMac -r $SRCROOT/../../src $SAUERPKG/sauerbraten/\n/Developer/Tools/CpMac -r $SRCROOT/../../README.html $SAUERPKG/\nfind -d $SAUERPKG -name \"CVS\" -exec rm -rf {} \\;\nfind $SAUERPKG -name \".DS_Store\" -exec rm -f {} \\;\nrm -rf $SAUERPKG/sauerbraten/src/xcode/build\n\n#finally make a disk image out of the stuff\nhdiutil create -srcfolder $SAUERPKG -volname sauerbraten sauerbraten.dmg\nhdiutil internet-enable -yes sauerbraten.dmg\n\n#cleanup\nrm -rf $SAUERPKG\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -680,6 +730,10 @@
 				B9AC7B110D06DB44005506F8 /* pch.cpp in Sources */,
 				B9AC7B130D06DB44005506F8 /* sbtrace.d in Sources */,
 				B9AC7B150D06DB44005506F8 /* tools.cpp in Sources */,
+				B91D40210D525FE0004EF78A /* decal.cpp in Sources */,
+				D1C660CA0D5467C8002E52C1 /* pvs.cpp in Sources */,
+				D16BD00D0D7000EA0053CECE /* dynlight.cpp in Sources */,
+				D118DEB60D979281000E8C4C /* glare.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -718,6 +772,14 @@
 				B96D0D5B0920971300B6C936 /* English */,
 			);
 			name = MainMenu.nib;
+			sourceTree = "<group>";
+		};
+		D1DB53E70D70F1CD003AE25C /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				D1DB53E50D70F1C3003AE25C /* English */,
+			);
+			name = Localizable.strings;
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */

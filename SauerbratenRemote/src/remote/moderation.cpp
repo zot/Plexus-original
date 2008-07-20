@@ -68,18 +68,18 @@ static vector<watcher> watchers;
 
 ICOMMAND(listidents, "", (),
     enumerate(*idents, ident, id,
-    	switch (id._type) {
+    	switch (id.type) {
     	case ID_VAR:
-   			printf("var: %s %d\n", id._name, id._val);
+   			printf("var: %s %d\n", id.name, id.val);
    			break;
     	case ID_COMMAND:
-   			printf("command: %s(%s)\n", id._name, id._narg);
+   			printf("command: %s(%s)\n", id.name, id.narg);
    			break;
     	case ID_CCOMMAND:
-   			printf("ccommand: %s(%s)\n", id._name, id._narg);
+   			printf("ccommand: %s(%s)\n", id.name, id.narg);
    			break;
     	case ID_ALIAS:
-   			printf("alias: %s = [%s]\n", id._name, id._action);
+   			printf("alias: %s = [%s]\n", id.name, id.action);
     		break;
     	}
     );
@@ -96,16 +96,16 @@ ICOMMAND(override, "sss", (const char *cmd, char *newName, char *body), {
 			} else if (!old) {
 				conoutf("cannot override cmd: %s as %s, because there is no definition for %s.", cmd, newName, cmd);
 			} else {
-				int oldType = old->_type;
+				int oldType = old->type;
 
 				idents->access(newstring(newName), old);
-				old->_type = ID_ALIAS;
-				old->_override = NO_OVERRIDE;
-				old->_stack = NULL;
-				old->_action = newstring(body);
-				old->_persist = false;
+				old->type = ID_ALIAS;
+				old->override = NO_OVERRIDE;
+				old->stack = NULL;
+				old->action = newstring(body);
+				//old->persist = false;
 				if (oldType != ID_ALIAS) {
-					old->_name = newstring(old->_name);
+					old->name = newstring(old->name);
 				}
 			}
 		} else {
@@ -189,6 +189,7 @@ static void entYaw(char *id, char *value) {
 		dynent *ent = getdynent(id);
 
 		if (ent) {
+			floatVal(ent->targetyaw, value);
 			floatVal(ent->yaw, value);
 		}
 	}
