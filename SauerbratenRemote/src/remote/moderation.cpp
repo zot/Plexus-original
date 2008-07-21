@@ -18,7 +18,7 @@ struct watcher {
 	char *id;
 	dynent *entity;
 	char *code;
-	vec lastPosition;
+	vec lastPosition, lastVel, lastFalling;
 	float lastRoll;
 	float lastPitch;
 	float lastYaw;
@@ -45,6 +45,8 @@ struct watcher {
 	}
 	void update() {
 		lastPosition = entity->o;
+		lastVel = entity->vel;
+		lastFalling = entity->falling;
 		lastRoll = entity->roll;
 		lastPitch = entity->pitch;
 		lastYaw = entity->yaw;
@@ -64,6 +66,16 @@ struct watcher {
 		if (moveRes > 0) {
 			tmp = entity->o;
 			tmp.sub(lastPosition);
+			if (tmp.squaredlen() > moveRes) {
+				return true;
+			}
+			tmp = entity->vel;
+			tmp.sub(lastVel);
+			if (tmp.squaredlen() > moveRes) {
+				return true;
+			}
+			tmp = entity->falling;
+			tmp.sub(lastFalling);
 			if (tmp.squaredlen() > moveRes) {
 				return true;
 			}
@@ -220,6 +232,66 @@ static void entZ(char *id, char *value) {
 	}
 }
 
+static void entvX(char *id, char *value) {
+	if (id && id[0]) {
+		dynent *ent = getdynent(id);
+
+		if (ent) {
+			floatVal(ent->vel.x, value);
+		}
+	}
+}
+
+static void entvY(char *id, char *value) {
+	if (id && id[0]) {
+		dynent *ent = getdynent(id);
+
+		if (ent) {
+			floatVal(ent->vel.y, value);
+		}
+	}
+}
+
+static void entvZ(char *id, char *value) {
+	if (id && id[0]) {
+		dynent *ent = getdynent(id);
+
+		if (ent) {
+			floatVal(ent->vel.z, value);
+		}
+	}
+}
+
+static void entfX(char *id, char *value) {
+	if (id && id[0]) {
+		dynent *ent = getdynent(id);
+
+		if (ent) {
+			floatVal(ent->falling.x, value);
+		}
+	}
+}
+
+static void entfY(char *id, char *value) {
+	if (id && id[0]) {
+		dynent *ent = getdynent(id);
+
+		if (ent) {
+			floatVal(ent->falling.y, value);
+		}
+	}
+}
+
+static void entfZ(char *id, char *value) {
+	if (id && id[0]) {
+		dynent *ent = getdynent(id);
+
+		if (ent) {
+			floatVal(ent->falling.z, value);
+		}
+	}
+}
+
 static void entRoll(char *id, char *value) {
 	if (id && id[0]) {
 		dynent *ent = getdynent(id);
@@ -329,6 +401,13 @@ static void tc_info(char *id) {
 			if (!areDoublesEqual(ent->pitch, w->lastPitch)) report(buf, "pit", ent->pitch);
 			if (!areDoublesEqual(ent->yaw, w->lastYaw)) report(buf, "yaw", ent->yaw);
 
+			if (!areDoublesEqual(ent->vel.x, w->lastVel.x)) report(buf, "vx", ent->vel.x);
+			if (!areDoublesEqual(ent->vel.y, w->lastVel.y)) report(buf, "vy", ent->vel.y);
+			if (!areDoublesEqual(ent->vel.z, w->lastVel.z)) report(buf, "vz", ent->vel.z);
+			if (!areDoublesEqual(ent->falling.x, w->lastFalling.x)) report(buf, "fx", ent->falling.x);
+			if (!areDoublesEqual(ent->falling.y, w->lastFalling.y)) report(buf, "fy", ent->falling.y);
+			if (!areDoublesEqual(ent->falling.z, w->lastFalling.z)) report(buf, "fz", ent->falling.z);
+
 			if (ent->inwater != w->lastinwater) report(buf, "iw", ent->inwater);
 			if (ent->timeinair != w->lasttimeinair) report(buf, "tia", ent->timeinair);
 			if (ent->strafe != w->laststrafe) report(buf, "s", ent->strafe);
@@ -353,6 +432,13 @@ static bool initModeration() {
 	addcommand("ent.rol", (void(*)())entRoll, "ss");
 	addcommand("ent.pit", (void(*)())entPitch, "ss");
 	addcommand("ent.yaw", (void(*)())entYaw, "ss");
+
+	addcommand("ent.vx", (void(*)())entvX, "ss");
+	addcommand("ent.vy", (void(*)())entvY, "ss");
+	addcommand("ent.vz", (void(*)())entvZ, "ss");
+	addcommand("ent.fx", (void(*)())entfX, "ss");
+	addcommand("ent.fy", (void(*)())entfY, "ss");
+	addcommand("ent.fz", (void(*)())entfZ, "ss");
 
 	addcommand("ent.iw", (void(*)())entInWater, "ss");
 	addcommand("ent.tia", (void(*)())entTimeInAir, "ss");

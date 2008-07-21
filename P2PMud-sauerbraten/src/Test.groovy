@@ -60,7 +60,7 @@ public class Test {
 				names[id] = name
 				sauer('prep', "createplayer $id")
 			}
-			for (def ix = 1; ix < u.size(); ix = ix + 2)
+			for (def ix = 1; ix < u.size(); ix += 2)
 			{
 				def f = u[ix]
 				def v = u[ix+1]
@@ -70,7 +70,7 @@ public class Test {
 		}
 		
 		pastryCmds.sauer = {s ->
-			for (i = 0; i < s.size(); i++) {
+			for (def i = 0; i < s.size(); i++) {
 				sauer(i, s.join(" "))
 			}
 			dumpCommands()
