@@ -153,7 +153,7 @@ static void moderationTick() {
 		}
 	}
 }
-/*
+
 static void floatVal(float &fl, char *value) {
 	if (!value[0]) {
 		sprintf(buf, "%f", fl);
@@ -286,7 +286,6 @@ static void entPhysState(char *id, char *value) {
 		if (ent) ucharVal(ent->physstate, value);
 	}
 }
-*/
 
 watcher *findWatcher(dynent *ent) {
 	loopi(watchers.length()) {
@@ -340,18 +339,18 @@ static bool initModeration() {
 	extern void addTickHook(void (*hook)());
 	addTickHook(moderationTick);
 	addcommand("tc_info", (void(*)())tc_info, "ss");
-	//addcommand("ent.x", (void(*)())entX, "ss");
-	//addcommand("ent.y", (void(*)())entY, "ss");
-	//addcommand("ent.z", (void(*)())entZ, "ss");
-	//addcommand("ent.roll", (void(*)())entRoll, "ss");
-	//addcommand("ent.pitch", (void(*)())entPitch, "ss");
-	//addcommand("ent.yaw", (void(*)())entYaw, "ss");
+	addcommand("ent.x", (void(*)())entX, "ss");
+	addcommand("ent.y", (void(*)())entY, "ss");
+	addcommand("ent.z", (void(*)())entZ, "ss");
+	addcommand("ent.r", (void(*)())entRoll, "ss");
+	addcommand("ent.p", (void(*)())entPitch, "ss");
+	addcommand("ent.y", (void(*)())entYaw, "ss");
 
-	//addcommand("ent.inwater", (void(*)())entInWater, "ss");
-	//addcommand("ent.timeinair", (void(*)())entTimeInAir, "ss");
-	//addcommand("ent.strafe", (void(*)())entStrafe, "ss");
-	//addcommand("ent.move", (void(*)())entMove, "ss");
-	//addcommand("ent.physstate", (void(*)())entPhysState, "ss");
+	addcommand("ent.w", (void(*)())entInWater, "ss");
+	addcommand("ent.t", (void(*)())entTimeInAir, "ss");
+	addcommand("ent.s", (void(*)())entStrafe, "ss");
+	addcommand("ent.m", (void(*)())entMove, "ss");
+	addcommand("ent.q", (void(*)())entPhysState, "ss");
 	return true;
 }
 bool init = initModeration();
