@@ -303,7 +303,7 @@ ICOMMAND(createplayer, "s", (char *ent), {
 			conoutf("/createplayer error: cannot recreate original player");
 			return;
 		}
-		if (NULL == p) fpscl->newclient(fpscl->players.length());
+		if (NULL == p) p = fpscl->newclient(fpscl->players.length());
 		else conoutf("/createplayer warning: reusing existing player %s", ent);
 		fpscl->spawnplayer(p);
         //findplayerspawn(p, -1, 0);

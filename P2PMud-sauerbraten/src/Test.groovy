@@ -35,6 +35,7 @@ public class Test {
 	def zField
 	def cmdField
 	def runs = 0
+	def id_index = 1
 
 	public static void main(String[] a) {
 		if (a.length < 2) {
@@ -53,20 +54,24 @@ public class Test {
 			pastryCmds.update(l)
 		}
 		pastryCmds.update = {u ->
-			id = "p${u[0]}"
-			if (!ids[u[0]]) {
-				ids[u[0]] = id
-				names[id] = u[0]
+			def name =u[0] 
+			def id = ids[name]
+			if (!id) {
+				id = "p$id_index"
+				ids[name] = id
+				++id_index
+				names[id] = name
 				sauer('prep', "createplayer $id")
 			}
-			sauer("$id.x", "ent.x $id ${u[1]}")
-			sauer("$id.y", "ent.y $id ${u[2]}")
-			sauer("$id.z", "ent.z $id ${u[3]}")
-			sauer("$id.roll", "ent.roll $id ${u[4]}")
-			sauer("$id.pitch", "ent.pitch $id ${u[5]}")
-			sauer("$id.yaw", "ent.yaw $id ${u[6]}")
+			sauer("${id}.x", "ent.x $id ${u[1]}")
+			sauer("${id}.y", "ent.y $id ${u[2]}")
+			sauer("${id}.z", "ent.z $id ${u[3]}")
+			sauer("${id}.roll", "ent.roll $id ${u[4]}")
+			sauer("${id}.pitch", "ent.pitch $id ${u[5]}")
+			sauer("${id}.yaw", "ent.yaw $id ${u[6]}")
 			dumpCommands()
 		}
+		
 		pastryCmds.sauer = {s ->
 			for (i = 0; i < s.size(); i++) {
 				sauer(i, s.join(" "))
@@ -74,9 +79,18 @@ public class Test {
 			dumpCommands()
 		}
 		pastryCmds.chat = {c ->
-			sauer('chat', "psay m0 [${c.join(' ')}]")
+			def name = c[0] 
+			def id = ids[name]
+			sauer('chat', "psay $id [${c.join(' ')}]")
 			dumpCommands()
 		}
+//		pastryCmds.chat = {c ->
+//			def name = u[0] 
+//			def id = ids[name]
+//
+//			sauer('chat', "psay $id [${c.join(' ')}]")
+//			dumpCommands()
+//		}
 		swing = new SwingBuilder()
 		swing.build {
 			f = frame(title: 'Position', windowClosing: {System.exit(0)}, layout: new MigLayout('fillx'), pack: true, show: true) {
@@ -88,6 +102,7 @@ public class Test {
 				zField = textField(name: 'zField', actionPerformed: {newZ()}, focusLost: {newZ()}, constraints: 'wrap, growx')
 				label(name: 'cmdLabel', text: "Command: ")
 				cmdField = textField(name: 'cmdField', actionPerformed: {cmd()}, focusLost: {cmd()}, constraints: 'wrap, growx')
+				button(text: "update", actionPerformed: {pastryCmds.update(["floopy", "1597.093994", "1620.530884", "2062.024658", "0.000000", "-55.000015", "348.454498"])})
 			}
 			f.size = [500, (int)f.size.height] as Dimension
 		}
@@ -168,10 +183,10 @@ public class Test {
 	 	sauer('init', [
 			"alias p2pname [$name]",
 			'alias prep [if (= $arg2 0) edittoggle; mfreeze $arg1; if (= $arg2 0) edittoggle]',
-			'alias chat [echo $p2pname says: $arg1;remotesend chat $arg1]',
+			'alias chat [echo $p2pname says: $arg1;remotesend chat $p2pname $arg1]',
 			'bind RETURN [saycommand [/chat ""]]',
 			'editbind RETURN [saycommand [/chat ""]]',
-			'alias emote [echo $p2pname $arg1;remotesend chat $arg1]',
+			'alias emote [echo $p2pname $arg1;remotesend chat $p2pname $arg1]',
 			'bind SEMICOLON [saycommand [/emote ""]]',
 			'editbind SEMICOLON [saycommand [/emote ""]]',
 			'echo INIT'

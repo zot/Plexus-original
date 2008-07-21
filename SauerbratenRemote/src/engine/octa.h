@@ -185,6 +185,9 @@ struct cubeext
     octaentities *ents;      // list of map entites totally inside cube
     mergeinfo *merges;       // bounds of merged surfaces
     int tjoints;             // linked list of t-joints
+#ifdef TC_
+    int sensorid;
+#endif
 };  
 
 struct cube

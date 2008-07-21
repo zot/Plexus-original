@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launchConfiguration type="org.codehaus.groovy.eclipse.groovyLaunchConfiguration">
 <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
-<listEntry value="/P2PMud-sauerbraten/src/p2pmud/PastryTest.java"/>
+<listEntry value="/P2PMud-sauerbraten/src/p2pmud/P2PMudPeer.java"/>
 </listAttribute>
 <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
 <listEntry value="1"/>

@@ -21,6 +21,9 @@ cubeext *newcubeext(cube &c)
     c.ext->ents = NULL;
     c.ext->merges = NULL;
     c.ext->tjoints = -1;
+#ifdef TC_
+    c.ext->sensorid = -1;
+#endif
     return c.ext;
 }
 
@@ -70,6 +73,9 @@ void discardchildren(cube &c)
         c.ext->va = NULL;
         c.ext->merged = 0;
         c.ext->tjoints = -1;
+#ifdef TC_
+        c.ext->sensorid = -1;
+#endif
         freesurfaces(c);
         freenormals(c);
         freeclipplanes(c);
