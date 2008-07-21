@@ -492,3 +492,12 @@ ICOMMAND(watch, "ss", (char *entName, char *code), {
 			}
 		}
 });
+ICOMMAND(maxspeed, "ss", (char *ent, char *speed), {
+	if (ent && ent[0]) {
+		dynent *d = getdynent(ent);
+
+		if (d) {
+			floatVal(d->maxspeed, speed);
+		}
+	}
+});
