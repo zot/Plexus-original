@@ -310,47 +310,47 @@ static void report(char *output, char *field, int value)
 }
 
 
-static void tc_info(char *id, char *output) {
-	output[0] = '\0';
+static void tc_info(char *id) {
+	buf[0] = '\0';
 
-	if (!(id && id[0])) return;{
-	dynent *ent = getdynent(id);
-	if (!ent) return;
-	watcher *w = findWatcher(ent);
-	if (!w) return;
+	if (id && id[0]) {
+		dynent *ent = getdynent(id);
+		watcher *w = findWatcher(ent);
+		if (ent && w) {
+			if (ent->o.x != w->lastPosition.x) report(buf, "x", ent->o.x);
+			if (ent->o.y != w->lastPosition.y) report(buf, "y", ent->o.y);
+			if (ent->o.z != w->lastPosition.z) report(buf, "z", ent->o.z);
+			if (ent->roll != w->lastRoll) report(buf, "rol", ent->roll);
+			if (ent->pitch != w->lastPitch) report(buf, "pit", ent->pitch);
+			if (ent->yaw != w->lastYaw) report(buf, "yaw", ent->yaw);
 
-	if (ent->o.x != w->lastPosition.x) report(output, "x", ent->o.x);
-	if (ent->o.y != w->lastPosition.y) report(output, "y", ent->o.y);
-	if (ent->o.z != w->lastPosition.z) report(output, "z", ent->o.z);
-	if (ent->roll != w->lastRoll) report(output, "r", ent->roll);
-	if (ent->pitch != w->lastPitch) report(output, "p", ent->pitch);
-	if (ent->yaw != w->lastYaw) report(output, "y", ent->yaw);
-
-	if (ent->inwater != w->lastinwater) report(output, "w", ent->inwater);
-	if (ent->timeinair != w->lasttimeinair) report(output, "t", ent->timeinair);
-	if (ent->strafe != w->laststrafe) report(output, "s", ent->strafe);
-	if (ent->move != w->lastmove) report(output, "m", ent->move);
-	if (ent->physstate != w->lastphysstate) report(output, "q", ent->physstate);
+			if (ent->inwater != w->lastinwater) report(buf, "iw", ent->inwater);
+			if (ent->timeinair != w->lasttimeinair) report(buf, "tia", ent->timeinair);
+			if (ent->strafe != w->laststrafe) report(buf, "s", ent->strafe);
+			if (ent->move != w->lastmove) report(buf, "m", ent->move);
+			if (ent->physstate != w->lastphysstate) report(buf, "ps", ent->physstate);
+		}
 	}
+	result(buf);
 }
 
 static bool initModeration() {
 	printf("INITIALIZING\n");
 	extern void addTickHook(void (*hook)());
 	addTickHook(moderationTick);
-	addcommand("tc_info", (void(*)())tc_info, "ss");
+	addcommand("tc_info", (void(*)())tc_info, "s");
 	addcommand("ent.x", (void(*)())entX, "ss");
 	addcommand("ent.y", (void(*)())entY, "ss");
 	addcommand("ent.z", (void(*)())entZ, "ss");
-	addcommand("ent.r", (void(*)())entRoll, "ss");
-	addcommand("ent.p", (void(*)())entPitch, "ss");
-	addcommand("ent.y", (void(*)())entYaw, "ss");
+	addcommand("ent.rol", (void(*)())entRoll, "ss");
+	addcommand("ent.pit", (void(*)())entPitch, "ss");
+	addcommand("ent.yaw", (void(*)())entYaw, "ss");
 
-	addcommand("ent.w", (void(*)())entInWater, "ss");
-	addcommand("ent.t", (void(*)())entTimeInAir, "ss");
+	addcommand("ent.iw", (void(*)())entInWater, "ss");
+	addcommand("ent.tia", (void(*)())entTimeInAir, "ss");
 	addcommand("ent.s", (void(*)())entStrafe, "ss");
 	addcommand("ent.m", (void(*)())entMove, "ss");
-	addcommand("ent.q", (void(*)())entPhysState, "ss");
+	addcommand("ent.ps", (void(*)())entPhysState, "ss");
 	return true;
 }
 bool init = initModeration();
