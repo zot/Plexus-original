@@ -297,18 +297,22 @@ watcher *findWatcher(dynent *ent) {
 
 static void report(char *output, char *field, float value)
 {
-	char buf[32];
-	sprintf(buf, " %s %f", field, value);
-	strcpy(output, buf);
+	char mybuf[32];
+	sprintf(mybuf, " %s %f", field, value);
+	strcat(output, mybuf);
 }
 
 static void report(char *output, char *field, int value)
 {
-	char buf[32];
-	sprintf(buf, " %s %d", field, value);
-	strcat(output, buf);
+	char mybuf[32];
+	sprintf(mybuf, " %s %d", field, value);
+	strcat(output, mybuf);
 }
 
+static bool areDoublesEqual(double d1, double d2)
+{
+	return fabs(d1 - d2) < 0.00001;
+}
 
 static void tc_info(char *id) {
 	buf[0] = '\0';
@@ -317,18 +321,22 @@ static void tc_info(char *id) {
 		dynent *ent = getdynent(id);
 		watcher *w = findWatcher(ent);
 		if (ent && w) {
-			if (ent->o.x != w->lastPosition.x) report(buf, "x", ent->o.x);
-			if (ent->o.y != w->lastPosition.y) report(buf, "y", ent->o.y);
-			if (ent->o.z != w->lastPosition.z) report(buf, "z", ent->o.z);
-			if (ent->roll != w->lastRoll) report(buf, "rol", ent->roll);
-			if (ent->pitch != w->lastPitch) report(buf, "pit", ent->pitch);
-			if (ent->yaw != w->lastYaw) report(buf, "yaw", ent->yaw);
+			//fprintf(stderr, "tc_info have ent and watcher!\n");
+			if (!areDoublesEqual(ent->o.x, w->lastPosition.x)) report(buf, "x", ent->o.x);
+			if (!areDoublesEqual(ent->o.y, w->lastPosition.y)) report(buf, "y", ent->o.y);
+			if (!areDoublesEqual(ent->o.z, w->lastPosition.z)) report(buf, "z", ent->o.z);
+			if (!areDoublesEqual(ent->roll, w->lastRoll)) report(buf, "rol", ent->roll);
+			if (!areDoublesEqual(ent->pitch, w->lastPitch)) report(buf, "pit", ent->pitch);
+			if (!areDoublesEqual(ent->yaw, w->lastYaw)) report(buf, "yaw", ent->yaw);
 
 			if (ent->inwater != w->lastinwater) report(buf, "iw", ent->inwater);
 			if (ent->timeinair != w->lasttimeinair) report(buf, "tia", ent->timeinair);
 			if (ent->strafe != w->laststrafe) report(buf, "s", ent->strafe);
 			if (ent->move != w->lastmove) report(buf, "m", ent->move);
 			if (ent->physstate != w->lastphysstate) report(buf, "ps", ent->physstate);
+		} else {
+			conoutf("tc_info error: no entity or watcher specified");
+			strcpy(buf, "tc_info error");
 		}
 	}
 	result(buf);
