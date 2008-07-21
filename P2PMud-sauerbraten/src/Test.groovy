@@ -21,6 +21,7 @@ import net.miginfocom.swing.MigLayout
 public class Test {
 	def output = null
 	def name
+	def id_index = 1
 	def ids = [:]
 	def names
 	def count = 0
@@ -53,18 +54,21 @@ public class Test {
 			pastryCmds.update(l)
 		}
 		pastryCmds.update = {u ->
-			id = "p${u[0]}"
-			if (!ids[u[0]]) {
-				ids[u[0]] = id
-				names[id] = u[0]
+			def name =u[0] 
+			def id = ids[name]
+			if (!id) {
+				id = "p$id_index"
+				ids[name] = id
+				++id_index
+				names[id] = name
 				sauer('prep', "createplayer $id")
 			}
-			sauer("$id.x", "ent.x $id ${u[1]}")
-			sauer("$id.y", "ent.y $id ${u[2]}")
-			sauer("$id.z", "ent.z $id ${u[3]}")
-			sauer("$id.roll", "ent.roll $id ${u[4]}")
-			sauer("$id.pitch", "ent.pitch $id ${u[5]}")
-			sauer("$id.yaw", "ent.yaw $id ${u[6]}")
+			for (ix = 1; ix < u.length; ix = ix + 2)
+			{
+				def f = u[ix]
+				def v = u[ix+1]
+				sauer("${id}.$f", "ent.$f $id $v")
+			}
 			dumpCommands()
 		}
 		pastryCmds.sauer = {s ->
@@ -74,7 +78,9 @@ public class Test {
 			dumpCommands()
 		}
 		pastryCmds.chat = {c ->
-			sauer('chat', "psay m0 [${c.join(' ')}]")
+			def name = c[0] 
+			def id = ids[name]
+			sauer('chat', "psay $id [${c.join(' ')}]")
 			dumpCommands()
 		}
 		swing = new SwingBuilder()
@@ -91,6 +97,7 @@ public class Test {
 			}
 			f.size = [500, (int)f.size.height] as Dimension
 		}
+		//button(text: "update", actionPerformed: {pastryCmds.update(["floopy", "1597.093994", "1620.530884", "2062.024658", "0.000000", "-55.000015", "348.454498"])})
 		start(args[0])
 		P2PMudPeer.main({cmd -> cmd.msgs.each {runCommand(it, pastryCmds)}} as P2PMudCommandHandler, args[2..-1] as String[])
 	}
@@ -168,10 +175,10 @@ public class Test {
 	 	sauer('init', [
 			"alias p2pname [$name]",
 			'alias prep [if (= $arg2 0) edittoggle; mfreeze $arg1; if (= $arg2 0) edittoggle]',
-			'alias chat [echo $p2pname says: $arg1;remotesend chat $arg1]',
+			'alias chat [echo $p2pname says: $arg1;remotesend chat $p2pname $arg1]',
 			'bind RETURN [saycommand [/chat ""]]',
 			'editbind RETURN [saycommand [/chat ""]]',
-			'alias emote [echo $p2pname $arg1;remotesend chat $arg1]',
+			'alias emote [echo $p2pname $arg1;remotesend chat $p2pname $arg1]',
 			'bind SEMICOLON [saycommand [/emote ""]]',
 			'editbind SEMICOLON [saycommand [/emote ""]]',
 			'echo INIT'

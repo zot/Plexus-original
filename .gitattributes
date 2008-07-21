@@ -6,3 +6,4 @@
 Makefile -crlf
 *.cfg -crlf
 *.dsp -crlf
+*.launch -crlf
