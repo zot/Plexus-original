@@ -21,6 +21,7 @@ import net.miginfocom.swing.MigLayout
 public class Test {
 	def output = null
 	def name
+	def id_index = 1
 	def ids = [:]
 	def names
 	def count = 0
@@ -63,12 +64,12 @@ public class Test {
 				names[id] = name
 				sauer('prep', "createplayer $id")
 			}
-			sauer("${id}.x", "ent.x $id ${u[1]}")
-			sauer("${id}.y", "ent.y $id ${u[2]}")
-			sauer("${id}.z", "ent.z $id ${u[3]}")
-			sauer("${id}.roll", "ent.roll $id ${u[4]}")
-			sauer("${id}.pitch", "ent.pitch $id ${u[5]}")
-			sauer("${id}.yaw", "ent.yaw $id ${u[6]}")
+			for (ix = 1; ix < u.length; ix = ix + 2)
+			{
+				def f = u[ix]
+				def v = u[ix+1]
+				sauer("${id}.$f", "ent.$f $id $v")
+			}
 			dumpCommands()
 		}
 		
@@ -106,6 +107,7 @@ public class Test {
 			}
 			f.size = [500, (int)f.size.height] as Dimension
 		}
+		//button(text: "update", actionPerformed: {pastryCmds.update(["floopy", "1597.093994", "1620.530884", "2062.024658", "0.000000", "-55.000015", "348.454498"])})
 		start(args[0])
 		P2PMudPeer.main({cmd -> cmd.msgs.each {runCommand(it, pastryCmds)}} as P2PMudCommandHandler, args[2..-1] as String[])
 	}

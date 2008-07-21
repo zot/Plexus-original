@@ -14,3 +14,8 @@ config.status
 sauer_client
 sauer_server
 cmd
+Debug
+Release
+CVS
+*.pdb
+*.ncb

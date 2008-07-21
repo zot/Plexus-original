@@ -25,7 +25,10 @@ struct watcher {
 	float moveRes;
 	float rotRes;
 	int lastupdate;
-	
+    int lastinwater, lasttimeinair;
+	char laststrafe, lastmove;
+	uchar lastphysstate;	
+
 	watcher(char *id, char *code, float _moveRes, float _rotRes): moveRes(_moveRes), rotRes(_rotRes), lastupdate(0) {
 		entity = getdynent(id);
 		if (entity) {
@@ -41,14 +44,17 @@ struct watcher {
 		return !!entity;
 	}
 	void update() {
-		if (moveRes > 0) {
-			lastPosition = entity->o;
-		}
-		if (rotRes > 0) {
-			lastRoll = entity->roll;
-			lastPitch = entity->pitch;
-			lastYaw = entity->yaw;
-		}
+		lastPosition = entity->o;
+		lastRoll = entity->roll;
+		lastPitch = entity->pitch;
+		lastYaw = entity->yaw;
+
+		lastinwater = entity->inwater;
+		lasttimeinair = entity->timeinair;
+		laststrafe = entity->strafe;
+		lastmove = entity->move;
+		lastphysstate = entity->physstate;
+
 		lastupdate = tickmillis;
 	}
 	bool changed() {
@@ -62,6 +68,12 @@ struct watcher {
 				return true;
 			}
 		}
+		if (lastinwater != entity->inwater ||
+			lasttimeinair != entity->timeinair ||
+			laststrafe != entity->strafe ||
+			lastmove != entity->move ||
+			lastphysstate != entity->physstate) return true;
+
 		return rotRes > 0 && fabs(lastRoll - entity->roll) + fabs(lastPitch - entity->pitch) + fabs(lastYaw - entity->yaw) > rotRes;
 	}
 	void execute() {
@@ -136,8 +148,8 @@ static void moderationTick() {
 		tmp = w->entity->o;
 		tmp.sub(w->lastPosition);
 		if (w->changed()) {
-			w->update();
 			w->execute();
+			w->update(); // update AFTER execute to reset last known info
 		}
 	}
 }
@@ -148,6 +160,33 @@ static void floatVal(float &fl, char *value) {
 		result(buf);
 	} else {
 		fl = atof(value);
+	}
+}
+
+static void intVal(int &fl, char *value) {
+	if (!value[0]) {
+		sprintf(buf, "%d", fl);
+		result(buf);
+	} else {
+		fl = atoi(value);
+	}
+}
+
+static void charVal(char &fl, char *value) {
+	if (!value[0]) {
+		sprintf(buf, "%d", (int) fl);
+		result(buf);
+	} else {
+		fl = (char) atoi(value);
+	}
+}
+
+static void ucharVal(uchar &fl, char *value) {
+	if (!value[0]) {
+		sprintf(buf, "%d", (int) fl);
+		result(buf);
+	} else {
+		fl = (uchar) atoi(value);
 	}
 }
 
@@ -211,17 +250,115 @@ static void entYaw(char *id, char *value) {
 		}
 	}
 }
+static void entInWater(char *id, char *value) {
+	if (id && id[0]) {
+		dynent *ent = getdynent(id);
+
+		if (ent) intVal(ent->inwater, value);
+	}
+}
+
+static void entTimeInAir(char *id, char *value) {
+	if (id && id[0]) {
+		dynent *ent = getdynent(id);
+
+		if (ent) intVal(ent->timeinair, value);
+	}
+}
+static void entStrafe(char *id, char *value) {
+	if (id && id[0]) {
+		dynent *ent = getdynent(id);
+
+		if (ent) charVal(ent->strafe, value);
+	}
+}
+static void entMove(char *id, char *value) {
+	if (id && id[0]) {
+		dynent *ent = getdynent(id);
+
+		if (ent) charVal(ent->move, value);
+	}
+}
+static void entPhysState(char *id, char *value) {
+	if (id && id[0]) {
+		dynent *ent = getdynent(id);
+
+		if (ent) ucharVal(ent->physstate, value);
+	}
+}
+
+watcher *findWatcher(dynent *ent) {
+	loopi(watchers.length()) {
+		watcher *w = &watchers[i];
+		if (NULL != w && w->entity == ent) return w;
+	}
+	return NULL;
+}
+
+static void report(char *output, char *field, float value)
+{
+	char mybuf[32];
+	sprintf(mybuf, " %s %f", field, value);
+	strcat(output, mybuf);
+}
+
+static void report(char *output, char *field, int value)
+{
+	char mybuf[32];
+	sprintf(mybuf, " %s %d", field, value);
+	strcat(output, mybuf);
+}
+
+static bool areDoublesEqual(double d1, double d2)
+{
+	return fabs(d1 - d2) < 0.00001;
+}
+
+static void tc_info(char *id) {
+	buf[0] = '\0';
+
+	if (id && id[0]) {
+		dynent *ent = getdynent(id);
+		watcher *w = findWatcher(ent);
+		if (ent && w) {
+			//fprintf(stderr, "tc_info have ent and watcher!\n");
+			if (!areDoublesEqual(ent->o.x, w->lastPosition.x)) report(buf, "x", ent->o.x);
+			if (!areDoublesEqual(ent->o.y, w->lastPosition.y)) report(buf, "y", ent->o.y);
+			if (!areDoublesEqual(ent->o.z, w->lastPosition.z)) report(buf, "z", ent->o.z);
+			if (!areDoublesEqual(ent->roll, w->lastRoll)) report(buf, "rol", ent->roll);
+			if (!areDoublesEqual(ent->pitch, w->lastPitch)) report(buf, "pit", ent->pitch);
+			if (!areDoublesEqual(ent->yaw, w->lastYaw)) report(buf, "yaw", ent->yaw);
+
+			if (ent->inwater != w->lastinwater) report(buf, "iw", ent->inwater);
+			if (ent->timeinair != w->lasttimeinair) report(buf, "tia", ent->timeinair);
+			if (ent->strafe != w->laststrafe) report(buf, "s", ent->strafe);
+			if (ent->move != w->lastmove) report(buf, "m", ent->move);
+			if (ent->physstate != w->lastphysstate) report(buf, "ps", ent->physstate);
+		} else {
+			conoutf("tc_info error: no entity or watcher specified");
+			strcpy(buf, "tc_info error");
+		}
+	}
+	result(buf);
+}
 
 static bool initModeration() {
 	printf("INITIALIZING\n");
 	extern void addTickHook(void (*hook)());
 	addTickHook(moderationTick);
+	addcommand("tc_info", (void(*)())tc_info, "s");
 	addcommand("ent.x", (void(*)())entX, "ss");
 	addcommand("ent.y", (void(*)())entY, "ss");
 	addcommand("ent.z", (void(*)())entZ, "ss");
-	addcommand("ent.roll", (void(*)())entRoll, "ss");
-	addcommand("ent.pitch", (void(*)())entPitch, "ss");
+	addcommand("ent.rol", (void(*)())entRoll, "ss");
+	addcommand("ent.pit", (void(*)())entPitch, "ss");
 	addcommand("ent.yaw", (void(*)())entYaw, "ss");
+
+	addcommand("ent.iw", (void(*)())entInWater, "ss");
+	addcommand("ent.tia", (void(*)())entTimeInAir, "ss");
+	addcommand("ent.s", (void(*)())entStrafe, "ss");
+	addcommand("ent.m", (void(*)())entMove, "ss");
+	addcommand("ent.ps", (void(*)())entPhysState, "ss");
 	return true;
 }
 bool init = initModeration();

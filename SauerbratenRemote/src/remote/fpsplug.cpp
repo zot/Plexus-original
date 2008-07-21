@@ -4,6 +4,9 @@ struct moderation moderator;
 char idbuf[1024];
 
 #define fpscl ((fpsclient *)cl)
+#ifdef WINDOWS
+#define snprintf _snprintf
+#endif
 
 /////
 // MEMBERS FOR: dynent
