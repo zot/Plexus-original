@@ -31,12 +31,8 @@ public class Test {
 	def queueRunTime = Long.MAX_VALUE
 	def queueBatchPeriod = 200
 	def swing
-	def xField
-	def yField
-	def zField
-	def cmdField
+	def fields = [:]
 	def runs = 0
-	def id_index = 1
 
 	public static void main(String[] a) {
 		if (a.length < 2) {
@@ -64,7 +60,7 @@ public class Test {
 				names[id] = name
 				sauer('prep', "createplayer $id")
 			}
-			for (ix = 1; ix < u.length; ix = ix + 2)
+			for (def ix = 1; ix < u.size(); ix = ix + 2)
 			{
 				def f = u[ix]
 				def v = u[ix+1]
@@ -94,15 +90,30 @@ public class Test {
 //		}
 		swing = new SwingBuilder()
 		swing.build {
-			f = frame(title: 'Position', windowClosing: {System.exit(0)}, layout: new MigLayout('fillx'), pack: true, show: true) {
-				label(name: 'xLabel', text: "x: ")
-				xField = textField(name: 'xField', actionPerformed: {newX()}, focusLost: {newX()}, constraints: 'wrap, growx')
-				label(name: 'yLabel', text: "y: ")
-				yField = textField(name: 'yField', actionPerformed: {newY()}, focusLost: {newY()}, constraints: 'wrap, growx')
-				label(name: 'zLabel', text: "z: ")
-				zField = textField(name: 'zField', actionPerformed: {newZ()}, focusLost: {newZ()}, constraints: 'wrap, growx')
-				label(name: 'cmdLabel', text: "Command: ")
-				cmdField = textField(name: 'cmdField', actionPerformed: {cmd()}, focusLost: {cmd()}, constraints: 'wrap, growx')
+			def field = {lbl, key ->
+				label(text: lbl)
+				fields[key] = textField(actionPerformed: {sauerEnt(key)}, focusLost: {sauerEnt(key)}, constraints: 'wrap, growx')
+			}
+			def f = frame(title: 'Position', windowClosing: {System.exit(0)}, layout: new MigLayout('fillx'), pack: true, show: true) {
+				field('x: ', 'x')
+				field('y: ', 'y')
+				field('z: ', 'z')
+				field('vx: ', 'vx')
+				field('vy: ', 'vy')
+				field('vz: ', 'vz')
+				field('fx: ', 'fx')
+				field('fy: ', 'fy')
+				field('fz: ', 'fz')
+				field('roll: ', 'rol')
+				field('pitch: ', 'pit')
+				field('yaw: ', 'yaw')
+				field('in water: ', 'iw')
+				field('time in air: ', 'tia')
+				field('strafe: ', 's')
+				field('move: ', 'm')
+				field('physics state: ', 'ps')
+				label(text: "Command: ")
+				fields.cmd = textField(actionPerformed: {cmd()}, focusLost: {cmd()}, constraints: 'wrap, growx')
 				button(text: "update", actionPerformed: {pastryCmds.update(["floopy", "1597.093994", "1620.530884", "2062.024658", "0.000000", "-55.000015", "348.454498"])})
 			}
 			f.size = [500, (int)f.size.height] as Dimension
@@ -157,27 +168,18 @@ public class Test {
 			output.flush()
 		}
 	}
-	def sauerEnt(label, field) {
-		if (field.text && field.text[0]) {
-			def cmd = "ent.$label p0 ${field.text}"
+	def sauerEnt(label) {
+		if (fields[label]?.text && fields[label].text[0]) {
+			def cmd = "ent.$label ${ids[name]} ${fields[label].text}"
 			println "NEW $label: $cmd"
 			sauer(label, cmd)
 			dumpCommands()
 		}
 	}
-	def newX() {
-		sauerEnt('x', xField)
-	}
-	def newY() {
-		sauerEnt('y', yField)
-	}
-	def newZ() {
-		sauerEnt('z', zField)
-	}
 	def cmd() {
-		if (cmdField.text && cmdField.text[0]) {
-			sauer('cmd', cmdField.text)
-			cmdField.text = ""
+		if (fields.cmd.text && fields.cmd.text[0]) {
+			sauer('cmd', fields.cmd.text)
+			fields.cmd.text = ""
 			dumpCommands()
 		}
 	}

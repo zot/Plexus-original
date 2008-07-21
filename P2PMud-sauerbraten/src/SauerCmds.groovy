@@ -25,9 +25,11 @@ public class SauerCmds {
 	def position() {
 		if (main.names[args[0]] == main.name) {
 			main.swing.edt {
-				main.xField.text = args[1]
-				main.yField.text = args[2]
-				main.zField.text = args[3]
+				for (def i = 1; i < args.size(); i += 2) {
+					def field = main.fields[args[i]]
+					
+					if (field) field.text = args[i + 1]
+				}
 			}
 			println "SENDING: update ${args[1..-1].join(' ')}"
 			main.pastry(["update ${main.name} ${args[1..-1].join(' ')}"])
