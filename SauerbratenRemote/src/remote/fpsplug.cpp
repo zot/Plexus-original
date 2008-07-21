@@ -309,6 +309,7 @@ ICOMMAND(createplayer, "s", (char *ent), {
 		if (NULL == p) p = fpscl->newclient(fpscl->players.length());
 		else conoutf("/createplayer warning: reusing existing player %s", ent);
 		fpscl->spawnplayer(p);
+		p->state = CS_ALIVE;
         //findplayerspawn(p, -1, 0);
         //fpscl.spawnstate(p);
 		p->tc_id = atoi(ent + 1);
