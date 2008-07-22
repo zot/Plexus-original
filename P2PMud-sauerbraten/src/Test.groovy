@@ -76,6 +76,10 @@ public class Test {
 			sauer('chat', "psay $id [${c.join(' ')}]")
 			dumpCommands()
 		}
+		pastryCmds.tc_upmap = {c ->
+			sauer('tc_upmap', "tc_upmap ${c.join(' ')}")
+			dumpCommands()
+		}
 //		pastryCmds.chat = {c ->
 //			def name = u[0] 
 //			def id = ids[name]

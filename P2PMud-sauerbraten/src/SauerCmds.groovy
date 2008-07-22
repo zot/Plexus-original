@@ -22,6 +22,11 @@ public class SauerCmds {
 			"chat ${args.join(' ')}"
 		])
 	}
+	def tc_upmap() {
+		main.pastry([
+			"tc_upmap ${args[1..-1].join(' ')}"
+		])
+	}
 	def position() {
 		if (main.names[args[0]] == main.name) {
 			main.swing.edt {
