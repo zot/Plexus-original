@@ -58,14 +58,9 @@ public class Test {
 				ids[name] = id
 				++id_index
 				names[id] = name
-				sauer('prep', "createplayer $id")
+				sauer('prep', "createplayer $id $name")
 			}
-			for (def ix = 1; ix < u.size(); ix += 2)
-			{
-				def f = u[ix]
-				def v = u[ix+1]
-				sauer("${id}.$f", "ent.$f $id $v")
-			}
+			sauer("${id}.update", "tc_setinfo $id " + u[2..-1].join(' '))
 			dumpCommands()
 		}
 		
@@ -107,14 +102,12 @@ public class Test {
 				field('roll: ', 'rol')
 				field('pitch: ', 'pit')
 				field('yaw: ', 'yaw')
-				field('in water: ', 'iw')
-				field('time in air: ', 'tia')
 				field('strafe: ', 's')
 				field('move: ', 'm')
 				field('physics state: ', 'ps')
 				label(text: "Command: ")
 				fields.cmd = textField(actionPerformed: {cmd()}, focusLost: {cmd()}, constraints: 'wrap, growx')
-				button(text: "update", actionPerformed: {pastryCmds.update(["floopy", "1597.093994", "1620.530884", "2062.024658", "0.000000", "-55.000015", "348.454498"])})
+				button(text: "update", actionPerformed: {pastryCmds.update(["floopy", "x", "1597.093994", "y", "1620.530884", "z", "2062.024658", "rol", "0.000000", "pit", "-55.000015", "yaw", "348.454498"])})
 			}
 			f.size = [500, (int)f.size.height] as Dimension
 		}
