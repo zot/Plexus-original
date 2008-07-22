@@ -298,7 +298,7 @@ ICOMMAND(mfreeze, "s", (char *ent), {
        }
 });
 
-ICOMMAND(createplayer, "s", (char *ent), {
+ICOMMAND(createplayer, "ss", (char *ent, char *name), {
 	if (ent && ent[0] == 'p') {
 		// if we try to recreate a new player of the same id, just reuse the existing one
 		fpsent *p = getplayer(ent);
@@ -308,10 +308,10 @@ ICOMMAND(createplayer, "s", (char *ent), {
 		}
 		if (NULL == p) p = fpscl->newclient(fpscl->players.length());
 		else conoutf("/createplayer warning: reusing existing player %s", ent);
+
+		if (name && name[0]) strncpy(p->name, name, sizeof(p->name));
 		fpscl->spawnplayer(p);
 		p->state = CS_ALIVE;
-        //findplayerspawn(p, -1, 0);
-        //fpscl.spawnstate(p);
 		p->tc_id = atoi(ent + 1);
 
     }
@@ -379,6 +379,39 @@ static bool initfpsplug() {
 	addcommand("hit.gun", hit_gun, "");
 	addcommand("hit.info", hit_info, "");
 	return true;
+}
+
+// lifted out of client.h parsepositions() function
+void interpolatePlayer(void *p, float oldyaw, float oldpitch, vec oldpos)
+{
+	fpsent *d = (fpsent *) p;
+
+	if(fpscl->allowmove(d))
+	{
+		updatephysstate(d);
+		// updatepos(d);   this would keep the player from being on top of us if we cared about that
+	}
+	if(d->state==CS_DEAD)
+	{
+		d->resetinterp();
+		d->smoothmillis = 0;
+	}
+	else if(fpscl->smoothmove() && d->smoothmillis>=0 && oldpos.dist(d->o) < fpscl->smoothdist())
+	{
+		d->newpos = d->o;
+		d->newyaw = d->yaw;
+		d->newpitch = d->pitch;
+		d->o = oldpos;
+		d->yaw = oldyaw;
+		d->pitch = oldpitch;
+		(d->deltapos = oldpos).sub(d->newpos);
+		d->deltayaw = oldyaw - d->newyaw;
+		if(d->deltayaw > 180) d->deltayaw -= 360;
+		else if(d->deltayaw < -180) d->deltayaw += 360;
+		d->deltapitch = oldpitch - d->newpitch;
+		d->smoothmillis = fpscl->lastmillis;
+	}
+	else d->smoothmillis = 0;
 }
 
 bool plug_fpspluginitialized = initfpsplug();

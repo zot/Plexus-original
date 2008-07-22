@@ -12,8 +12,6 @@ int updateresolution = 200;
 typedef hashtable<const char *, ident> identtable;
 VAR(appmouse, 0, 0, 1);
 
-static vec tmp;
-
 struct watcher {
 	char *id;
 	dynent *entity;
@@ -63,8 +61,8 @@ struct watcher {
 		if (tickmillis - lastupdate < updateresolution) {
 			return false;
 		}
-		if (moveRes > 0) {
-			tmp = entity->o;
+		if (moveRes >= 0) {
+			vec tmp = entity->o;
 			tmp.sub(lastPosition);
 			if (tmp.squaredlen() > moveRes) {
 				return true;
@@ -86,7 +84,10 @@ struct watcher {
 			lastmove != entity->move ||
 			lastphysstate != entity->physstate) return true;
 
-		return rotRes > 0 && fabs(lastRoll - entity->roll) + fabs(lastPitch - entity->pitch) + fabs(lastYaw - entity->yaw) > rotRes;
+		if (rotRes >= 0) {
+			if (fabs(lastRoll - entity->roll) + fabs(lastPitch - entity->pitch) + fabs(lastYaw - entity->yaw) > rotRes) return true;
+		}
+		return false;
 	}
 	void execute() {
 		executeret(code);
@@ -157,10 +158,13 @@ ICOMMAND(override, "sss", (const char *cmd, char *newName, char *body), {
 static void moderationTick() {
 	loopi(watchers.length()) {
 		watcher *w = &watchers[i];
-		tmp = w->entity->o;
-		tmp.sub(w->lastPosition);
 		if (w->changed()) {
+            float oldyaw = w->entity->yaw, oldpitch = w->entity->pitch;
+            vec oldpos(w->entity->o);
+
 			w->execute();
+			extern void interpolatePlayer(void *d, float oldyaw, float oldpitch, vec oldpos);
+			interpolatePlayer(w->entity, oldyaw, oldpitch, oldpos);
 			w->update(); // update AFTER execute to reset last known info
 		}
 	}
@@ -449,7 +453,7 @@ static bool initModeration() {
 }
 bool init = initModeration();
 
-ICOMMAND(watch, "ss", (char *entName, char *code), {
+ICOMMAND(watch, "sss", (char *entName, char *code, char *resolution), {
 		if (!entName || !entName[0]) {
 			conoutf("no entity specified to watch");
 		} else if (!code) {
@@ -483,7 +487,9 @@ ICOMMAND(watch, "ss", (char *entName, char *code), {
 					return;
 				}
 			}
-			watcher w(entName, code, 1, 1);
+			float res = 1.0;
+			if (resolution && resolution[0]) floatVal(res, resolution);
+			watcher w(entName, code, res, res);
 			
 			if (!w.valid()) {
 				conoutf("no entity for id [%s]", entName);
