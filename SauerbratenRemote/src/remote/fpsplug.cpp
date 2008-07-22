@@ -1,3 +1,5 @@
+#include "tc.h"
+
 // plug in to fps.cpp
 extern igameclient *cl;
 struct moderation moderator;
@@ -386,11 +388,13 @@ void interpolatePlayer(void *p, float oldyaw, float oldpitch, vec oldpos)
 {
 	fpsent *d = (fpsent *) p;
 
+	ndebugf(3, "Allowmove: %s\n", fpscl->allowmove(d) ? "true" : "false");
 	if(fpscl->allowmove(d))
 	{
 		updatephysstate(d);
 		fpscl->cc.updatepos(d);
 	}
+	ndebugf(3, "Smoothmove: %s\n", fpscl->smoothmove(d) ? "true" : "false");
 	if(d->state==CS_DEAD)
 	{
 		d->resetinterp();

@@ -7,10 +7,10 @@
 
 //Millisecond value updated before each tick
 int tickmillis;
-int updateresolution = 200;
 
 typedef hashtable<const char *, ident> identtable;
 VAR(appmouse, 0, 0, 1);
+VAR(updateperiod, 50, 75, 3000);
 
 struct watcher {
 	char *id;
@@ -58,7 +58,7 @@ struct watcher {
 		lastupdate = tickmillis;
 	}
 	bool changed() {
-		if (tickmillis - lastupdate < updateresolution) {
+		if (tickmillis - lastupdate < updateperiod) {
 			return false;
 		}
 		if (moveRes >= 0) {
@@ -93,14 +93,6 @@ struct watcher {
 		executeret(code);
 	}
 };
-
-ICOMMAND(updateperiod, "i", (int *i), {
-	if (i) {
-		updateresolution = *i;
-	} else {
-		intret(updateresolution);
-	}
-});
 
 extern identtable *idents;        // contains ALL vars/commands/aliases
 
@@ -394,6 +386,26 @@ static void tc_info(char *id) {
 		watcher *w = findWatcher(ent);
 		if (ent && w) {
 			//fprintf(stderr, "tc_info have ent and watcher!\n");
+#define REPORT_ALL 1
+#ifdef REPORT_ALL
+			report(buf, "x", ent->o.x);
+			report(buf, "y", ent->o.y);
+			report(buf, "z", ent->o.z);
+			report(buf, "rol", ent->roll);
+			report(buf, "pit", ent->pitch);
+			report(buf, "yaw", ent->yaw);
+			report(buf, "vx", ent->vel.x);
+			report(buf, "vy", ent->vel.y);
+			report(buf, "vz", ent->vel.z);
+			report(buf, "fx", ent->falling.x);
+			report(buf, "fy", ent->falling.y);
+			report(buf, "fz", ent->falling.z);
+			//report(buf, "iw", ent->inwater);
+			//report(buf, "tia", ent->timeinair);
+			report(buf, "s", ent->strafe);
+			report(buf, "m", ent->move);
+			report(buf, "ps", ent->physstate);
+#else
 			if (!areDoublesEqual(ent->o.x, w->lastPosition.x)) report(buf, "x", ent->o.x);
 			if (!areDoublesEqual(ent->o.y, w->lastPosition.y)) report(buf, "y", ent->o.y);
 			if (!areDoublesEqual(ent->o.z, w->lastPosition.z)) report(buf, "z", ent->o.z);
@@ -413,6 +425,7 @@ static void tc_info(char *id) {
 			if (ent->strafe != w->laststrafe) report(buf, "s", ent->strafe);
 			if (ent->move != w->lastmove) report(buf, "m", ent->move);
 			if (ent->physstate != w->lastphysstate) report(buf, "ps", ent->physstate);
+#endif
 		} else {
 			conoutf("tc_info error: no entity or watcher specified");
 			strcpy(buf, "tc_info error");
