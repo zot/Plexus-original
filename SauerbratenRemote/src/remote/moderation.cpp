@@ -159,8 +159,8 @@ static void moderationTick() {
 	loopi(watchers.length()) {
 		watcher *w = &watchers[i];
 		if (w->changed()) {
-            float oldyaw = w->entity->yaw, oldpitch = w->entity->pitch;
-            vec oldpos(w->entity->o);
+            float oldyaw = w->lastYaw, oldpitch = w->lastPitch;
+            vec oldpos(w->lastPosition);
 
 			w->execute();
 			extern void interpolatePlayer(void *d, float oldyaw, float oldpitch, vec oldpos);
