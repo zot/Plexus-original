@@ -23,7 +23,7 @@ struct watcher {
 	float moveRes;
 	float rotRes;
 	int lastupdate;
-    int lastinwater, lasttimeinair;
+    //int lastinwater, lasttimeinair;
 	char laststrafe, lastmove;
 	uchar lastphysstate;	
 
@@ -49,8 +49,8 @@ struct watcher {
 		lastPitch = entity->pitch;
 		lastYaw = entity->yaw;
 
-		lastinwater = entity->inwater;
-		lasttimeinair = entity->timeinair;
+		//lastinwater = entity->inwater;
+		//lasttimeinair = entity->timeinair;
 		laststrafe = entity->strafe;
 		lastmove = entity->move;
 		lastphysstate = entity->physstate;
@@ -78,8 +78,8 @@ struct watcher {
 				return true;
 			}
 		}
-		if (lastinwater != entity->inwater ||
-			lasttimeinair != entity->timeinair ||
+		if (//lastinwater != entity->inwater ||
+			//lasttimeinair != entity->timeinair ||
 			laststrafe != entity->strafe ||
 			lastmove != entity->move ||
 			lastphysstate != entity->physstate) return true;
@@ -159,12 +159,8 @@ static void moderationTick() {
 	loopi(watchers.length()) {
 		watcher *w = &watchers[i];
 		if (w->changed()) {
-            float oldyaw = w->lastYaw, oldpitch = w->lastPitch;
-            vec oldpos(w->lastPosition);
 
 			w->execute();
-			extern void interpolatePlayer(void *d, float oldyaw, float oldpitch, vec oldpos);
-			interpolatePlayer(w->entity, oldyaw, oldpitch, oldpos);
 			w->update(); // update AFTER execute to reset last known info
 		}
 	}
@@ -412,8 +408,8 @@ static void tc_info(char *id) {
 			if (!areDoublesEqual(ent->falling.y, w->lastFalling.y)) report(buf, "fy", ent->falling.y);
 			if (!areDoublesEqual(ent->falling.z, w->lastFalling.z)) report(buf, "fz", ent->falling.z);
 
-			if (ent->inwater != w->lastinwater) report(buf, "iw", ent->inwater);
-			if (ent->timeinair != w->lasttimeinair) report(buf, "tia", ent->timeinair);
+			//if (ent->inwater != w->lastinwater) report(buf, "iw", ent->inwater);
+			//if (ent->timeinair != w->lasttimeinair) report(buf, "tia", ent->timeinair);
 			if (ent->strafe != w->laststrafe) report(buf, "s", ent->strafe);
 			if (ent->move != w->lastmove) report(buf, "m", ent->move);
 			if (ent->physstate != w->lastphysstate) report(buf, "ps", ent->physstate);
@@ -425,11 +421,76 @@ static void tc_info(char *id) {
 	result(buf);
 }
 
+static void updateField(dynent *ent, char *f, char *value) {
+	if (0 == strcmp(f, "x")) {
+			floatVal(ent->o.x, value);
+	} else if (0 == strcmp(f, "y")) {
+			floatVal(ent->o.y, value);
+	} else if (0 == strcmp(f, "z")) {
+			floatVal(ent->o.z, value);
+	} else if (0 == strcmp(f, "rol")) {
+			floatVal(ent->roll, value);
+	} else if (0 == strcmp(f, "pit")) {
+			floatVal(ent->pitch, value);
+	} else if (0 == strcmp(f, "yaw")) {
+			floatVal(ent->yaw, value);
+	} else if (0 == strcmp(f, "vx")) {
+			floatVal(ent->vel.x, value);
+	} else if (0 == strcmp(f, "vy")) {
+			floatVal(ent->vel.y, value);
+	} else if (0 == strcmp(f, "vz")) {
+			floatVal(ent->vel.z, value);
+	} else if (0 == strcmp(f, "fx")) {
+			floatVal(ent->falling.x, value);
+	} else if (0 == strcmp(f, "fy")) {
+			floatVal(ent->falling.y, value);
+	} else if (0 == strcmp(f, "fz")) {
+			floatVal(ent->falling.z, value);
+	} else if (0 == strcmp(f, "s")) {
+			charVal(ent->strafe, value);
+	} else if (0 == strcmp(f, "m")) {
+			charVal(ent->move, value);
+	} else if (0 == strcmp(f, "ps")) {
+			ucharVal(ent->physstate, value);
+	}
+}
+
+static void tc_setinfo(char *info)
+{
+	dynent *ent = NULL;
+	char *tok = NULL;
+
+	if (info && info[0]) {
+		char *id = strtok(info, " \t");
+		//fprintf(stderr, "Player entity: %s\n", id);
+		ent = getdynent(id);
+	}
+	if (!ent) return;
+	
+     float oldyaw = ent->yaw, oldpitch = ent->pitch;
+     vec oldpos(ent->o);
+
+	tok = strtok(NULL, " \t");
+	while (NULL != tok) {
+		char *f = tok;
+		char *v = strtok(NULL, " \t");
+		if (f && v) {
+			//fprintf(stderr, "Setting property: %s -> %s\n", f, v);
+			updateField(ent, f, v);
+		} else break;
+		tok = strtok(NULL, " \t");
+	}
+	extern void interpolatePlayer(void *d, float oldyaw, float oldpitch, vec oldpos);
+	interpolatePlayer(ent, oldyaw, oldpitch, oldpos);
+}
+
+
 static bool initModeration() {
 	printf("INITIALIZING\n");
 	extern void addTickHook(void (*hook)());
 	addTickHook(moderationTick);
 	addcommand("tc_info", (void(*)())tc_info, "s");
+	addcommand("tc_setinfo", (void(*)())tc_setinfo, "C");
 	addcommand("ent.x", (void(*)())entX, "ss");
 	addcommand("ent.y", (void(*)())entY, "ss");
 	addcommand("ent.z", (void(*)())entZ, "ss");
@@ -444,8 +505,8 @@ static bool initModeration() {
 	addcommand("ent.fy", (void(*)())entfY, "ss");
 	addcommand("ent.fz", (void(*)())entfZ, "ss");
 
-	addcommand("ent.iw", (void(*)())entInWater, "ss");
-	addcommand("ent.tia", (void(*)())entTimeInAir, "ss");
+	//addcommand("ent.iw", (void(*)())entInWater, "ss");
+	//addcommand("ent.tia", (void(*)())entTimeInAir, "ss");
 	addcommand("ent.s", (void(*)())entStrafe, "ss");
 	addcommand("ent.m", (void(*)())entMove, "ss");
 	addcommand("ent.ps", (void(*)())entPhysState, "ss");
