@@ -118,11 +118,15 @@ static char *remoteconnect() {
 }
 ICOMMAND(remoteconnect, "", (), remoteconnect(););
 
-ICOMMAND(remotesend, "C", (char *line),
+void tc_remotesend(char *line) {
 	if (mysocket != -1) {
 		output.put(line, strlen(line));
 		output.add('\n');
 	}
+}
+
+ICOMMAND(remotesend, "C", (char *line),
+		 tc_remotesend(line);
 );
 
 static void readChunk() {

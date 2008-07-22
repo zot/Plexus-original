@@ -948,6 +948,10 @@ struct fpsclient : igameclient
 
     void edittrigger(const selinfo &sel, int op, int arg1, int arg2, int arg3)
     {
+#ifdef TC
+		extern void tc_edittrigger(const selinfo &sel, int op, int arg1, int arg2, int arg3);
+		tc_edittrigger(sel, op, arg1, arg2, arg3);
+#else
         if(gamemode==1) switch(op)
         {
             case EDIT_FLIP:
@@ -985,6 +989,7 @@ struct fpsclient : igameclient
                 break;
             }
         }
+#endif
     }
 
     bool serverinfostartcolumn(g3d_gui *g, int i)

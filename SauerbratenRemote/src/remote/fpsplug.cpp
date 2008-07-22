@@ -6,9 +6,6 @@ struct moderation moderator;
 char idbuf[1024];
 
 #define fpscl ((fpsclient *)cl)
-#ifdef WINDOWS
-#define snprintf _snprintf
-#endif
 
 /////
 // MEMBERS FOR: dynent
@@ -417,6 +414,5 @@ void interpolatePlayer(void *p, float oldyaw, float oldpitch, vec oldpos)
 	}
 	else d->smoothmillis = 0;
 }
-
 
 bool plug_fpspluginitialized = initfpsplug();

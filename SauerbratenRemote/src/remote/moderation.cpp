@@ -1,9 +1,11 @@
 #include "pch.h"
 #include "cube.h"
 #include "iengine.h"
+#include "game.h"
 #include <stdio.h>
 #include <sys/types.h>
 #include "remote.h"
+#include "tc.h"
 
 //Millisecond value updated before each tick
 int tickmillis;
@@ -146,17 +148,6 @@ ICOMMAND(override, "sss", (const char *cmd, char *newName, char *body), {
 			conoutf("usage: overriding cmd newName body");
 		}
 });
-
-static void moderationTick() {
-	loopi(watchers.length()) {
-		watcher *w = &watchers[i];
-		if (w->changed()) {
-
-			w->execute();
-			w->update(); // update AFTER execute to reset last known info
-		}
-	}
-}
 
 static void floatVal(float &fl, char *value) {
 	if (!value[0]) {
@@ -499,13 +490,152 @@ static void tc_setinfo(char *info)
 	interpolatePlayer(ent, oldyaw, oldpitch, oldpos);
 }
 
+struct mapupdate {
+	struct mapupdate *next;
+	char *update;
+
+	mapupdate(char *up) : next(0), update(_strdup(up)) { }
+};
+
+//#define UNSENT ((struct mapupdate*) -1)
+struct mapwatcher {
+	struct mapupdate *first, *last, *lastSent;
+
+	mapwatcher() : first(0), last(0), lastSent(0) { }
+
+	void addMapUpdate(char *up) {
+		struct mapupdate *update = new mapupdate(up);
+		if (!first) first = update;
+		if (last) last->next = update; 
+		last = update;
+	}
+
+	struct mapupdate *getNextUpdate() {
+		if (NULL == first || lastSent == last) return NULL;
+		//fprintf(stderr, "getNextUpdate  f: %p l: %p sn: %p\n", first, last, lastSent);
+		if (NULL == lastSent) { return lastSent = first; }
+		struct mapupdate *ret = lastSent->next;
+		if (ret) lastSent = ret;
+		return ret;
+	}
+};
+static struct mapwatcher *map_watcher = NULL;
+
+    void tc_edittrigger(const selinfo &sel, int op, int arg1, int arg2, int arg3)
+    {
+		//fprintf(stderr, "Calling tc_edittrigger\n");
+		char buf[256];
+        switch(op)
+        {
+            case EDIT_FLIP:
+            case EDIT_COPY:
+            case EDIT_PASTE:
+            case EDIT_DELCUBE:
+            {
+				snprintf(buf, sizeof(buf), "tc_upmap %d %d %d %d %d %d %d %d %d %d %d %d %d %d", SV_EDITF + op, 
+                   sel.o.x, sel.o.y, sel.o.z, sel.s.x, sel.s.y, sel.s.z, sel.grid, sel.orient,
+                   sel.cx, sel.cxs, sel.cy, sel.cys, sel.corner);
+                break;
+            }
+            case EDIT_MAT:
+            case EDIT_ROTATE:
+            {
+				snprintf(buf, sizeof(buf), "tc_upmap %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d", SV_EDITF + op, 
+                   sel.o.x, sel.o.y, sel.o.z, sel.s.x, sel.s.y, sel.s.z, sel.grid, sel.orient,
+                   sel.cx, sel.cxs, sel.cy, sel.cys, sel.corner,
+                   arg1);
+                break;
+            }
+            case EDIT_FACE:
+            case EDIT_TEX:
+            case EDIT_REPLACE:
+            {
+				snprintf(buf, sizeof(buf), "tc_upmap %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d", SV_EDITF + op, 
+                   sel.o.x, sel.o.y, sel.o.z, sel.s.x, sel.s.y, sel.s.z, sel.grid, sel.orient,
+                   sel.cx, sel.cxs, sel.cy, sel.cys, sel.corner,
+                   arg1, arg2);
+                break;
+            }
+            case EDIT_REMIP:
+            {
+				snprintf(buf, sizeof(buf), "tc_upmap %d r", SV_EDITF + op);
+                //cc.addmsg(SV_EDITF + op, "r");
+                break;
+            }
+        }
+		//fprintf(stderr, "Finished tc_edittrigger: %s\n", buf);
+		if (map_watcher) map_watcher->addMapUpdate(buf);
+    }
+
+static void moderationTick() {
+	loopi(watchers.length()) {
+		watcher *w = &watchers[i];
+		if (w->changed()) {
+
+			w->execute();
+			w->update(); // update AFTER execute to reset last known info
+		}
+	}
+
+	if (!map_watcher) return;
+	//fprintf(stderr, "I have a map_watcher!\n");
+	struct mapupdate *up = NULL;
+	extern void tc_remotesend(char *s);
+	while (NULL != (up = map_watcher->getNextUpdate())) {
+		fprintf(stderr, "Sending out map update: %s\n", up->update);
+		tc_remotesend(up->update);
+	}
+}
+
+static void tc_upmap(char *info)
+{
+	if (!info || !info[0]) return;
+
+	char *t = strtok(info, " \t");
+	if (NULL == t) return;
+	int type = atoi(t);
+
+	selinfo sel;
+	intVal(sel.o.x, strtok(NULL, " \t"));
+	intVal(sel.o.y, strtok(NULL, " \t"));
+	intVal(sel.o.z, strtok(NULL, " \t"));
+	intVal(sel.s.x, strtok(NULL, " \t"));
+	intVal(sel.s.y, strtok(NULL, " \t"));
+	intVal(sel.s.z, strtok(NULL, " \t"));
+	intVal(sel.grid, strtok(NULL, " \t"));
+	intVal(sel.orient, strtok(NULL, " \t"));
+	intVal(sel.cx, strtok(NULL, " \t"));
+	intVal(sel.cxs, strtok(NULL, " \t"));
+	intVal(sel.cy, strtok(NULL, " \t"));
+	intVal(sel.cys, strtok(NULL, " \t"));
+	intVal(sel.corner, strtok(NULL, " \t"));
+	int dir, mode, tex, newtex, mat, allfaces;
+	ivec moveo;
+	fpsent *d = (fpsent *) getdynent("p0");   // not sure.. may have to pass in the player making the change!
+	switch(type)
+	{
+	case SV_EDITF: intVal(dir, strtok(NULL, " \t")); intVal(mode, strtok(NULL, " \t")); mpeditface(dir, mode, sel, false); break;
+	case SV_EDITT: intVal(tex, strtok(NULL, " \t")); intVal(allfaces, strtok(NULL, " \t")); mpedittex(tex, allfaces, sel, false); break;
+	case SV_EDITM: intVal(mat, strtok(NULL, " \t")); mpeditmat(mat, sel, false); break;
+	case SV_FLIP: mpflip(sel, false); break;
+	case SV_COPY: mpcopy(d->edit, sel, false); break;
+	case SV_PASTE: mppaste(d->edit, sel, false); break;
+	case SV_ROTATE: intVal(dir, strtok(NULL, " \t")); mprotate(dir, sel, false); break;
+	case SV_REPLACE: intVal(tex, strtok(NULL, " \t")); intVal(newtex, strtok(NULL, " \t")); mpreplacetex(tex, newtex, sel, false); break;
+	case SV_DELCUBE: mpdelcube(sel, false); break;
+	}
+}
+
 
 static bool initModeration() {
 	printf("INITIALIZING\n");
 	extern void addTickHook(void (*hook)());
 	addTickHook(moderationTick);
+	map_watcher = new mapwatcher();
+
 	addcommand("tc_info", (void(*)())tc_info, "s");
 	addcommand("tc_setinfo", (void(*)())tc_setinfo, "C");
+	addcommand("tc_upmap", (void(*)())tc_upmap, "C");
 	addcommand("ent.x", (void(*)())entX, "ss");
 	addcommand("ent.y", (void(*)())entY, "ss");
 	addcommand("ent.z", (void(*)())entZ, "ss");
