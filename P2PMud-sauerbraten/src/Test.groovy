@@ -60,7 +60,7 @@ public class Test {
 				names[id] = name
 				sauer('prep', "createplayer $id $name")
 			}
-			sauer("${id}.update", "tc_setinfo $id " + u[2..-1].join(' '))
+			sauer("${id}.update", "tc_setinfo $id " + u[1..-1].join(' '))
 			dumpCommands()
 		}
 		
