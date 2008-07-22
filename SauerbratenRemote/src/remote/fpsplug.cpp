@@ -381,31 +381,6 @@ static bool initfpsplug() {
 	return true;
 }
 
-void updatepos(fpsent *d)
-{
-	// update the position of other clients in the game in our world
-	// don't care if he's in the scenery or other players,
-	// just don't overlap with our client
-
-	const float r = fpscl->player1->radius+d->radius;
-	const float dx = fpscl->player1->o.x-d->o.x;
-	const float dy = fpscl->player1->o.y-d->o.y;
-	const float dz = fpscl->player1->o.z-d->o.z;
-	const float rz = fpscl->player1->aboveeye+d->eyeheight;
-	const float fx = (float)fabs(dx), fy = (float)fabs(dy), fz = (float)fabs(dz);
-	if(fx<r && fy<r && fz<rz && fpscl->player1->state!=CS_SPECTATOR && d->state!=CS_DEAD)
-	{
-		if(fx<fy) d->o.y += dy<0 ? r-fy : -(r-fy);  // push aside
-		else      d->o.x += dx<0 ? r-fx : -(r-fx);
-	}
-	int lagtime = fpscl->lastmillis-d->lastupdate;
-	if(lagtime)
-	{
-		if(d->state!=CS_SPAWNING && d->lastupdate) d->plag = (d->plag*5+lagtime)/6;
-		d->lastupdate = fpscl->lastmillis;
-	}
-}
-
 // lifted out of client.h parsepositions() function
 void interpolatePlayer(void *p, float oldyaw, float oldpitch, vec oldpos)
 {
@@ -414,7 +389,7 @@ void interpolatePlayer(void *p, float oldyaw, float oldpitch, vec oldpos)
 	if(fpscl->allowmove(d))
 	{
 		updatephysstate(d);
-		updatepos(d);
+		fpscl->cc.updatepos(d);
 	}
 	if(d->state==CS_DEAD)
 	{

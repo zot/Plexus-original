@@ -480,6 +480,8 @@ static void tc_setinfo(char *info)
 		} else break;
 		tok = strtok(NULL, " \t");
 	}
+
+	ent->state = CS_ALIVE;
 	extern void interpolatePlayer(void *d, float oldyaw, float oldpitch, vec oldpos);
 	interpolatePlayer(ent, oldyaw, oldpitch, oldpos);
 }
