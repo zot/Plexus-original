@@ -253,8 +253,10 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	}
 	public void deliver(Topic topic, ScribeContent content) {
 		if (content instanceof P2PMudScribeContent) {
-			System.out.println("Received p2pmud update: " + content);
-			handleCommand(((P2PMudScribeContent)content).cmd);
+			if (!endpoint.getId().equals(((P2PMudScribeContent)content).cmd.from)) {
+				System.out.println("Received p2pmud update: " + content);
+				handleCommand(((P2PMudScribeContent)content).cmd);
+			}
 		} else {
 			System.out.println("Received update: " + content);
 		}
