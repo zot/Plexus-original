@@ -7,3 +7,11 @@ Makefile -crlf
 *.cfg -crlf
 *.dsp -crlf
 *.launch -crlf
+.gitignore -crlf
+.gitattributes -crlf
+.project -crlf
+.classpath -crlf
+*.sln -crlf
+*.vcproj -crlf
+*.nsi -crlf
+*.rc -crlf
