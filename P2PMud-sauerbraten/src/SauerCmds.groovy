@@ -24,7 +24,7 @@ public class SauerCmds {
 	}
 	def tc_upmap() {
 		main.pastry([
-			"tc_upmap ${args[1..-1].join(' ')}"
+			"tc_upmap ${args.join(' ')}"
 		])
 	}
 	def position() {

@@ -452,8 +452,10 @@ static void updateField(dynent *ent, char *f, char *value) {
 			floatVal(ent->falling.z, value);
 	} else if (0 == strcmp(f, "s")) {
 			charVal(ent->strafe, value);
+			fprintf(stderr, "Assigning strafe: %d from %s\n", (int) ent->strafe, value);
 	} else if (0 == strcmp(f, "m")) {
 			charVal(ent->move, value);
+			fprintf(stderr, "Assigning move: %d from %s\n", (int) ent->move, value);
 	} else if (0 == strcmp(f, "ps")) {
 			ucharVal(ent->physstate, value);
 	}
@@ -488,6 +490,7 @@ static void tc_setinfo(char *info)
 	ent->state = CS_ALIVE;
 	extern void interpolatePlayer(void *d, float oldyaw, float oldpitch, vec oldpos);
 	interpolatePlayer(ent, oldyaw, oldpitch, oldpos);
+	fprintf(stderr, "States after interpolation s: %d m: %d\n", (int) ent->strafe, (int) ent->move);
 }
 
 struct mapupdate {
@@ -550,7 +553,7 @@ static struct mapwatcher *map_watcher = NULL;
             case EDIT_TEX:
             case EDIT_REPLACE:
             {
-				snprintf(buf, sizeof(buf), "tc_upmap %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d", SV_EDITF + op, 
+				snprintf(buf, sizeof(buf), "tc_upmap %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d", SV_EDITF + op, 
                    sel.o.x, sel.o.y, sel.o.z, sel.s.x, sel.s.y, sel.s.z, sel.grid, sel.orient,
                    sel.cx, sel.cxs, sel.cy, sel.cys, sel.corner,
                    arg1, arg2);
@@ -587,41 +590,52 @@ static void moderationTick() {
 	}
 }
 
+bool safeParseInt(int &i)
+{
+	char *str = strtok(NULL, " \t");
+	if (!str) return false;
+
+	intVal(i, str); // 2
+	return true;
+}
+
 static void tc_upmap(char *info)
 {
 	if (!info || !info[0]) return;
 
-	char *t = strtok(info, " \t");
+	char *t = strtok(info, " \t"); // 1
 	if (NULL == t) return;
 	int type = atoi(t);
 
 	selinfo sel;
-	intVal(sel.o.x, strtok(NULL, " \t"));
-	intVal(sel.o.y, strtok(NULL, " \t"));
-	intVal(sel.o.z, strtok(NULL, " \t"));
-	intVal(sel.s.x, strtok(NULL, " \t"));
-	intVal(sel.s.y, strtok(NULL, " \t"));
-	intVal(sel.s.z, strtok(NULL, " \t"));
-	intVal(sel.grid, strtok(NULL, " \t"));
-	intVal(sel.orient, strtok(NULL, " \t"));
-	intVal(sel.cx, strtok(NULL, " \t"));
-	intVal(sel.cxs, strtok(NULL, " \t"));
-	intVal(sel.cy, strtok(NULL, " \t"));
-	intVal(sel.cys, strtok(NULL, " \t"));
-	intVal(sel.corner, strtok(NULL, " \t"));
+	if (!(
+		safeParseInt(sel.o.x) &&
+		safeParseInt(sel.o.y) &&
+		safeParseInt(sel.o.z) &&
+		safeParseInt(sel.s.x) &&
+		safeParseInt(sel.s.y) &&
+		safeParseInt(sel.s.z) &&
+		safeParseInt(sel.grid) &&
+		safeParseInt(sel.orient) &&
+		safeParseInt(sel.cx) &&
+		safeParseInt(sel.cxs) &&
+		safeParseInt(sel.cy) &&
+		safeParseInt(sel.cys) &&
+		safeParseInt(sel.corner))) return;
+
 	int dir, mode, tex, newtex, mat, allfaces;
 	ivec moveo;
 	fpsent *d = (fpsent *) getdynent("p0");   // not sure.. may have to pass in the player making the change!
 	switch(type)
 	{
-	case SV_EDITF: intVal(dir, strtok(NULL, " \t")); intVal(mode, strtok(NULL, " \t")); mpeditface(dir, mode, sel, false); break;
-	case SV_EDITT: intVal(tex, strtok(NULL, " \t")); intVal(allfaces, strtok(NULL, " \t")); mpedittex(tex, allfaces, sel, false); break;
-	case SV_EDITM: intVal(mat, strtok(NULL, " \t")); mpeditmat(mat, sel, false); break;
+	case SV_EDITF: if (safeParseInt(dir) && safeParseInt(mode)){ mpeditface(dir, mode, sel, false); } break;
+	case SV_EDITT: if (safeParseInt(tex) && safeParseInt(allfaces)) { mpedittex(tex, allfaces, sel, false); } break;
+	case SV_EDITM: if (safeParseInt(mat)) { mpeditmat(mat, sel, false); } break;
 	case SV_FLIP: mpflip(sel, false); break;
 	case SV_COPY: mpcopy(d->edit, sel, false); break;
 	case SV_PASTE: mppaste(d->edit, sel, false); break;
-	case SV_ROTATE: intVal(dir, strtok(NULL, " \t")); mprotate(dir, sel, false); break;
-	case SV_REPLACE: intVal(tex, strtok(NULL, " \t")); intVal(newtex, strtok(NULL, " \t")); mpreplacetex(tex, newtex, sel, false); break;
+	case SV_ROTATE: if (safeParseInt(dir)) { mprotate(dir, sel, false); } break;
+	case SV_REPLACE: if (safeParseInt(tex) && safeParseInt(newtex)) { mpreplacetex(tex, newtex, sel, false); } break;
 	case SV_DELCUBE: mpdelcube(sel, false); break;
 	}
 }
