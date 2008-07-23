@@ -27,7 +27,7 @@ struct watcher {
 	int lastupdate;
     //int lastinwater, lasttimeinair;
 	char laststrafe, lastmove;
-	uchar lastphysstate;	
+	uchar lastphysstate;
 
 	watcher(char *id, char *code, float _moveRes, float _rotRes): moveRes(_moveRes), rotRes(_rotRes), lastupdate(0) {
 		entity = getdynent(id);
@@ -478,7 +478,7 @@ static void tc_setinfo(char *info)
 		ent = getdynent(id);
 	}
 	if (!ent) return;
-	
+
      float oldyaw = ent->yaw, oldpitch = ent->pitch;
      vec oldpos(ent->o);
 
@@ -503,7 +503,7 @@ struct mapupdate {
 	struct mapupdate *next;
 	char *update;
 
-	mapupdate(char *up) : next(0), update(_strdup(up)) { }
+	mapupdate(char *up) : next(0), update(strdup(up)) { }
 };
 
 //#define UNSENT ((struct mapupdate*) -1)
@@ -515,7 +515,7 @@ struct mapwatcher {
 	void addMapUpdate(char *up) {
 		struct mapupdate *update = new mapupdate(up);
 		if (!first) first = update;
-		if (last) last->next = update; 
+		if (last) last->next = update;
 		last = update;
 	}
 
@@ -541,7 +541,7 @@ static struct mapwatcher *map_watcher = NULL;
             case EDIT_PASTE:
             case EDIT_DELCUBE:
             {
-				snprintf(buf, sizeof(buf), "tc_upmap %d %d %d %d %d %d %d %d %d %d %d %d %d %d", SV_EDITF + op, 
+				snprintf(buf, sizeof(buf), "tc_upmap %d %d %d %d %d %d %d %d %d %d %d %d %d %d", SV_EDITF + op,
                    sel.o.x, sel.o.y, sel.o.z, sel.s.x, sel.s.y, sel.s.z, sel.grid, sel.orient,
                    sel.cx, sel.cxs, sel.cy, sel.cys, sel.corner);
                 break;
@@ -549,7 +549,7 @@ static struct mapwatcher *map_watcher = NULL;
             case EDIT_MAT:
             case EDIT_ROTATE:
             {
-				snprintf(buf, sizeof(buf), "tc_upmap %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d", SV_EDITF + op, 
+				snprintf(buf, sizeof(buf), "tc_upmap %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d", SV_EDITF + op,
                    sel.o.x, sel.o.y, sel.o.z, sel.s.x, sel.s.y, sel.s.z, sel.grid, sel.orient,
                    sel.cx, sel.cxs, sel.cy, sel.cys, sel.corner,
                    arg1);
@@ -559,7 +559,7 @@ static struct mapwatcher *map_watcher = NULL;
             case EDIT_TEX:
             case EDIT_REPLACE:
             {
-				snprintf(buf, sizeof(buf), "tc_upmap %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d", SV_EDITF + op, 
+				snprintf(buf, sizeof(buf), "tc_upmap %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d", SV_EDITF + op,
                    sel.o.x, sel.o.y, sel.o.z, sel.s.x, sel.s.y, sel.s.z, sel.grid, sel.orient,
                    sel.cx, sel.cxs, sel.cy, sel.cys, sel.corner,
                    arg1, arg2);
@@ -716,7 +716,7 @@ ICOMMAND(watch, "sss", (char *entName, char *code, char *resolution), {
 			float res = 1.0;
 			if (resolution && resolution[0]) floatVal(res, resolution);
 			watcher w(entName, code, res, res);
-			
+
 			if (!w.valid()) {
 				conoutf("no entity for id [%s]", entName);
 			} else {

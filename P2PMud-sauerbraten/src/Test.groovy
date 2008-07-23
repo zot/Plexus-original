@@ -196,6 +196,7 @@ public class Test {
 	}
 	
 	def pastry(cmds) {
-		P2PMudPeer.test.sendCmds(cmds as String[])
+//		P2PMudPeer.test.sendCmds(cmds as String[])
+		P2PMudPeer.test.broadcastCmds(cmds as String[])
 	}
 }
