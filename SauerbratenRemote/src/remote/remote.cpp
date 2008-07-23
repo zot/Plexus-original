@@ -155,7 +155,7 @@ static void readChunk() {
 			input[lastNl] = 0;
 			if (input.length() > 1) {
 				char *command = input.getbuf();
-				fprintf(stderr, "Zot (%d):%s\n", lastNl, command);
+				//fprintf(stderr, "Zot (%d):%s\n", lastNl, command);
 				executeret(command);
 			}
 			if (lastNl + 1 < input.length()) {

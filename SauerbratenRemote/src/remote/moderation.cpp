@@ -454,10 +454,8 @@ static void updateField(dynent *ent, char *f, char *value) {
 			floatVal(ent->falling.z, value);
 	} else if (0 == strcmp(f, "s")) {
 			charVal(ent->strafe, value);
-			fprintf(stderr, "Assigning strafe: %d from %s\n", (int) ent->strafe, value);
 	} else if (0 == strcmp(f, "m")) {
 			charVal(ent->move, value);
-			fprintf(stderr, "Assigning move: %d from %s\n", (int) ent->move, value);
 	} else if (0 == strcmp(f, "e")) {
 			char e = '\0';
 			charVal(e, value);
@@ -475,7 +473,7 @@ static void tc_setinfo(char *info)
 	char *tok = NULL;
 
 	if (info && info[0]) {
-		fprintf(stderr, "\ntc_setinfo: %s\n", info);
+		//fprintf(stderr, "\ntc_setinfo: %s\n", info);
 		char *id = strtok(info, " \t");
 		//fprintf(stderr, "Player entity: %s\n", id);
 		ent = getdynent(id);
@@ -491,7 +489,7 @@ static void tc_setinfo(char *info)
 		char *f = tok;
 		char *v = strtok(NULL, " \t");
 		if (f && v) {
-			fprintf(stderr, "Setting property: %s -> %s\n", f, v);
+			//fprintf(stderr, "Setting property: %s -> %s\n", f, v);
 			updateField(ent, f, v);
 		} else break;
 		tok = strtok(NULL, " \t");
@@ -499,7 +497,7 @@ static void tc_setinfo(char *info)
 
 	extern void interpolatePlayer(void *d, float oldyaw, float oldpitch, vec oldpos);
 	interpolatePlayer(ent, oldyaw, oldpitch, oldpos);
-	fprintf(stderr, "States after interpolation s: %d m: %d\n", (int) ent->strafe, (int) ent->move);
+	//fprintf(stderr, "States after interpolation s: %d m: %d\n", (int) ent->strafe, (int) ent->move);
 }
 
 struct mapupdate {
@@ -594,7 +592,7 @@ static void moderationTick() {
 	struct mapupdate *up = NULL;
 	extern void tc_remotesend(char *s);
 	while (NULL != (up = map_watcher->getNextUpdate())) {
-		fprintf(stderr, "Sending out map update: %s\n", up->update);
+		//fprintf(stderr, "Sending out map update: %s\n", up->update);
 		tc_remotesend(up->update);
 	}
 }
