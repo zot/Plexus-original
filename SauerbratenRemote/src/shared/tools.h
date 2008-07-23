@@ -92,8 +92,11 @@ static inline T min(T a, T b)
 #endif
 
 // easy safe strings
-
+#if TC
+#define MAXSTRLEN 512
+#else
 #define MAXSTRLEN 260
+#endif
 typedef char string[MAXSTRLEN];
 
 inline void formatstring(char *d, const char *fmt, va_list v) { _vsnprintf(d, MAXSTRLEN, fmt, v); d[MAXSTRLEN-1] = 0; }

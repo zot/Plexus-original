@@ -394,7 +394,11 @@ char *conc(char **w, int n, bool space)
     return r;
 }
 
+#ifdef TC
+VARN(numargs, _numargs, 0, 0, 50);
+#else
 VARN(numargs, _numargs, 0, 0, 25);
+#endif
 
 #define parseint(s) strtol((s), NULL, 0)
 
@@ -404,7 +408,11 @@ extern const char *addreleaseaction(const char *s);
 
 char *executeret(const char *p)               // all evaluation happens here, recursively
 {
+#ifdef TC
+    const int MAXWORDS = 50;                    // limit, remove
+#else
     const int MAXWORDS = 25;                    // limit, remove
+#endif
     char *w[MAXWORDS];
     char *retval = NULL;
     #define setretval(v) { char *rv = v; if(rv) retval = rv; }

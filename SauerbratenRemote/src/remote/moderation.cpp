@@ -464,6 +464,8 @@ static void updateField(dynent *ent, char *f, char *value) {
 			if (e) ent->state = CS_EDITING;
 	} else if (0 == strcmp(f, "ps")) {
 			ucharVal(ent->physstate, value);
+	} else {
+		conoutf("tc_setinfo protocol sending unknown field: %s", f);
 	}
 }
 
@@ -473,6 +475,7 @@ static void tc_setinfo(char *info)
 	char *tok = NULL;
 
 	if (info && info[0]) {
+		fprintf(stderr, "\ntc_setinfo: %s\n", info);
 		char *id = strtok(info, " \t");
 		//fprintf(stderr, "Player entity: %s\n", id);
 		ent = getdynent(id);
