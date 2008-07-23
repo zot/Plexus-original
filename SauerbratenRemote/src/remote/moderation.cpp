@@ -393,6 +393,8 @@ static void tc_info(char *id) {
 			report(buf, "fz", ent->falling.z);
 			//report(buf, "iw", ent->inwater);
 			//report(buf, "tia", ent->timeinair);
+			char e = (ent->state == CS_EDITING) ? 1 : 0;
+			report(buf, "s", e);
 			report(buf, "s", ent->strafe);
 			report(buf, "m", ent->move);
 			report(buf, "ps", ent->physstate);
@@ -456,6 +458,10 @@ static void updateField(dynent *ent, char *f, char *value) {
 	} else if (0 == strcmp(f, "m")) {
 			charVal(ent->move, value);
 			fprintf(stderr, "Assigning move: %d from %s\n", (int) ent->move, value);
+	} else if (0 == strcmp(f, "e")) {
+			char e = '\0';
+			charVal(e, value);
+			if (e) ent->state = CS_EDITING;
 	} else if (0 == strcmp(f, "ps")) {
 			ucharVal(ent->physstate, value);
 	}
@@ -476,18 +482,18 @@ static void tc_setinfo(char *info)
      float oldyaw = ent->yaw, oldpitch = ent->pitch;
      vec oldpos(ent->o);
 
+	ent->state = CS_ALIVE;
 	tok = strtok(NULL, " \t");
 	while (NULL != tok) {
 		char *f = tok;
 		char *v = strtok(NULL, " \t");
 		if (f && v) {
-			//fprintf(stderr, "Setting property: %s -> %s\n", f, v);
+			fprintf(stderr, "Setting property: %s -> %s\n", f, v);
 			updateField(ent, f, v);
 		} else break;
 		tok = strtok(NULL, " \t");
 	}
 
-	ent->state = CS_ALIVE;
 	extern void interpolatePlayer(void *d, float oldyaw, float oldpitch, vec oldpos);
 	interpolatePlayer(ent, oldyaw, oldpitch, oldpos);
 	fprintf(stderr, "States after interpolation s: %d m: %d\n", (int) ent->strafe, (int) ent->move);

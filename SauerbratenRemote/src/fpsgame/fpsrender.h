@@ -18,8 +18,10 @@ struct fpsrender
 
     const playermodelinfo &getplayermodelinfo()
     {
-        static const playermodelinfo playermodels[3] =
+        static const playermodelinfo playermodels[5] =
         {
+           // { "hansolo", "hansolo", "hansolo", NULL, NULL, { NULL, NULL, NULL }, "hansolo", "hansolo", "hansolo" },
+           // { "valkery", "valkery", "valkery", NULL, NULL, { NULL, NULL, NULL }, "valkery", "valkery", "valkery" },
             { "mrfixit", "mrfixit/blue", "mrfixit/red", NULL, "mrfixit/horns", { "mrfixit/armor/blue", "mrfixit/armor/green", "mrfixit/armor/yellow" }, "mrfixit", "mrfixit_blue", "mrfixit_red" },
             { "ironsnout", "ironsnout/blue", "ironsnout/red", NULL, "quadspheres", { "shield/blue", "shield/green", "shield/yellow" }, "ironsnout", "ironsnout_blue", "ironsnout_red" },
             { "monster/ogro", "monster/ogro/blue", "monster/ogro/red", "monster/ogro/vwep", NULL, { NULL, NULL, NULL }, "ogro", "ogro", "ogro" }
