@@ -18,6 +18,8 @@ void dynent::renderplayer(fpsclient &cl, void *void_mdl, int team) {
 //	printf("render player (%s) %s\n", name, suggestion);
 	if(d->state!=CS_DEAD || d->superdamage<50) {
 		cl.fr.renderplayer((fpsent*)this, mdl, team);
+		if (d->name[0]) particle_text(d->abovehead(), d->name, 24, 1);
+		//particle_meter(d->abovehead(), 0.75, 17);
 	}
 	//if (fiddlies) {
 	//	s_strcpy(d->info, cl.colorname(d, NULL, "@"));
@@ -282,7 +284,8 @@ ICOMMAND(psay, "ss", (char *ent, char *txt), {
 
        if (d) {
                s_sprintfd(ds)("@%s", txt);
-               particle_text(d->abovehead(), ds, 16, 10000);
+			   vec high = d->abovehead().add(vec(0, 0, d->aboveeye+2));
+               particle_text(high, ds, 16, 10000);
                conoutf("%s:\f0 %s", fpscl->colorname(d), txt);
        }
 });
