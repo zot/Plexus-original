@@ -845,7 +845,7 @@ static struct partmap { int type; int color; float size; } partmaps[] =
     { 14, 0xFF8080, 4.0f }, // 22 red explosion fireball
     { 14, 0xA0C080, 4.0f }, // 23 orange explosion fireball
 #ifdef TC
-    { 10, 0x40FF40, 3.0f},			// 24 TC floating name type
+    { 10, 0x40FF40, 2.5f},			// 24 TC floating name type
 #else
     /* @UNUSED */ { -1, 0, 0.0f}, // 24
 #endif

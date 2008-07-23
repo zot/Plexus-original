@@ -175,7 +175,11 @@ struct demoheader
 };
 
 #define MAXNAMELEN 15
+#ifdef TC
+#define MAXTEAMLEN 24
+#else
 #define MAXTEAMLEN 4
+#endif
 
 static struct itemstat { int add, max, sound; const char *name; int info; } itemstats[] =
 {

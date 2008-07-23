@@ -12,20 +12,27 @@ char idbuf[1024];
 /////
 void dynent::renderplayer(fpsclient &cl, void *void_mdl, int team) {
 	fpsclient::playermodelinfo &mdl = *((fpsclient::playermodelinfo *) void_mdl);
-	fpsent *d = (fpsent *)this;
+	fpsent *ent = (fpsent *)this;
 	//const char *model = modelname ? modelname : modelnames[mdl];
 
 //	printf("render player (%s) %s\n", name, suggestion);
-	if(d->state!=CS_DEAD || d->superdamage<50) {
-		cl.fr.renderplayer((fpsent*)this, mdl, team);
-		if (d->name[0]) particle_text(d->abovehead(), d->name, 24, 1);
+	if(ent->state!=CS_DEAD) {
+		//cl.fr.renderplayer(ent, mdl, team);
+		char *mdlname = ent->modelname;
+		if (!mdlname) mdlname = "mrfixit";
+
+        int lastaction = ent->lastaction, attack = ent->gunselect==GUN_FIST ? ANIM_PUNCH : ANIM_SHOOT, delay = mdl.vwep ? 300 : cl.ws.reloadtime(ent->gunselect)+50;
+        renderclient(ent, mdlname, NULL, attack, delay, lastaction, ent->lastpain);
+
+		vec v = ent->abovehead().add(vec(0, 0, 2));
+		if (ent->name[0]) particle_text(v, ent->name, 24, 1);
+
+		if (ent->team[0]) {
+			particle_text(v.sub(vec(0, 0, 2)),  ent->team, 24, 1);
+		}
+		// could make a 'health bar' with this:
 		//particle_meter(d->abovehead(), 0.75, 17);
 	}
-	//if (fiddlies) {
-	//	s_strcpy(d->info, cl.colorname(d, NULL, "@"));
-	//	if(d->maxhealth>100) { s_sprintfd(sn)(" +%d", d->maxhealth-100); s_strcat(d->info, sn); }
-	//	if(d->state!=CS_DEAD) particle_text(d->abovehead(), d->info, mdl ? (mdl==1 ? 16 : 13) : 11, 1);
-	//}
 }
 
 void dynent::rendermonster(fpsclient &cl) {
@@ -315,8 +322,32 @@ ICOMMAND(createplayer, "ss", (char *ent, char *name), {
 		fpscl->spawnplayer(p);
 		p->state = CS_ALIVE;
 		p->tc_id = atoi(ent + 1);
-
+		conoutf("Welcome player %s to this world", p->name);
     }
+});
+
+void playersetmodel(fpsent *p, char *model)
+{
+	if (p->modelname) { free(p->modelname); p->modelname = NULL; }
+	if (model && model[0]) p->modelname = strdup(model);
+}
+
+ICOMMAND(playerinfo, "sss", (char *ent, char *team, char *model), {
+	if (ent && ent[0] == 'p') {
+		// if we try to recreate a new player of the same id, just reuse the existing one
+		fpsent *p = getplayer(ent);
+		if (NULL == p) {
+			conoutf("/playerinfo error: player %s not found", ent);
+			return;
+		}
+
+		if (team && team[0]) {
+			snprintf(p->team, sizeof(p->team), "<%s>", team);
+		} else {
+			p->team[0] = '\0';
+		}
+		playersetmodel(p, model);
+	}
 });
 
 ICOMMAND(createmonster, "s", (char *ent), {
@@ -328,6 +359,7 @@ ICOMMAND(createmonster, "s", (char *ent), {
 
     }
 });
+
 ICOMMAND(monsterstate, "s", (char *ent), {
 	if (ent && ent[0] == 'm') {
 		fpsclient::monsterset::monster *m = getmonster(ent);
