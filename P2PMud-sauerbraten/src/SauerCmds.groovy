@@ -9,7 +9,7 @@ public class SauerCmds {
 		args = cmdString.split()
 		def name = args[0]
 		args = args[1..-1]
-		println "EXECUTING: $args"
+//		println "EXECUTING: $args"
 		invokeMethod(name, null)
 	}
 	def login() {
@@ -36,7 +36,7 @@ public class SauerCmds {
 					if (field) field.text = args[i + 1]
 				}
 			}
-			println "SENDING: update ${args[1..-1].join(' ')}"
+//			println "SENDING: update ${args[1..-1].join(' ')}"
 			main.pastry(["update ${main.name} ${args[1..-1].join(' ')}"])
 		}
 	}

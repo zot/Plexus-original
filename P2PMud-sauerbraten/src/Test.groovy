@@ -33,6 +33,7 @@ public class Test {
 	def swing
 	def fields = [:]
 	def runs = 0
+	def pastryCmd
 
 	public static void main(String[] a) {
 		if (a.length < 2) {
@@ -80,6 +81,9 @@ public class Test {
 			sauer('tc_upmap', "tc_upmap ${c.join(' ')}")
 			dumpCommands()
 		}
+		pastryCmds.sendmap = {c ->
+			sendMap()
+		}
 //		pastryCmds.chat = {c ->
 //			def name = u[0] 
 //			def id = ids[name]
@@ -117,7 +121,10 @@ public class Test {
 		}
 		//button(text: "update", actionPerformed: {pastryCmds.update(["floopy", "1597.093994", "1620.530884", "2062.024658", "0.000000", "-55.000015", "348.454498"])})
 		start(args[0])
-		P2PMudPeer.main({cmd -> cmd.msgs.each {runCommand(it, pastryCmds)}} as P2PMudCommandHandler, args[2..-1] as String[])
+		P2PMudPeer.main({cmd ->
+			pastryCmd = cmd
+			cmd.msgs.each {runCommand(it, pastryCmds)}
+		} as P2PMudCommandHandler, args[2..-1] as String[])
 	}
 	def start(port) {
 		Thread.startDaemon {
@@ -126,7 +133,7 @@ public class Test {
 			println "READY"
 			while (true) {
 				Socket client = sock.accept({
-					println("Got connection...")
+					println("Got connection from sauerbraten...")
 					output = it.getOutputStream()
 					init()
 					it.getInputStream().eachLine {
@@ -148,7 +155,7 @@ public class Test {
 		def a = str.split()
 		def func = cmds[a[0]]
 	
-		println "EXECUTING: $a"
+//		println "EXECUTING: $a"
 		if (func) {
 			func(a.length > 1 ? a[1..-1] : [])
 		}
@@ -158,7 +165,7 @@ public class Test {
 			synchronized (pendingCommands) {
 				if (!pendingCommands.isEmpty()) {
 					output << pendingCommands.collect{it.value}.join(";") + '\n'
-					println "SENT: ${pendingCommands.collect{it.value}.join(';') + '\n'}"
+//					println "SENT: ${pendingCommands.collect{it.value}.join(';') + '\n'}"
 					pendingCommands = [:]
 				}
 			}
@@ -168,7 +175,7 @@ public class Test {
 	def sauerEnt(label) {
 		if (fields[label]?.text && fields[label].text[0]) {
 			def cmd = "ent.$label ${ids[name]} ${fields[label].text}"
-			println "NEW $label: $cmd"
+//			println "NEW $label: $cmd"
 			sauer(label, cmd)
 			dumpCommands()
 		}
@@ -194,9 +201,11 @@ public class Test {
 		].join(';'))
 	 	dumpCommands()
 	}
-	
 	def pastry(cmds) {
 //		P2PMudPeer.test.sendCmds(cmds as String[])
 		P2PMudPeer.test.broadcastCmds(cmds as String[])
+	}
+	def sendMap() {
+		P2PMudPeer.test.sendCmds(cmds as String[])
 	}
 }

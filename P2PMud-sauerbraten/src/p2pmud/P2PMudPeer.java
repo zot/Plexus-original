@@ -254,7 +254,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	public void deliver(Topic topic, ScribeContent content) {
 		if (content instanceof P2PMudScribeContent) {
 			if (!endpoint.getId().equals(((P2PMudScribeContent)content).cmd.from)) {
-				System.out.println("Received p2pmud update: " + content);
+//				System.out.println("Received p2pmud update: " + content);
 				handleCommand(((P2PMudScribeContent)content).cmd);
 			}
 		} else {
@@ -273,6 +273,13 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		System.err.println("ERROR: Failed to subscribe to topics: " + topics);
 	}
 	public void subscribeSuccess(Collection arg0) {}
+	public void sendMulticast(String msg) throws IOException {
+		System.out.println("Node "+endpoint.getLocalNodeHandle()+" broadcasting " + msg);
+		myScribe.publish(myTopic, new P2PMudScribeContent(new P2PMudCommand(node.getId(), msg))); 
+	}
+	public void broadcastCmds(String cmds[]) {
+		myScribe.publish(myTopic, new P2PMudScribeContent(new P2PMudCommand(node.getId(), cmds))); 
+	}
 	public void sendCmds(String cmds[]) {
 		getOther();
 		if (other != null) {
@@ -281,13 +288,6 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	}
 	public void sendCmds(Id id, String cmds[]) {
 		endpoint.route(id, new P2PMudMessage(new P2PMudCommand(endpoint.getId(), cmds)), null);
-	}
-	public void broadcastCmds(String cmds[]) {
-		myScribe.publish(myTopic, new P2PMudScribeContent(new P2PMudCommand(node.getId(), cmds))); 
-	}
-	public void sendMulticast(String msg) throws IOException {
-		System.out.println("Node "+endpoint.getLocalNodeHandle()+" broadcasting " + msg);
-		myScribe.publish(myTopic, new P2PMudScribeContent(new P2PMudCommand(node.getId(), msg))); 
 	}
 	public void storeData(String handle) throws IOException {
 //		final PastContent myContent = new P2PMudPastContent(idFactory.buildId(handle), new handle);
