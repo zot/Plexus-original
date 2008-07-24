@@ -494,6 +494,8 @@ static void tc_setinfo(char *info)
 		} else break;
 		tok = strtok(NULL, " \t");
 	}
+	// experimental change so u don't animate run while in edit mode
+	if (ent->state == CS_EDITING) { ent->move = 0; ent->strafe = 0; }
 
 	extern void interpolatePlayer(void *d, float oldyaw, float oldpitch, vec oldpos);
 	interpolatePlayer(ent, oldyaw, oldpitch, oldpos);

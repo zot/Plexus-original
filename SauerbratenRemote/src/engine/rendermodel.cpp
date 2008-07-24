@@ -974,7 +974,11 @@ void renderclient(dynent *d, const char *mdlname, modelattach *attachments, int 
     if(d!=player) flags |= MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY;
     if(d->type==ENT_PLAYER) flags |= MDL_FULLBRIGHT;
     else flags |= MDL_CULL_DIST;
+#ifdef TC
+    if(d->state==CS_EDITING) flags |= MDL_TRANSLUCENT;
+#else
     if(d->state==CS_LAGGED) flags |= MDL_TRANSLUCENT;
+#endif
     else if((anim&ANIM_INDEX)!=ANIM_DEAD) flags |= MDL_DYNSHADOW;
     rendermodel(NULL, mdlname, anim, o, testanims && d==player ? 0 : yaw+90, testpitch && d==player ? testpitch : pitch, flags, d, attachments, basetime);
 }
