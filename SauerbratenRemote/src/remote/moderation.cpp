@@ -320,6 +320,19 @@ static void entTimeInAir(char *id, char *value) {
 		if (ent) intVal(ent->timeinair, value);
 	}
 }
+
+static void entE(char *id, char *value) {
+	if (id && id[0]) {
+		dynent *ent = getdynent(id);
+
+		if (ent) {
+			char e = ent->state == CS_EDITING;
+
+			charVal(e, value);
+			ent->state = e ? CS_EDITING : CS_ALIVE;
+		}
+	}
+}
 static void entStrafe(char *id, char *value) {
 	if (id && id[0]) {
 		dynent *ent = getdynent(id);
@@ -674,6 +687,7 @@ static bool initModeration() {
 
 	//addcommand("ent.iw", (void(*)())entInWater, "ss");
 	//addcommand("ent.tia", (void(*)())entTimeInAir, "ss");
+	addcommand("ent.e", (void(*)())entE, "ss");
 	addcommand("ent.s", (void(*)())entStrafe, "ss");
 	addcommand("ent.m", (void(*)())entMove, "ss");
 	addcommand("ent.ps", (void(*)())entPhysState, "ss");
