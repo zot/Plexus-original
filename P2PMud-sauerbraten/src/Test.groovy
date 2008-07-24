@@ -104,6 +104,7 @@ public class Test {
 				field('pitch: ', 'pit')
 				field('yaw: ', 'yaw')
 				field('strafe: ', 's')
+				field('edit: ', 'e')
 				field('move: ', 'm')
 				field('physics state: ', 'ps')
 				label(text: "Command: ")

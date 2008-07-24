@@ -40,6 +40,11 @@ struct watcher {
 			this->code = NULL;
 		}
 	}
+	~watcher() {
+		if (entity) delete entity;
+		if (id) delete[] id;
+		if (code) delete[] code;
+	}
 	bool valid() {
 		return !!entity;
 	}
@@ -320,6 +325,19 @@ static void entTimeInAir(char *id, char *value) {
 		if (ent) intVal(ent->timeinair, value);
 	}
 }
+
+static void entEdit(char *id, char *value) {
+	if (id && id[0]) {
+		dynent *ent = getdynent(id);
+
+		if (ent) {
+			char e = 0;
+			charVal(e, value);
+			ent->state = (e) ? CS_EDITING : CS_ALIVE;
+		}
+	}
+}
+
 static void entStrafe(char *id, char *value) {
 	if (id && id[0]) {
 		dynent *ent = getdynent(id);
@@ -327,6 +345,7 @@ static void entStrafe(char *id, char *value) {
 		if (ent) charVal(ent->strafe, value);
 	}
 }
+
 static void entMove(char *id, char *value) {
 	if (id && id[0]) {
 		dynent *ent = getdynent(id);
@@ -334,6 +353,7 @@ static void entMove(char *id, char *value) {
 		if (ent) charVal(ent->move, value);
 	}
 }
+
 static void entPhysState(char *id, char *value) {
 	if (id && id[0]) {
 		dynent *ent = getdynent(id);
@@ -674,6 +694,7 @@ static bool initModeration() {
 
 	//addcommand("ent.iw", (void(*)())entInWater, "ss");
 	//addcommand("ent.tia", (void(*)())entTimeInAir, "ss");
+	addcommand("ent.e", (void(*)())entEdit, "ss");
 	addcommand("ent.s", (void(*)())entStrafe, "ss");
 	addcommand("ent.m", (void(*)())entMove, "ss");
 	addcommand("ent.ps", (void(*)())entPhysState, "ss");
@@ -726,6 +747,26 @@ ICOMMAND(watch, "sss", (char *entName, char *code, char *resolution), {
 			}
 		}
 });
+
+ICOMMAND(deleteplayer, "s", (char *ent), {
+	if (ent && ent[0] == 'p') {
+		// if we try to recreate a new player of the same id, just reuse the existing one
+		fpsent *p = getplayer(ent);
+		if (NULL == p) {
+			conoutf("/deleteplayer error: player %s not found", ent);
+			return;
+		}
+
+		loopi(watchers.length()) {
+			watcher *w = &watchers[i];
+			if (w && w->entity == p) {
+				watchers.erase(i);
+				return;
+			}
+		}
+	}
+});
+
 ICOMMAND(maxspeed, "ss", (char *ent, char *speed), {
 	if (ent && ent[0]) {
 		dynent *d = getdynent(ent);
