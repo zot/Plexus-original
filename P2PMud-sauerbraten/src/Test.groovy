@@ -1,5 +1,6 @@
 import p2pmud.P2PMudPeer
 import p2pmud.P2PMudCommandHandler
+import p2pmud.Player
 import java.awt.Dimension
 import java.awt.Component
 import javax.swing.BoxLayout
@@ -34,6 +35,7 @@ public class Test {
 	def fields = [:]
 	def runs = 0
 	def pastryCmd
+	def player = new Player()
 
 	public static void main(String[] a) {
 		if (a.length < 2) {
@@ -196,6 +198,10 @@ public class Test {
 	}
 	def pastry(cmds) {
 		P2PMudPeer.test.broadcastCmds(cmds as String[])
+	}
+	def cvtNewlines(str) {
+		println "${str.replaceAll(/\n/, ';')}"
+		return str.replaceAll(/\n/, ';')
 	}
 	def sendMap() {
 		
