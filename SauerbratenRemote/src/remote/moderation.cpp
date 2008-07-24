@@ -40,7 +40,7 @@ struct watcher {
 			this->code = NULL;
 		}
 	}
-	~watcher() {
+	void dispose() {
 		if (entity) delete entity;
 		if (id) delete[] id;
 		if (code) delete[] code;
@@ -326,14 +326,16 @@ static void entTimeInAir(char *id, char *value) {
 	}
 }
 
-static void entEdit(char *id, char *value) {
+
+static void entE(char *id, char *value) {
 	if (id && id[0]) {
 		dynent *ent = getdynent(id);
 
 		if (ent) {
-			char e = 0;
+			char e = ent->state == CS_EDITING;
+
 			charVal(e, value);
-			ent->state = (e) ? CS_EDITING : CS_ALIVE;
+			ent->state = e ? CS_EDITING : CS_ALIVE;
 		}
 	}
 }
@@ -694,7 +696,7 @@ static bool initModeration() {
 
 	//addcommand("ent.iw", (void(*)())entInWater, "ss");
 	//addcommand("ent.tia", (void(*)())entTimeInAir, "ss");
-	addcommand("ent.e", (void(*)())entEdit, "ss");
+	addcommand("ent.e", (void(*)())entE, "ss");
 	addcommand("ent.s", (void(*)())entStrafe, "ss");
 	addcommand("ent.m", (void(*)())entMove, "ss");
 	addcommand("ent.ps", (void(*)())entPhysState, "ss");
@@ -751,16 +753,21 @@ ICOMMAND(watch, "sss", (char *entName, char *code, char *resolution), {
 ICOMMAND(deleteplayer, "s", (char *ent), {
 	if (ent && ent[0] == 'p') {
 		// if we try to recreate a new player of the same id, just reuse the existing one
-		fpsent *p = getplayer(ent);
+		fpsent *p = (fpsent *) getdynent(ent);
 		if (NULL == p) {
 			conoutf("/deleteplayer error: player %s not found", ent);
 			return;
 		}
+		if (p->tc_id == 0) {
+			conoutf("/deleteplayer error: cannot delete yourself!");
+			return;
+		}
 
 		loopi(watchers.length()) {
-			watcher *w = &watchers[i];
-			if (w && w->entity == p) {
-				watchers.erase(i);
+			watcher &w = watchers[i];
+			if (w.entity == p) {
+				watchers.remove(i);
+				w.dispose();
 				return;
 			}
 		}
