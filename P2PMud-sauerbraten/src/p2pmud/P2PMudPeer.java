@@ -242,7 +242,11 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		System.out.println(handle + (joined ? " joined" : " left"));
 	}
 	public boolean anycast(Topic topic, ScribeContent content) {
-		System.out.println("Received anycast: " + content);
+		if (content instanceof P2PMudScribeContent) {
+			handleCommand(((P2PMudScribeContent)content).cmd);
+		} else {
+			System.out.println("Received anycast: " + content);
+		}
 		return false;
 	}
 	public void childAdded(Topic topic, rice.p2p.commonapi.NodeHandle child) {

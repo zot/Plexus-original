@@ -84,13 +84,6 @@ public class Test {
 		pastryCmds.sendmap = {c ->
 			sendMap()
 		}
-//		pastryCmds.chat = {c ->
-//			def name = u[0] 
-//			def id = ids[name]
-//
-//			sauer('chat', "psay $id [${c.join(' ')}]")
-//			dumpCommands()
-//		}
 		swing = new SwingBuilder()
 		swing.build {
 			def field = {lbl, key ->
@@ -202,10 +195,9 @@ public class Test {
 	 	dumpCommands()
 	}
 	def pastry(cmds) {
-//		P2PMudPeer.test.sendCmds(cmds as String[])
 		P2PMudPeer.test.broadcastCmds(cmds as String[])
 	}
 	def sendMap() {
-		P2PMudPeer.test.sendCmds(cmds as String[])
+		
 	}
 }
