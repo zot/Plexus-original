@@ -23,7 +23,7 @@ guitext [M: @(ent.s $id)]
 """;
 	}
 	def showGui(main) {
-		main.sauer('playergui', main.cvtNewlines("""
+		def cmd = """
 alias player_hit_points $hitPoints
 newgui playergui [
 	guititle Stats
@@ -31,8 +31,12 @@ newgui playergui [
 	guifield player_hit_points 25 [remotesend player hitPoints \$player_hit_points]
 	${playerEditor(name, 'p0')}
 ]
-showgui playergui
-"""))
+showgui playergui"""
+
+		for (n in main.ids) {
+			cmd += playerEditor(n.key, n.value)
+		}
+		main.sauer('playergui', main.cvtNewlines(cmd))
 		main.dumpCommands()
 	}
 }
