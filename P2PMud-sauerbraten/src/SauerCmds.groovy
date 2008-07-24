@@ -8,7 +8,7 @@ public class SauerCmds {
 	def invoke(cmdString) {
 		args = cmdString.split()
 		def name = args[0]
-		args = args[1..-1]
+		args = args.size() > 1 ? args[1..-1] : []
 //		println "EXECUTING: $args"
 		invokeMethod(name, null)
 	}
@@ -16,6 +16,16 @@ public class SauerCmds {
 		main.pastry([
 			"login $name ${args.join(' ')}"
 		])
+	}
+	def showplayergui() {
+		main.player.showGui(main)
+	}
+	def player() {
+		def prop = args[0]
+
+		main.player."$prop" = args[1]
+		def val = main.player."$prop"
+		println "set player $prop to $val"
 	}
 	def chat() {
 		main.pastry([
