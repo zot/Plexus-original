@@ -1,0 +1,2 @@
+ java -classpath output;bin:lib\bouncycastle.jar;lib\commons-jxpath-1.1.jar;lib\commons-logging.jar;lib\FreePastry-2.1beta.jar;lib\sbbi-upnplib-1.0.4.jar;lib\xmlpull_1_1_3_4a.jar;lib\xpp3-1.1.3.4d_b2.jar;lib\miglayout-3.5.5-swing.jar;lib\egit-20080715.jar;lib\javolution-5.2.6.jar;lib\groovy-all-1.6-beta-1.jar Test 12345 zot 9090 - 9090 -external 75.13.72.30:9090
+ 

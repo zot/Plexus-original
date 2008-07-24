@@ -393,8 +393,7 @@ static void tc_info(char *id) {
 			report(buf, "fz", ent->falling.z);
 			//report(buf, "iw", ent->inwater);
 			//report(buf, "tia", ent->timeinair);
-			char e = (ent->state == CS_EDITING) ? 1 : 0;
-			report(buf, "s", e);
+			report(buf, "e", ent->state == CS_EDITING);
 			report(buf, "s", ent->strafe);
 			report(buf, "m", ent->move);
 			report(buf, "ps", ent->physstate);
