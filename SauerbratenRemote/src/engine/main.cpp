@@ -674,6 +674,7 @@ void checkinput()
 					} else if (0 == ms) { // only release if they let go of both buttons, if still holding one, don't let go yet
 						SDL_WM_GrabInput(SDL_GRAB_OFF);
 						amgrabbingmouse = false;
+						SDL_WarpMouse(grabbedX * screen->w, grabbedY * screen->h);
 						tc_setcursorpos(grabbedX, grabbedY); 
 						//fprintf(stderr, "releasing mouse\n");
 					}
