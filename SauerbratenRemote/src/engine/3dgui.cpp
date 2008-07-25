@@ -904,6 +904,35 @@ void g3d_resetcursor()
     cursorx = cursory = 0.5f;
 }
 
+#ifdef TC
+void tc_movecursor(int x, int y, bool hide)
+{
+	if (hide) { cursorx = cursory = 2.0; return; }
+
+	//fprintf(stderr, "Mouse pos is %d x %d\n", x, y);
+	cursorx = x / (float) screen->w;
+	cursory = y / (float) screen->h;
+}
+
+void tc_getcursorpos(float &x, float &y)
+{
+	x = cursorx;
+	y = cursory;
+}
+
+void tc_setcursorpos(float x, float y)
+{
+	cursorx = x;
+	cursory = y;
+}
+
+
+// disable these for wow mode
+
+bool g3d_movecursor(int dx, int dy) { return false; }
+
+#else
+
 bool g3d_movecursor(int dx, int dy)
 {
     if(!guis2d.length() || !hascursor) return false;
@@ -912,6 +941,9 @@ bool g3d_movecursor(int dx, int dy)
     cursory = max(0.0f, min(1.0f, cursory+dy/CURSORSCALE));
     return true;
 }
+
+#endif
+
 
 VARNP(guifollow, useguifollow, 0, 1, 1);
 VARNP(gui2d, usegui2d, 0, 1, 1);

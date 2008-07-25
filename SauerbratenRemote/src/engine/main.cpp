@@ -464,11 +464,13 @@ void setupscreen(int &usedcolorbits, int &useddepthbits, int &usedfsaa)
     scr_w = screen->w;
     scr_h = screen->h;
 
+#ifndef TC
     #ifdef WIN32
     SDL_WM_GrabInput(SDL_GRAB_ON);
     #else
     SDL_WM_GrabInput(fullscreen ? SDL_GRAB_ON : SDL_GRAB_OFF);
     #endif
+#endif
 
     usedcolorbits = hasbpp ? colorbits : 0;
     useddepthbits = config&1 ? depthbits : 0;
@@ -563,8 +565,28 @@ bool interceptkey(int sym)
     return false;
 }
 
+#ifdef TC
+
+void setWowMode(int wm) {
+	SDL_WM_GrabInput(wm ? SDL_GRAB_OFF : SDL_GRAB_ON);
+	if (!wm) g3d_resetcursor();
+}
+
+VARF(wowmode, 0, 0, 1, setWowMode(wowmode));
+
+#endif
+
 void checkinput()
 {
+#ifdef TC
+	Uint8 ms = 0;
+	static bool lastmiddle = false, autorun = false, amgrabbingmouse = false;
+	static float grabbedX = 0.0, grabbedY = 0.0;
+	physent *p = (physent *) cl->iterdynents(0);
+	bool editMode = !!p->editstate;
+#define SDL_BUTTON_BOTHMASK (SDL_BUTTON_LMASK|SDL_BUTTON_RMASK)
+#endif
+
     SDL_Event event;
     int lasttype = 0, lastbut = 0;
     while(events.length() || SDL_PollEvent(&event))
@@ -613,12 +635,75 @@ void checkinput()
                 }
                 if((screen->flags&SDL_FULLSCREEN) || grabmouse)
                 #endif
+#ifdef TC
+				if (wowmode > 0 && !editMode) {
+					// make the mouse track only when a button is held down
+					extern void tc_movecursor(int x, int y, bool hide);
+					if (amgrabbingmouse) {
+					//if(!g3d_movecursor(event.motion.xrel, event.motion.yrel))
+						mousemove(event.motion.xrel * 5.0, event.motion.yrel * 5.0);
+						tc_movecursor(event.motion.x, event.motion.y, true);
+					} else {
+						tc_movecursor(event.motion.x, event.motion.y, false);
+					}
+				} else {
+	                if(!g3d_movecursor(event.motion.xrel, event.motion.yrel))
+		                mousemove(event.motion.xrel, event.motion.yrel);
+				}
+#else
                 if(!g3d_movecursor(event.motion.xrel, event.motion.yrel))
                     mousemove(event.motion.xrel, event.motion.yrel);
+#endif
                 break;
 
             case SDL_MOUSEBUTTONDOWN:
             case SDL_MOUSEBUTTONUP:
+#ifdef TC
+			if (wowmode > 0 && !editMode) {
+				ms = SDL_GetMouseState(NULL, NULL);
+				extern void tc_getcursorpos(float &x, float &y);
+				extern void tc_setcursorpos(float x, float y);
+				//fprintf(stderr, "got a mouse click %d  which: %d buttons: %d state: %d lastbut: %d  lasttype: %d lastmiddle: %d!\n", event.type, event.button.which, event.button.button, ms, lastbut, lasttype, (int) lastmiddle);
+				// grab the mouse only if left or right mouse button are clicked
+				if (event.button.button == 3 || event.button.button == 1) {
+					if (event.type == SDL_MOUSEBUTTONDOWN) {
+						SDL_WM_GrabInput(SDL_GRAB_ON); 
+						amgrabbingmouse = true;
+						tc_getcursorpos(grabbedX, grabbedY); 
+						//fprintf(stderr, "grabbing mouse\n");
+					} else if (0 == ms) { // only release if they let go of both buttons, if still holding one, don't let go yet
+						SDL_WM_GrabInput(SDL_GRAB_OFF);
+						amgrabbingmouse = false;
+						tc_setcursorpos(grabbedX, grabbedY); 
+						//fprintf(stderr, "releasing mouse\n");
+					}
+				}
+				int savemiddle = lastmiddle;
+				lastmiddle = false;
+				// run if both mouse buttons held down, ignore middle mouse button clicks while doing this so autorun still works
+				if ((ms & SDL_BUTTON(SDL_BUTTON_MIDDLE)) && event.type == SDL_MOUSEBUTTONDOWN) { // || lastmiddle) {
+					p->move = !p->move;
+					autorun = !!p->move;
+					//fprintf(stderr, "middle button pressed, move is now %d\n", p->move);
+					lastmiddle = true;
+				} else if (event.type == SDL_MOUSEBUTTONUP && savemiddle) {
+					//fprintf(stderr, "middle button released\n");
+					// eat the mouse up event here so that we don't stop autorun
+				} else if (true || 0 == ms || SDL_BUTTON_BOTHMASK == ms) {
+					//physent *p = (physent *) cl->iterdynents(0);
+					//fprintf(stderr, "middle button NOT pressed, can reset move state.  move is now %d\n", p->move);
+					if (SDL_BUTTON_BOTHMASK == ms) {
+						p->move = 1;
+						autorun = false;
+						//fprintf(stderr, "Both buttons down, moving but no longer in autorun\n");
+					}
+					else if (!autorun) {
+						//fprintf(stderr, "all other events, not in auto run so i'm going to stop\n");
+						p->move = 0;
+					}
+				}
+			}				
+#endif
                 if(lasttype==event.type && lastbut==event.button.button) break; // why?? get event twice without it
                 keypress(-event.button.button, event.button.state!=0, 0);
                 lasttype = event.type;

@@ -1348,9 +1348,17 @@ void writecrosshairs(FILE *f)
     fprintf(f, "\n");
 }
 
+#ifdef TC
+void drawcrosshair(int w, int h, bool windowhit)
+{
+	//fprintf(stderr, "rndering cursor/crosshairs %d x %d, %d %d\n", w, h, (int) windowhit, (int) hidehud); 
+	extern int wowmode;
+	if (!wowmode) windowhit = g3d_windowhit(true, false);
+#else
 void drawcrosshair(int w, int h)
 {
     bool windowhit = g3d_windowhit(true, false);
+#endif
     if(!windowhit && hidehud) return; //(hidehud || player->state==CS_SPECTATOR || player->state==CS_DEAD)) return;
 
     float r = 1, g = 1, b = 1, cx = 0.5f, cy = 0.5f, chsize;
@@ -1380,6 +1388,10 @@ void drawcrosshair(int w, int h)
         }
         chsize = crosshairsize*w/300.0f;
     }
+#ifdef TC
+	extern void tc_getcursorpos(float &x, float &y);
+	tc_getcursorpos(cx, cy);
+#endif
     if(crosshair->bpp==32) glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     else glBlendFunc(GL_ONE, GL_ONE);
     glColor3f(r, g, b);
@@ -1477,7 +1489,11 @@ void gl_drawhud(int w, int h, int fogmat, float fogblend, int abovemat)
     glLoadIdentity();
     glOrtho(0, w*3, h*3, 0, -1, 1);
 
+#ifdef TC
+    drawcrosshair(w, h, true);
+#else
     drawcrosshair(w, h);
+#endif
 
     int abovehud = h*3 - FONTH;
 
