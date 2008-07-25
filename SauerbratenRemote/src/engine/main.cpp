@@ -581,6 +581,7 @@ void checkinput()
 #ifdef TC
 	Uint8 ms = 0;
 	static bool lastmiddle = false, autorun = false, amgrabbingmouse = false;
+	static int restoreX, restoreY;
 	static float grabbedX = 0.0, grabbedY = 0.0;
 	physent *p = (physent *) cl->iterdynents(0);
 	bool editMode = !!p->editstate;
@@ -669,12 +670,14 @@ void checkinput()
 					if (event.type == SDL_MOUSEBUTTONDOWN) {
 						SDL_WM_GrabInput(SDL_GRAB_ON); 
 						amgrabbingmouse = true;
+						restoreX = event.motion.x;
+						restoreY = event.motion.y;
 						tc_getcursorpos(grabbedX, grabbedY); 
 						//fprintf(stderr, "grabbing mouse\n");
 					} else if (0 == ms) { // only release if they let go of both buttons, if still holding one, don't let go yet
 						SDL_WM_GrabInput(SDL_GRAB_OFF);
 						amgrabbingmouse = false;
-						SDL_WarpMouse(grabbedX * screen->w, grabbedY * screen->h);
+						SDL_WarpMouse(restoreX, restoreY);
 						tc_setcursorpos(grabbedX, grabbedY); 
 						//fprintf(stderr, "releasing mouse\n");
 					}
