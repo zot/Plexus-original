@@ -566,9 +566,9 @@ bool interceptkey(int sym)
 }
 
 #ifdef TC
-void tcGrab(int grab) {
+void tcGrab(SDL_GrabMode grab) {
 #ifdef WIN32
-	SDL_WM_GrabInput(grab)
+	SDL_WM_GrabInput(grab);
 #else
 	SDL_WM_GrabInput(fullscreen && grab == SDL_GRAB_ON ? SDL_GRAB_ON : SDL_GRAB_OFF);
 #endif
