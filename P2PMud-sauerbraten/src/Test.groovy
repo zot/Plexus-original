@@ -268,8 +268,12 @@ public class Test {
 		println "Saved map, storing in PAST"
 		peer.wimpyStoreFile(mapname, maps, "${map}.ogz", [
 			receiveResult: {file ->
-				println "Sending load cmd"
-				peer.sendCmds(Id.build(id), ["loadmap ${file.getId().toStringFull()}"] as String[])
+				if (file) {
+					println "Sending load cmd"
+					peer.sendCmds(Id.build(id), ["loadmap ${file.getId().toStringFull()}"] as String[])
+				} else {
+					println "Could not store file for $mapname"
+				}
 			},
 			receiveException: {exception -> err("Error storing file: $mapname", exception)}
 		] as Continuation);

@@ -89,11 +89,23 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 			}
 			int bootport = Integer.parseInt(args[2]);
 			InetSocketAddress bootaddress = host.equals("-") ? null : new InetSocketAddress(bootaddr,bootport);
+			for (int i = 3; i < args.length; i++) {
+				if (args[i].equals("-clean") && System.getProperty("past.storage") != null) {
+					File storage = new File(System.getProperty("past.storage"));
+
+					if (storage.exists()) {
+						System.out.println("CLEANING STORAGE");
+						Tools.deleteAll(storage);
+					}
+				}
+			}
 			// launch our node!
 			test.connect(args, bindport, bootaddress);
 			if (args.length > 3) {
 				new Thread() {
 					public void run() {
+						int count = 0;
+
 						try {
 							Thread.sleep(5000);
 							mode = SCRIBE;
@@ -104,13 +116,30 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 									mode = PAST;
 								} else if (args[i].equals("-cmd")) {
 									mode = CMD;
+								} else if (args[i].equals("-clean")) {
 								} else {
 									switch (mode) {
 									case SCRIBE:
 										test.broadcastCmds(new String[]{args[i]});
 										break;
 									case PAST:
-//										test.storeData(args[i]);
+										File base = new File("/tmp/testbase");
+										String version = "branch-" + count++;
+
+										base.mkdirs();
+										test.wimpyStoreFile(new P2PMudFile(test.idFactory.buildId(version), "branch", version, args[i].getBytes()), new Continuation() {
+											public void receiveResult(Object result) {
+												if (result != null) {
+													System.out.println("Stored file: " + result);
+												} else {
+													System.out.println("Couldn't store file: branch");
+												}
+											}
+											public void receiveException(Exception exception) {
+												System.err.println("Error while attempting to store file: branch");
+												exception.printStackTrace();
+											}
+										});
 										break;
 									case CMD:
 										cmdHandler = new P2PMudCommandHandler() {
@@ -216,7 +245,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	}
 	private void startPast() throws IOException {
 		// create a different storage root for each node
-		String storageDirectory = "/tmp/storage"+node.getId().hashCode();
+		String storageDirectory = System.getProperty("past.storage", "/tmp/storage"+node.getId().hashCode());
 	
 		// create the persistent part
 		Storage stor = new PersistentStorage(idFactory, storageDirectory, 4 * 1024 * 1024, node.getEnvironment());
@@ -291,16 +320,18 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		endpoint.route(id, new P2PMudMessage(new P2PMudCommand(endpoint.getId(), cmds)), null);
 	}
 	public void wimpyStoreFile(final String branchName, File base, final String path, final Continuation cont) {
-		System.out.println("WIMPY STORE FILE");
-		final P2PMudFile file = P2PMudFile.create(buildId(path), branchName, base, path);
-		
 		if (branchName.equals(path)) {
-			throw new RuntimeException("Branch name and path must be different!");
+			cont.receiveException(new RuntimeException("Branch name and path must be different!"));
+		} else {
+			wimpyStoreFile(P2PMudFile.create(idFactory.buildId(branchName), branchName, base, path), cont);
 		}
+	}
+	public void wimpyStoreFile(final P2PMudFile file, final Continuation cont) {
+		System.out.println("WIMPY STORE FILE: " + file.getId().toStringFull());
 		if (file != null) {
 			past.insert(file, new Continuation() {
 				public void receiveResult(final Object result) {          
-					final P2PMudFilePath filePath = new P2PMudFilePath(idFactory.buildId(branchName), path, file.getId());
+					final P2PMudFilePath filePath = new P2PMudFilePath(idFactory.buildId(file.branch), file.path, file.getId());
 					Boolean[] results = ((Boolean[]) result);
 					int numSuccessfulStores = 0;
 
@@ -330,7 +361,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 				}
 			});
 		} else {
-			System.out.println("Null file for " + branchName + " (" + path + ")");
+			cont.receiveResult(null);
 		}
 	}
 	public void wimpyGetFile(Id id, File base, Continuation handler) {
