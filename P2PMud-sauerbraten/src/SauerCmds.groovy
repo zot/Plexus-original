@@ -13,7 +13,7 @@ public class SauerCmds {
 		invokeMethod(name, null)
 	}
 	def login() {
-		main.pastry([
+		main.broadcast([
 			"login $name ${args.join(' ')}"
 		])
 	}
@@ -28,12 +28,12 @@ public class SauerCmds {
 		println "set player $prop to $val"
 	}
 	def chat() {
-		main.pastry([
+		main.broadcast([
 			"chat ${args.join(' ')}"
 		])
 	}
 	def tc_upmap() {
-		main.pastry([
+		main.broadcast([
 			"tc_upmap ${args.join(' ')}"
 		])
 	}
@@ -52,7 +52,16 @@ public class SauerCmds {
 				}
 			}
 //			println "SENDING: update ${args[1..-1].join(' ')}"
-			main.pastry(["update ${main.name} ${args[1..-1].join(' ')}"])
+			main.broadcast(["update ${main.name} ${args[1..-1].join(' ')}"])
 		}
+	}
+	def mapname() {
+		main.mapname = args[0]
+	}
+	def requestmap() {
+		main.anycast(['requestmap'])
+	}
+	def sendfile() {
+		main.sendFile(args[0], args[1])
 	}
 }

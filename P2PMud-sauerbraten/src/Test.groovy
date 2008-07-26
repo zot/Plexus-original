@@ -1,3 +1,9 @@
+import java.text.SimpleDateFormat
+import rice.p2p.commonapi.IdFactory
+import rice.Continuation
+import rice.pastry.Id
+import p2pmud.P2PMudFile
+import p2pmud.P2PMudFilePath
 import p2pmud.P2PMudPeer
 import p2pmud.P2PMudCommandHandler
 import p2pmud.Player
@@ -36,6 +42,11 @@ public class Test {
 	def runs = 0
 	def pastryCmd
 	def player = new Player()
+	def sauerDir
+	def maps
+	def peer
+	
+	def static TIME_STAMP = new SimpleDateFormat("yyyyMMdd-HH:mm:ss.zzz")
 
 	public static void main(String[] a) {
 		if (a.length < 2) {
@@ -46,7 +57,16 @@ public class Test {
 	}
 
 	def _main(args) {
+		sauerDir = System.getProperty("sauerdir");
 		name = args[1]
+		if (!verifySauerdir(sauerDir)) {
+			usage("sauerdir must be provided")
+		} else if (!name) {
+			usage("name must be provided")
+		}
+		sauerDir = new File(sauerDir)
+		maps = new File(sauerDir, 'packages/p2pmud')
+		maps.mkdirs()
 		names = [p0: name]
 		ids[name] = 'p0'
 		pastryCmds.login = {l ->
@@ -54,7 +74,7 @@ public class Test {
 			pastryCmds.update(l)
 		}
 		pastryCmds.update = {u ->
-			def name =u[0] 
+			def name = u[0] 
 			def id = ids[name]
 			if (!id) {
 				id = "p$id_index"
@@ -83,12 +103,15 @@ public class Test {
 			sauer('tc_upmap', "tc_upmap ${c.join(' ')}")
 			dumpCommands()
 		}
+		pastryCmds.requestmap = {c ->
+			requestMap()
+		}
+		pastryCmds.loadmap = {c ->
+			loadMap(c[0])
+		}
 		pastryCmds.tc_editent = {c ->
 			sauer('tc_editent', "tc_editent ${c.join(' ')}")
 			dumpCommands()
-		}
-		pastryCmds.sendmap = {c ->
-			sendMap()
 		}
 		swing = new SwingBuilder()
 		swing.build {
@@ -125,6 +148,23 @@ public class Test {
 			pastryCmd = cmd
 			cmd.msgs.each {runCommand(it, pastryCmds)}
 		} as P2PMudCommandHandler, args[2..-1] as String[])
+		peer = P2PMudPeer.test
+	}
+	def verifySauerdir(dir) {
+		def f = new File(dir)
+		def subs = ['data', 'docs', 'packages/base']
+
+		for (s in subs) {
+			if (!new File(f, subs).isDirectory()) {
+				return false
+			}
+		}
+		return true
+	}
+	def usage(msg) {
+		println msg
+		println "usage: ${getClass().name} port name"
+		println "System property sauerdir must hold your Sauerbraten distribution directory"
 	}
 	def start(port) {
 		Thread.startDaemon {
@@ -189,6 +229,7 @@ public class Test {
 	}
 	def init() {
 	 	sauer('init', [
+			"remotesend mapname (mapname)",
 			"alias p2pname [$name]",
 			'alias prep [if (= $arg2 0) edittoggle; mfreeze $arg1; if (= $arg2 0) edittoggle]',
 			'alias chat [echo $p2pname says: $arg1;remotesend chat $p2pname $arg1]',
@@ -201,14 +242,49 @@ public class Test {
 		].join(';'))
 	 	dumpCommands()
 	}
-	def pastry(cmds) {
-		P2PMudPeer.test.broadcastCmds(cmds as String[])
+	def broadcast(cmds) {
+		peer.broadcastCmds(cmds as String[])
+	}
+	def anycast(cmds) {
+		peer.anycastCmds(cmds as String[])
 	}
 	def cvtNewlines(str) {
 		println "${str.replaceAll(/\n/, ';')}"
 		return str.replaceAll(/\n/, ';')
 	}
-	def sendMap() {
-		
+	def requestMap() {
+		def uname = uniqify(mapname)
+
+		println "Map requested.  Sending: $mapname ($uname)"
+		sauer('save', "savemap $maps/$uname;remotesend sendFile $uname ${pastryCmd.from.toStringFull()}")
+	}
+	def uniqify(name) {
+		"name-${TIME_STAMP.format(new Date())}"
+	}
+	def sendFile(map, id) {
+		P2PMudFile file = P2PMudFile.create(maps, mapname)
+
+		println "Saved map, storing in PAST"
+		peer.wimpyStoreFile(mapname, File(maps), map, [
+			receiveResult: {result ->
+			println "Sending load cmd"
+				peer.sendCmds(peer.buildId(id), ["loadmap ${file.getId()}".split()])
+			},
+			receiveException: {exception -> err("Error storing file: $mapname", exception)}
+		] as Continuation);
+	}
+	def loadMap(id) {
+		println "Received load cmd for map: $id"
+		peer.wimpyGetFile(peer.buildId(id), new File(maps), [
+			receiveResult: {result ->
+				println "Retrieved map from PAST: ${result.branch}, loading..."
+				sauer('load', "echo loading new map: ${result.branch}; loadmap ${new File(maps, result.path)}")
+			},
+			receiveException: {exception -> err("Error retrieving file: $id", exception)}
+		])
+	}
+	def error(msg, err) {
+		System.out.println(msg)
+		err.printStackTrace();
 	}
 }
