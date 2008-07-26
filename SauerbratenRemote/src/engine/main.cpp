@@ -566,15 +566,8 @@ bool interceptkey(int sym)
 }
 
 #ifdef TC
-void tcGrab(int grab) {
-#ifdef WIN32
-	SDL_WM_GrabInput(grab)
-#else
-	SDL_WM_GrabInput(fullscreen && grab == SDL_GRAB_ON ? SDL_GRAB_ON : SDL_GRAB_OFF);
-#endif
-}
 void setWowMode(int wm) {
-	tcGrab(wm ? SDL_GRAB_OFF : SDL_GRAB_ON);
+	SDL_WM_GrabInput(wm ? SDL_GRAB_OFF : SDL_GRAB_ON);
 	if (!wm) g3d_resetcursor();
 }
 
@@ -684,14 +677,14 @@ void checkinput()
 				// grab the mouse only if left or right mouse button are clicked
 				if (event.button.button == 3 || event.button.button == 1) {
 					if (event.type == SDL_MOUSEBUTTONDOWN) {
-						tcGrab(SDL_GRAB_ON); 
+						SDL_WM_GrabInput(SDL_GRAB_ON); 
 						amgrabbingmouse = true;
 						restoreX = event.motion.x;
 						restoreY = event.motion.y;
 						tc_getcursorpos(grabbedX, grabbedY); 
 						//fprintf(stderr, "grabbing mouse\n");
 					} else if (0 == ms) { // only release if they let go of both buttons, if still holding one, don't let go yet
-						tcGrab(SDL_GRAB_OFF);
+						SDL_WM_GrabInput(SDL_GRAB_OFF);
 						amgrabbingmouse = false;
 						SDL_WarpMouse(restoreX, restoreY);
 						tc_setcursorpos(grabbedX, grabbedY); 
