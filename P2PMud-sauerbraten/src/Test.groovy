@@ -109,6 +109,10 @@ public class Test {
 		pastryCmds.loadmap = {c ->
 			loadMap(c[0])
 		}
+		pastryCmds.tc_editent = {c ->
+			sauer('tc_editent', "tc_editent ${c.join(' ')}")
+			dumpCommands()
+		}
 		swing = new SwingBuilder()
 		swing.build {
 			def field = {lbl, key ->
@@ -247,9 +251,6 @@ public class Test {
 	def cvtNewlines(str) {
 		println "${str.replaceAll(/\n/, ';')}"
 		return str.replaceAll(/\n/, ';')
-	}
-	def sendMapRequest() {
-		
 	}
 	def requestMap() {
 		def uname = uniqify(mapname)

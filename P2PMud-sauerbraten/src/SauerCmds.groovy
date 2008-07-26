@@ -37,6 +37,11 @@ public class SauerCmds {
 			"tc_upmap ${args.join(' ')}"
 		])
 	}
+	def tc_editent() {
+		main.pastry([
+			"tc_editend ${args.join(' ')}"
+		])
+	}
 	def position() {
 		if (main.names[args[0]] == main.name) {
 			main.swing.edt {
