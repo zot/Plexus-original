@@ -355,7 +355,12 @@ struct entities : icliententities
     void editent(int i)
     {
         extentity &e = *ents[i];
+#ifdef TC
+		void tc_editenttrigger(int i, entity &e);
+		tc_editenttrigger(i, e);
+#else
         cl.cc.addmsg(SV_EDITENT, "ri9", i, (int)(e.o.x*DMF), (int)(e.o.y*DMF), (int)(e.o.z*DMF), e.type, e.attr1, e.attr2, e.attr3, e.attr4);
+#endif
     }
 
     float dropheight(entity &e)

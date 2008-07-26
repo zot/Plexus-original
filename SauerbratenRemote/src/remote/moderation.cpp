@@ -446,11 +446,11 @@ static void tc_info(char *id) {
 			if (!areDoublesEqual(ent->falling.y, w->lastFalling.y)) report(buf, "fy", ent->falling.y);
 			if (!areDoublesEqual(ent->falling.z, w->lastFalling.z)) report(buf, "fz", ent->falling.z);
 
-			//if (ent->inwater != w->lastinwater) report(buf, "iw", ent->inwater);
-			//if (ent->timeinair != w->lasttimeinair) report(buf, "tia", ent->timeinair);
+			if (ent->edit != w->lastedit) report(buf, "e", ent->edit);
 			if (ent->strafe != w->laststrafe) report(buf, "s", ent->strafe);
 			if (ent->move != w->lastmove) report(buf, "m", ent->move);
 			if (ent->physstate != w->lastphysstate) report(buf, "ps", ent->physstate);
+			if (ent->maxspeed != w->lastmaxspeed) report(buf, "me", ent->maxspeed);
 #endif
 		} else {
 			conoutf("tc_info error: no entity or watcher specified");
@@ -537,6 +537,7 @@ static void tc_setinfo(char *info)
 	//fprintf(stderr, "States after interpolation s: %d m: %d\n", (int) ent->strafe, (int) ent->move);
 }
 
+
 struct mapupdate {
 	struct mapupdate *next;
 	char *update;
@@ -614,6 +615,7 @@ static struct mapwatcher *map_watcher = NULL;
 		if (map_watcher) map_watcher->addMapUpdate(buf);
     }
 
+
 static void moderationTick() {
 	loopi(watchers.length()) {
 		watcher *w = &watchers[i];
@@ -684,6 +686,35 @@ static void tc_upmap(char *info)
 	}
 }
 
+static void tc_editent(char *info)
+{
+	if (!info || !info[0]) return;
+
+	char *t = strtok(info, " \t"); // 1
+	if (NULL == t) return;
+	int type = atoi(t);
+	int i, x, y, z, attr1, attr2, attr3, attr4;
+
+	safeParseInt(i);
+	safeParseInt(x);
+	safeParseInt(y);
+	safeParseInt(z);
+	safeParseInt(type);
+	safeParseInt(attr1);
+	safeParseInt(attr2);
+	safeParseInt(attr3);
+	safeParseInt(attr4);
+
+    mpeditent(i, vec(x/DMF, y/DMF, z/DMF), type, attr1, attr2, attr3, attr4, false);
+}
+
+void tc_editenttrigger(int i, entity &e)
+{
+	char buf[256];
+	snprintf(buf, sizeof(buf), "tc_editent %d %d %d %d %d %d %d %d %d %d",
+		SV_EDITENT, i, (int)(e.o.x*DMF), (int)(e.o.y*DMF), (int)(e.o.z*DMF), e.type, e.attr1, e.attr2, e.attr3, e.attr4);
+	if (map_watcher) map_watcher->addMapUpdate(buf);
+}
 
 static bool initModeration() {
 	printf("INITIALIZING\n");
@@ -694,6 +725,7 @@ static bool initModeration() {
 	addcommand("tc_info", (void(*)())tc_info, "s");
 	addcommand("tc_setinfo", (void(*)())tc_setinfo, "C");
 	addcommand("tc_upmap", (void(*)())tc_upmap, "C");
+	addcommand("tc_editent", (void(*)())tc_editent, "C");
 	addcommand("ent.x", (void(*)())entX, "ss");
 	addcommand("ent.y", (void(*)())entY, "ss");
 	addcommand("ent.z", (void(*)())entZ, "ss");
