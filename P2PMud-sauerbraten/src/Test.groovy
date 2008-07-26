@@ -231,7 +231,6 @@ public class Test {
 	}
 	def init() {
 	 	sauer('init', [
-			"remotesend mapname (mapname)",
 			"alias p2pname [$name]",
 			'alias prep [if (= $arg2 0) edittoggle; mfreeze $arg1; if (= $arg2 0) edittoggle]',
 			'alias chat [echo $p2pname says: $arg1;remotesend chat $p2pname $arg1]',
@@ -240,6 +239,7 @@ public class Test {
 			'alias emote [echo $p2pname $arg1;remotesend chat $p2pname $arg1]',
 			'bind SEMICOLON [saycommand [/emote ""]]',
 			'editbind SEMICOLON [saycommand [/emote ""]]',
+			"remotesend mapname (mapname)",
 			'echo INIT'
 		].join(';'))
 	 	dumpCommands()
@@ -258,7 +258,7 @@ public class Test {
 		def uname = uniqify(mapname)
 
 		println "Map requested.  Sending: $mapname ($uname)"
-		sauer('save', "savemap $maps/$uname;remotesend sendfile $uname ${pastryCmd.from.toStringFull()}")
+		sauer('save', "savemap p2pmud/$uname;remotesend sendfile $uname ${pastryCmd.from.toStringFull()}")
 		dumpCommands()
 	}
 	def uniqify(name) {
@@ -266,26 +266,29 @@ public class Test {
 	}
 	def sendFile(map, id) {
 		println "Saved map, storing in PAST"
-		peer.wimpyStoreFile(mapname, maps, map, [
+		peer.wimpyStoreFile(mapname, maps, "${map}.ogz", [
 			receiveResult: {file ->
-			println "Sending load cmd"
-				peer.sendCmds(peer.buildId(id), ["loadmap ${file.getId()}".split()])
+				println "Sending load cmd"
+				peer.sendCmds(Id.build(id), ["loadmap ${file.getId()}"] as String[])
 			},
 			receiveException: {exception -> err("Error storing file: $mapname", exception)}
 		] as Continuation);
 	}
 	def loadMap(id) {
 		println "Received load cmd for map: $id"
-		peer.wimpyGetFile(peer.buildId(id), new File(maps), [
+		peer.wimpyGetFile(peer.buildId(id), maps, [
 			receiveResult: {result ->
 				println "Retrieved map from PAST: ${result.branch}, loading..."
+				def output = new FileOutputStream(new File(maps, result.branch))
+				output.write(result.data)
+				output.close()
 				sauer('load', "echo loading new map: ${result.branch}; loadmap ${new File(maps, result.path)}")
 				dumpCommands()
 			},
 			receiveException: {exception -> err("Error retrieving file: $id", exception)}
 		])
 	}
-	def error(msg, err) {
+	def err(msg, err) {
 		System.out.println(msg)
 		err.printStackTrace();
 	}
