@@ -28,6 +28,7 @@ struct watcher {
     //int lastinwater, lasttimeinair;
 	char laststrafe, lastmove;
 	uchar lastphysstate;
+	float lastmaxspeed;
 
 	watcher(char *id, char *code, float _moveRes, float _rotRes): moveRes(_moveRes), rotRes(_rotRes), lastupdate(0) {
 		entity = getdynent(id);
@@ -61,6 +62,7 @@ struct watcher {
 		laststrafe = entity->strafe;
 		lastmove = entity->move;
 		lastphysstate = entity->physstate;
+		lastmaxspeed = entity->maxspeed;
 
 		lastupdate = tickmillis;
 	}
@@ -89,7 +91,8 @@ struct watcher {
 			//lasttimeinair != entity->timeinair ||
 			laststrafe != entity->strafe ||
 			lastmove != entity->move ||
-			lastphysstate != entity->physstate) return true;
+			lastphysstate != entity->physstate ||
+			lastmaxspeed != entity->maxspeed) return true;
 
 		if (rotRes >= 0) {
 			if (fabs(lastRoll - entity->roll) + fabs(lastPitch - entity->pitch) + fabs(lastYaw - entity->yaw) > rotRes) return true;
@@ -364,6 +367,14 @@ static void entPhysState(char *id, char *value) {
 	}
 }
 
+static void entMaxSpeed(char *id, char *value) {
+	if (id && id[0]) {
+		dynent *ent = getdynent(id);
+
+		if (ent) floatVal(ent->maxspeed, value);
+	}
+}
+
 watcher *findWatcher(dynent *ent) {
 	loopi(watchers.length()) {
 		watcher *w = &watchers[i];
@@ -419,6 +430,7 @@ static void tc_info(char *id) {
 			report(buf, "s", ent->strafe);
 			report(buf, "m", ent->move);
 			report(buf, "ps", ent->physstate);
+			report(buf, "ms", ent->maxspeed);
 #else
 			if (!areDoublesEqual(ent->o.x, w->lastPosition.x)) report(buf, "x", ent->o.x);
 			if (!areDoublesEqual(ent->o.y, w->lastPosition.y)) report(buf, "y", ent->o.y);
@@ -483,6 +495,8 @@ static void updateField(dynent *ent, char *f, char *value) {
 			if (e) ent->state = CS_EDITING;
 	} else if (0 == strcmp(f, "ps")) {
 			ucharVal(ent->physstate, value);
+	} else if (0 == strcmp(f, "ms")) {
+			floatVal(ent->maxspeed, value);
 	} else {
 		conoutf("tc_setinfo protocol sending unknown field: %s", f);
 	}

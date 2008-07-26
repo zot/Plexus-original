@@ -1,5 +1,6 @@
 package p2pmud;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -9,8 +10,8 @@ import java.util.Collection;
 import java.util.Enumeration;
 
 import javolution.util.FastTable;
+import rice.Continuation;
 import rice.environment.Environment;
-import rice.environment.logging.Logger;
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
@@ -106,10 +107,10 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 								} else {
 									switch (mode) {
 									case SCRIBE:
-										test.sendMulticast(args[i]);
+										test.broadcastCmds(new String[]{args[i]});
 										break;
 									case PAST:
-										test.storeData(args[i]);
+//										test.storeData(args[i]);
 										break;
 									case CMD:
 										cmdHandler = new P2PMudCommandHandler() {
@@ -139,7 +140,10 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 			throw e; 
 		} 
 	}
-	
+
+	public Id buildId(String path) {
+		return idFactory.buildId(path);
+	}
 	public void disconnect() {}
 	/**
 	 * This constructor sets up a PastryNode.  It will bootstrap to an 
@@ -210,16 +214,12 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	    myScribe.subscribe(myTopic, this);
 	}
 	private void startPast() throws IOException {
-		// used for generating PastContent object Ids.
-		// this implements the "hash function" for our DHT
-		PastryIdFactory idf = new rice.pastry.commonapi.PastryIdFactory(env);
-	      
 		// create a different storage root for each node
 		String storageDirectory = "/tmp/storage"+node.getId().hashCode();
 	
 		// create the persistent part
-		Storage stor = new PersistentStorage(idf, storageDirectory, 4 * 1024 * 1024, node.getEnvironment());
-		past = new PastImpl(node, new StorageManagerImpl(idf, stor, new LRUCache(new MemoryStorage(idf), 512 * 1024, node.getEnvironment())), 3, "") {
+		Storage stor = new PersistentStorage(idFactory, storageDirectory, 4 * 1024 * 1024, node.getEnvironment());
+		past = new PastImpl(node, new StorageManagerImpl(idFactory, stor, new LRUCache(new MemoryStorage(idFactory), 512 * 1024, node.getEnvironment())), 3, "") {
 			public void deliver(Id id, rice.p2p.commonapi.Message message) {
 				System.out.println("received PAST message: " + message);
 				super.deliver(id, message);
@@ -228,7 +228,6 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	}
 	public void deliver(Id id, rice.p2p.commonapi.Message message) {
 		if (message instanceof P2PMudMessage) {
-			other = ((P2PMudMessage)message).cmd.from;
 			handleCommand(((P2PMudMessage)message).cmd);
 		} else {
 			System.out.println("received message: " + message);
@@ -257,16 +256,14 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	}
 	public void deliver(Topic topic, ScribeContent content) {
 		if (content instanceof P2PMudScribeContent) {
-			if (!endpoint.getId().equals(((P2PMudScribeContent)content).cmd.from)) {
-//				System.out.println("Received p2pmud update: " + content);
-				handleCommand(((P2PMudScribeContent)content).cmd);
-			}
+			handleCommand(((P2PMudScribeContent)content).cmd);
 		} else {
 			System.out.println("Received update: " + content);
 		}
 	}
 	protected void handleCommand(P2PMudCommand mudCommand) {
-		if (cmdHandler != null) {
+		if (cmdHandler != null && !mudCommand.from.equals(node.getId())) {
+			other = mudCommand.from;
 			cmdHandler.handleCommand(mudCommand);
 		}
 	}
@@ -277,9 +274,8 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		System.err.println("ERROR: Failed to subscribe to topics: " + topics);
 	}
 	public void subscribeSuccess(Collection arg0) {}
-	public void sendMulticast(String msg) throws IOException {
-		System.out.println("Node "+endpoint.getLocalNodeHandle()+" broadcasting " + msg);
-		myScribe.publish(myTopic, new P2PMudScribeContent(new P2PMudCommand(node.getId(), msg))); 
+	public void anycastCmds(String cmds[]) {
+		myScribe.anycast(myTopic, new P2PMudScribeContent(new P2PMudCommand(node.getId(), cmds))); 
 	}
 	public void broadcastCmds(String cmds[]) {
 		myScribe.publish(myTopic, new P2PMudScribeContent(new P2PMudCommand(node.getId(), cmds))); 
@@ -293,23 +289,38 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	public void sendCmds(Id id, String cmds[]) {
 		endpoint.route(id, new P2PMudMessage(new P2PMudCommand(endpoint.getId(), cmds)), null);
 	}
-	public void storeData(String handle) throws IOException {
-//		final PastContent myContent = new P2PMudPastContent(idFactory.buildId(handle), new handle);
-//	
-//		past.insert(myContent, new Continuation() {
-//			public void receiveResult(Object result) {          
-//				Boolean[] results = ((Boolean[]) result);
-//				int numSuccessfulStores = 0;
-//				for (int ctr = 0; ctr < results.length; ctr++) {
-//					if (results[ctr].booleanValue()) 
-//						numSuccessfulStores++;
-//				}
-//				System.out.println(myContent + " successfully stored at " + numSuccessfulStores + " locations.");
-//			}
-//			public void receiveException(Exception result) {
-//				System.out.println("Error storing "+myContent);
-//				result.printStackTrace();
-//			}
-//		});
+	public void wimpyStoreFile(final String branchName, File base, final String path, final Continuation cont) {
+		final P2PMudFile file = P2PMudFile.create(buildId(path), branchName, base, path);
+		
+		if (branchName.equals(path)) {
+			throw new RuntimeException("Branch name and path must be different!");
+		}
+		if (file != null) {
+			past.insert(file, new Continuation() {
+				public void receiveResult(Object result) {          
+					Boolean[] results = ((Boolean[]) result);
+					int numSuccessfulStores = 0;
+					for (int ctr = 0; ctr < results.length; ctr++) {
+						if (results[ctr].booleanValue()) 
+							numSuccessfulStores++;
+					}
+					System.out.println(file + " successfully stored at " + numSuccessfulStores + " locations.");
+					past.insert(new P2PMudFilePath(idFactory.buildId(branchName), path, file.getId()), new Continuation() {
+						public void receiveResult(Object result) {
+							cont.receiveResult(result);
+						}
+						public void receiveException(Exception exception) {
+							cont.receiveException(exception);
+						}
+					});
+				}
+				public void receiveException(Exception result) {
+					cont.receiveException(result);
+				}
+			});
+		}
+	}
+	public void wimpyGetFile(Id id, File base, Continuation handler) {
+		past.lookup(id, handler);
 	}
 }
