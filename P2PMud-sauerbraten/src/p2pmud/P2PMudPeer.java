@@ -338,21 +338,21 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 							numSuccessfulStores++;
 					}
 					System.out.println(file + " successfully stored at " + numSuccessfulStores + " locations.");
-					past.insert(filePath, new Continuation() {
-						public void receiveResult(Object result) {        
-							Boolean[] results = ((Boolean[]) result);
-							int numSuccessfulStores = 0;
-							for (int ctr = 0; ctr < results.length; ctr++) {
-								if (results[ctr].booleanValue()) 
-									numSuccessfulStores++;
-							}
-							System.out.println(filePath + " successfully stored at " + numSuccessfulStores + " locations.");
+//					past.insert(filePath, new Continuation() {
+//						public void receiveResult(Object result) {        
+//							Boolean[] results = ((Boolean[]) result);
+//							int numSuccessfulStores = 0;
+//							for (int ctr = 0; ctr < results.length; ctr++) {
+//								if (results[ctr].booleanValue()) 
+//									numSuccessfulStores++;
+//							}
+//							System.out.println(filePath + " successfully stored at " + numSuccessfulStores + " locations.");
 							cont.receiveResult(file);
-						}
-						public void receiveException(Exception exception) {
-							cont.receiveException(exception);
-						}
-					});
+//						}
+//						public void receiveException(Exception exception) {
+//							cont.receiveException(exception);
+//						}
+//					});
 				}
 				public void receiveException(Exception result) {
 					cont.receiveException(result);
