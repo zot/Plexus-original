@@ -925,25 +925,20 @@ void tc_setcursorpos(float x, float y)
 	cursorx = x;
 	cursory = y;
 }
-
-
-// disable these for wow mode
-
-bool g3d_movecursor(int dx, int dy) { return false; }
-
-#else
+#endif
 
 bool g3d_movecursor(int dx, int dy)
 {
+#ifdef TC
+	extern int wowmode;
+	if (wowmode) return false;
+#endif
     if(!guis2d.length() || !hascursor) return false;
     const float CURSORSCALE = 500.0f;
     cursorx = max(0.0f, min(1.0f, cursorx+dx*(screen->h/(screen->w*CURSORSCALE))));
     cursory = max(0.0f, min(1.0f, cursory+dy/CURSORSCALE));
     return true;
 }
-
-#endif
-
 
 VARNP(guifollow, useguifollow, 0, 1, 1);
 VARNP(gui2d, usegui2d, 0, 1, 1);
