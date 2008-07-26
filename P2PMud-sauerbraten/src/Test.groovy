@@ -269,14 +269,14 @@ public class Test {
 		peer.wimpyStoreFile(mapname, maps, "${map}.ogz", [
 			receiveResult: {file ->
 				println "Sending load cmd"
-				peer.sendCmds(Id.build(id), ["loadmap ${file.getId()}"] as String[])
+				peer.sendCmds(Id.build(id), ["loadmap ${file.getId().toStringFull()}"] as String[])
 			},
 			receiveException: {exception -> err("Error storing file: $mapname", exception)}
 		] as Continuation);
 	}
 	def loadMap(id) {
-		println "Received load cmd for map: $id"
-		peer.wimpyGetFile(peer.buildId(id), maps, [
+		println "Received load cmd for map: ${id.toStringFull()}"
+		peer.wimpyGetFile(Id.build(id), maps, [
 			receiveResult: {result ->
 				println "Retrieved map from PAST: ${result.branch}, loading..."
 				def output = new FileOutputStream(new File(maps, result.branch))
@@ -286,10 +286,10 @@ public class Test {
 				dumpCommands()
 			},
 			receiveException: {exception -> err("Error retrieving file: $id", exception)}
-		])
+		] as Continuation)
 	}
 	def err(msg, err) {
-		System.out.println(msg)
+		System.err.println(msg)
 		err.printStackTrace();
 	}
 }
