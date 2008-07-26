@@ -124,7 +124,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 										test.broadcastCmds(new String[]{args[i]});
 										break;
 									case PAST:
-										test.wimpyStoreFile("map.ogz", new File(new File(System.getProperty("sauerdir")), "/packages/p2pmud"), args[i], new Continuation() {
+										test.wimpyStoreFile("map.ogz", new File(System.getProperty("sauerdir")), args[i], new Continuation() {
 											public void receiveResult(Object result) {
 												if (result != null) {
 													System.out.println("Stored file: " + result);
@@ -320,7 +320,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		if (branchName.equals(path)) {
 			cont.receiveException(new RuntimeException("Branch name and path must be different!"));
 		} else {
-			wimpyStoreFile(P2PMudFile.create(idFactory.buildId(branchName), branchName, base, path), cont);
+			wimpyStoreFile(P2PMudFile.create(idFactory.buildId(path), branchName, base, path), cont);
 		}
 	}
 	public void wimpyStoreFile(final P2PMudFile file, final Continuation cont) {
