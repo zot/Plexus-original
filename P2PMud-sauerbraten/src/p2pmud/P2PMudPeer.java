@@ -290,6 +290,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		endpoint.route(id, new P2PMudMessage(new P2PMudCommand(endpoint.getId(), cmds)), null);
 	}
 	public void wimpyStoreFile(final String branchName, File base, final String path, final Continuation cont) {
+		System.out.println("WIMPY STORE FILE");
 		final P2PMudFile file = P2PMudFile.create(buildId(path), branchName, base, path);
 		
 		if (branchName.equals(path)) {
@@ -297,7 +298,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		}
 		if (file != null) {
 			past.insert(file, new Continuation() {
-				public void receiveResult(Object result) {          
+				public void receiveResult(final Object result) {          
 					Boolean[] results = ((Boolean[]) result);
 					int numSuccessfulStores = 0;
 					for (int ctr = 0; ctr < results.length; ctr++) {
@@ -307,7 +308,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 					System.out.println(file + " successfully stored at " + numSuccessfulStores + " locations.");
 					past.insert(new P2PMudFilePath(idFactory.buildId(branchName), path, file.getId()), new Continuation() {
 						public void receiveResult(Object result) {
-							cont.receiveResult(result);
+							cont.receiveResult(file);
 						}
 						public void receiveException(Exception exception) {
 							cont.receiveException(exception);
@@ -318,6 +319,8 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 					cont.receiveException(result);
 				}
 			});
+		} else {
+			System.out.println("Null file for " + branchName + " (" + path + ")");
 		}
 	}
 	public void wimpyGetFile(Id id, File base, Continuation handler) {

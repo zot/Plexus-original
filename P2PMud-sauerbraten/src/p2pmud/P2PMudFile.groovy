@@ -25,6 +25,7 @@ public class P2PMudFile extends ContentHashPastContent {
 
 			return new P2PMudFile(id, branch, path, data);
 		} catch (Exception ex) {
+			ex.printStackTrace();
 			return null;
 		}
 	}
