@@ -651,19 +651,21 @@ void checkinput()
 #endif
                 #endif
 #ifdef TC
-				if (wowmode > 0 && !editMode) {
-					// make the mouse track only when a button is held down
-					extern void tc_movecursor(int x, int y, bool hide);
-					if (amgrabbingmouse) {
-					//if(!g3d_movecursor(event.motion.xrel, event.motion.yrel))
-						mousemove(event.motion.xrel * 5.0, event.motion.yrel * 5.0);
-						tc_movecursor(event.motion.x, event.motion.y, true);
-					} else {
-						tc_movecursor(event.motion.x, event.motion.y, false);
-					}
-				} else {
-	                if(!g3d_movecursor(event.motion.xrel, event.motion.yrel))
-		                mousemove(event.motion.xrel, event.motion.yrel);
+				{
+                	if (wowmode > 0 && !editMode) {
+                		// make the mouse track only when a button is held down
+                		extern void tc_movecursor(int x, int y, bool hide);
+                		if (amgrabbingmouse) {
+                			//if(!g3d_movecursor(event.motion.xrel, event.motion.yrel))
+                			mousemove(event.motion.xrel * 5.0, event.motion.yrel * 5.0);
+                			tc_movecursor(event.motion.x, event.motion.y, true);
+                		} else {
+                			tc_movecursor(event.motion.x, event.motion.y, false);
+                		}
+                	} else {
+                		if(!g3d_movecursor(event.motion.xrel, event.motion.yrel))
+                			mousemove(event.motion.xrel, event.motion.yrel);
+                	}
 				}
 #else
                 if(!g3d_movecursor(event.motion.xrel, event.motion.yrel))
