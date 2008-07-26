@@ -24,6 +24,6 @@ public class P2PMudFilePath extends ContentHashPastContent {
 		this.fileId = fileId
 	}
 	public String toString() {
-		return "P2PMudFileId: $path (${fileId.toStringFull()})"
+		return "P2PMud File Path: $path (${fileId.toStringFull()})"
 	}
 }

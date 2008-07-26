@@ -157,6 +157,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		env = new Environment();
 //		env.getParameters().setInt("loglevel", Logger.FINE);
 		// disable the UPnP setting (in case you are testing this on a NATted LAN)
+		env.getParameters().setInt("p2p_past_messageTimeout", 60000);
 		env.getParameters().setString("nat_search_policy", "never");
 		env.getParameters().setString("probe_for_external_address", "true");
 		String probeHost = null;
@@ -299,15 +300,24 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		if (file != null) {
 			past.insert(file, new Continuation() {
 				public void receiveResult(final Object result) {          
+					final P2PMudFilePath filePath = new P2PMudFilePath(idFactory.buildId(branchName), path, file.getId());
 					Boolean[] results = ((Boolean[]) result);
 					int numSuccessfulStores = 0;
+
 					for (int ctr = 0; ctr < results.length; ctr++) {
 						if (results[ctr].booleanValue()) 
 							numSuccessfulStores++;
 					}
 					System.out.println(file + " successfully stored at " + numSuccessfulStores + " locations.");
-					past.insert(new P2PMudFilePath(idFactory.buildId(branchName), path, file.getId()), new Continuation() {
-						public void receiveResult(Object result) {
+					past.insert(filePath, new Continuation() {
+						public void receiveResult(Object result) {        
+							Boolean[] results = ((Boolean[]) result);
+							int numSuccessfulStores = 0;
+							for (int ctr = 0; ctr < results.length; ctr++) {
+								if (results[ctr].booleanValue()) 
+									numSuccessfulStores++;
+							}
+							System.out.println(filePath + " successfully stored at " + numSuccessfulStores + " locations.");
 							cont.receiveResult(file);
 						}
 						public void receiveException(Exception exception) {
@@ -324,6 +334,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		}
 	}
 	public void wimpyGetFile(Id id, File base, Continuation handler) {
+		System.out.println("LOOKING UP: " + id.toStringFull());
 		past.lookup(id, handler);
 	}
 }
