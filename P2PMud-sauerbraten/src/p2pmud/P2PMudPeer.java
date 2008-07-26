@@ -1,6 +1,7 @@
 package p2pmud;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -123,14 +124,12 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 										test.broadcastCmds(new String[]{args[i]});
 										break;
 									case PAST:
-										String version = "branch-" + count++;
-
-										test.wimpyStoreFile(new P2PMudFile(test.idFactory.buildId(version), "branch", version, args[i].getBytes()), new Continuation() {
+										test.wimpyStoreFile("map.ogz", new File(new File(System.getProperty("sauerdir")), "/packages/p2pmud"), args[i], new Continuation() {
 											public void receiveResult(Object result) {
 												if (result != null) {
 													System.out.println("Stored file: " + result);
 												} else {
-													System.out.println("Couldn't store file: branch");
+													System.out.println("Couldn't store file: map");
 												}
 											}
 											public void receiveException(Exception exception) {
@@ -362,8 +361,25 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 			cont.receiveResult(null);
 		}
 	}
-	public void wimpyGetFile(Id id, File base, Continuation handler) {
+	public void wimpyGetFile(Id id, final File base, final Continuation handler) {
 		System.out.println("LOOKING UP: " + id.toStringFull());
-		past.lookup(id, handler);
+		base.mkdirs();
+		past.lookup(id, new Continuation() {
+			public void receiveResult(Object result) {
+				P2PMudFile file = (P2PMudFile)result;
+
+				try {
+					FileOutputStream output = new FileOutputStream(new File(base, file.branch + ".ogz"));
+					output.write(file.data);
+					output.close();
+					handler.receiveResult(result);
+				} catch (Exception ex) {
+					handler.receiveException(ex);
+				}
+			}
+			public void receiveException(Exception exception) {
+				handler.receiveException(exception);
+			}
+		});
 	}
 }

@@ -283,9 +283,6 @@ public class Test {
 		peer.wimpyGetFile(Id.build(id), maps, [
 			receiveResult: {result ->
 				println "Retrieved map from PAST: $result, loading..."
-				def output = new FileOutputStream(new File(maps, "${result.branch}.ogz"))
-				output.write(result.data)
-				output.close()
 				sauer('load', "echo loading new map: ${result.branch}; loadmap ${new File(maps, result.path)}")
 				dumpCommands()
 			},
