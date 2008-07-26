@@ -56,6 +56,7 @@ public class SauerCmds {
 		}
 	}
 	def mapname() {
+		println "Setting mapname: ${args[0]}"
 		main.mapname = args[0]
 	}
 	def requestmap() {

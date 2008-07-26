@@ -45,8 +45,9 @@ public class Test {
 	def sauerDir
 	def maps
 	def peer
+	def mapname
 	
-	def static TIME_STAMP = new SimpleDateFormat("yyyyMMdd-HH:mm:ss.zzz")
+	def static TIME_STAMP = new SimpleDateFormat("yyyyMMdd-HHmmsszzz")
 
 	public static void main(String[] a) {
 		if (a.length < 2) {
@@ -151,11 +152,12 @@ public class Test {
 		peer = P2PMudPeer.test
 	}
 	def verifySauerdir(dir) {
+		if (!dir) return false
 		def f = new File(dir)
 		def subs = ['data', 'docs', 'packages/base']
 
 		for (s in subs) {
-			if (!new File(f, subs).isDirectory()) {
+			if (!new File(f, s).isDirectory()) {
 				return false
 			}
 		}
@@ -256,17 +258,16 @@ public class Test {
 		def uname = uniqify(mapname)
 
 		println "Map requested.  Sending: $mapname ($uname)"
-		sauer('save', "savemap $maps/$uname;remotesend sendFile $uname ${pastryCmd.from.toStringFull()}")
+		sauer('save', "savemap $maps/$uname;remotesend sendfile $uname ${pastryCmd.from.toStringFull()}")
+		dumpCommands()
 	}
 	def uniqify(name) {
 		"name-${TIME_STAMP.format(new Date())}"
 	}
 	def sendFile(map, id) {
-		P2PMudFile file = P2PMudFile.create(maps, mapname)
-
 		println "Saved map, storing in PAST"
-		peer.wimpyStoreFile(mapname, File(maps), map, [
-			receiveResult: {result ->
+		peer.wimpyStoreFile(mapname, maps, map, [
+			receiveResult: {file ->
 			println "Sending load cmd"
 				peer.sendCmds(peer.buildId(id), ["loadmap ${file.getId()}".split()])
 			},
@@ -279,6 +280,7 @@ public class Test {
 			receiveResult: {result ->
 				println "Retrieved map from PAST: ${result.branch}, loading..."
 				sauer('load', "echo loading new map: ${result.branch}; loadmap ${new File(maps, result.path)}")
+				dumpCommands()
 			},
 			receiveException: {exception -> err("Error retrieving file: $id", exception)}
 		])
