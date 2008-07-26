@@ -632,7 +632,11 @@ void checkinput()
 #endif
                 if(ignoremouse) { ignoremouse--; break; }
                 #ifndef WIN32
+#ifdef TC
+                if(!wowmode && !(screen->flags&SDL_FULLSCREEN) && grabmouse)
+#else
                 if(!(screen->flags&SDL_FULLSCREEN) && grabmouse)
+#endif
                 {
                     #ifdef __APPLE__
                     if(event.motion.y == 0) break;  //let mac users drag windows via the title bar
@@ -640,7 +644,11 @@ void checkinput()
                     if(event.motion.x == screen->w / 2 && event.motion.y == screen->h / 2) break;
                     SDL_WarpMouse(screen->w / 2, screen->h / 2);
                 }
+#ifdef TC
+                if(wowmode || (screen->flags&SDL_FULLSCREEN) || grabmouse)
+#else
                 if((screen->flags&SDL_FULLSCREEN) || grabmouse)
+#endif
                 #endif
 #ifdef TC
 				if (wowmode > 0 && !editMode) {
