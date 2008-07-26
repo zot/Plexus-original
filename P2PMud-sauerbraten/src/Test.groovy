@@ -275,7 +275,7 @@ public class Test {
 		] as Continuation);
 	}
 	def loadMap(id) {
-		println "Received load cmd for map: ${id.toStringFull()}"
+		println "Received load cmd for map: ${id}"
 		peer.wimpyGetFile(Id.build(id), maps, [
 			receiveResult: {result ->
 				println "Retrieved map from PAST: ${result.branch}, loading..."
