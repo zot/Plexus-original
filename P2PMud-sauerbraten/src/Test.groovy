@@ -83,6 +83,10 @@ public class Test {
 			sauer('tc_upmap', "tc_upmap ${c.join(' ')}")
 			dumpCommands()
 		}
+		pastryCmds.tc_editent = {c ->
+			sauer('tc_editent', "tc_editent ${c.join(' ')}")
+			dumpCommands()
+		}
 		pastryCmds.sendmap = {c ->
 			sendMap()
 		}
