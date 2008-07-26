@@ -269,7 +269,7 @@ public class Test {
 		peer.wimpyStoreFile(mapname, maps, "${map}.ogz", [
 			receiveResult: {file ->
 				if (file) {
-					println "Sending load cmd"
+					println "Sending load cmd for file: $file"
 					peer.sendCmds(Id.build(id), ["loadmap ${file.getId().toStringFull()}"] as String[])
 				} else {
 					println "Could not store file for $mapname"
@@ -282,8 +282,8 @@ public class Test {
 		println "Received load cmd for map: ${id}"
 		peer.wimpyGetFile(Id.build(id), maps, [
 			receiveResult: {result ->
-				println "Retrieved map from PAST: ${result.branch}, loading..."
-				def output = new FileOutputStream(new File(maps, result.branch))
+				println "Retrieved map from PAST: $result, loading..."
+				def output = new FileOutputStream(new File(maps, "${result.branch}.ogz"))
 				output.write(result.data)
 				output.close()
 				sauer('load', "echo loading new map: ${result.branch}; loadmap ${new File(maps, result.path)}")
