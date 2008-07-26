@@ -9,7 +9,6 @@ def static deleteAll(file) {
 				deleteAll(child)
 			}
 		}
-		println "Deleting: $f"
 		f.delete()
 	}
 }

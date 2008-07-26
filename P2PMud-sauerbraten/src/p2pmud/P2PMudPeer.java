@@ -123,10 +123,8 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 										test.broadcastCmds(new String[]{args[i]});
 										break;
 									case PAST:
-										File base = new File("/tmp/testbase");
 										String version = "branch-" + count++;
 
-										base.mkdirs();
 										test.wimpyStoreFile(new P2PMudFile(test.idFactory.buildId(version), "branch", version, args[i].getBytes()), new Continuation() {
 											public void receiveResult(Object result) {
 												if (result != null) {
@@ -186,7 +184,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		env = new Environment();
 //		env.getParameters().setInt("loglevel", Logger.FINE);
 		// disable the UPnP setting (in case you are testing this on a NATted LAN)
-		env.getParameters().setInt("p2p_past_messageTimeout", 60000);
+		env.getParameters().setInt("p2p_past_messageTimeout", Integer.parseInt(System.getProperty("past.timeout", "60000")));
 		env.getParameters().setString("nat_search_policy", "never");
 		env.getParameters().setString("probe_for_external_address", "true");
 		String probeHost = null;
