@@ -137,7 +137,7 @@ public class Test {
 				field('move: ', 'm')
 				field('physics state: ', 'ps')
 				label(text: "Command: ")
-				fields.cmd = textField(actionPerformed: {cmd()}, focusLost: {cmd()}, constraints: 'wrap, growx')
+				fields.cmd = textField(actionPerformed: {cmd()}, constraints: 'wrap, growx')
 				button(text: "update", actionPerformed: {pastryCmds.update(["floopy", "x", "1597.093994", "y", "1620.530884", "z", "2062.024658", "rol", "0.000000", "pit", "-55.000015", "yaw", "348.454498"])})
 			}
 			f.size = [500, (int)f.size.height] as Dimension
@@ -209,8 +209,8 @@ public class Test {
 //					println "SENT: ${pendingCommands.collect{it.value}.join(';') + '\n'}"
 					pendingCommands = [:]
 				}
+				output.flush()
 			}
-			output.flush()
 		}
 	}
 	def sauerEnt(label) {

@@ -25,7 +25,7 @@ import rice.p2p.past.ContentHashPastContentimport rice.p2p.util.SecurityUtilsi
 				ids.add(chunk.getId())
 			}
 			def file = new P2PMudFile(id, branch, path, ids, bytes.length);
-			result.add(file)
+			result.add(0, file)
 			return result as ArrayList
 		} catch (Exception ex) {
 			ex.printStackTrace();

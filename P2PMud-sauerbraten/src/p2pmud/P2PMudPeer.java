@@ -345,14 +345,14 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 			final ArrayList<PastContent> chunks = P2PMudFile.create(branchName, base, path);
 			MultiContinuation multi = new MultiContinuation(new Continuation<Object[], Exception>() {
 				public void receiveResult(Object[] result) {
-					cont.receiveResult((P2PMudFile) chunks.get(chunks.size() - 1));
+					cont.receiveResult((P2PMudFile) chunks.get(0));
 				}
 				public void receiveException(Exception exception) {
 					cont.receiveException(exception);
 				}
 			}, chunks.size());
 
-			System.out.println("STORING FILE: " + chunks.get(chunks.size() - 1));
+			System.out.println("STORING FILE: " + chunks.get(0));
 			for (int i = 0; i < chunks.size(); i++) {
 				System.out.println("INSERTING CHUNK: " + chunks.get(i));
 				past.insert(chunks.get(i), multi.getSubContinuation(i));
@@ -388,7 +388,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		final MultiContinuation cont = new MultiContinuation(new Continuation<Object[], Exception>() {
 			public void receiveResult(Object result[]) {
 				try {
-					ArrayList<Id> missing = new ArrayList<Id>();
+					final ArrayList<Id> missing = new ArrayList<Id>();
 
 					for (int i = 0; i < result.length; i++) {
 						if (result[i] instanceof Exception || result[i] == null) {
@@ -415,7 +415,16 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 						output.close();
 						handler.receiveResult(value);
 					} else {
-						getChunks(base, handler, file, missing, data, attempt + 1);
+						new Thread() {
+							public void run() {
+								try {
+									Thread.sleep(3000);
+									getChunks(base, handler, file, missing, data, attempt + 1);
+								} catch (Exception ex) {
+									handler.receiveException(ex);
+								}
+							}
+						};
 					}
 				} catch (Exception ex) {
 					handler.receiveException(ex);
