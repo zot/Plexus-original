@@ -43,7 +43,7 @@ public class Test {
 	def pastryCmd
 	def player = new Player()
 	def sauerDir
-	def maps
+	def mapPrefix = 'packages/p2pmud'
 	def peer
 	def mapname
 	
@@ -66,8 +66,7 @@ public class Test {
 			usage("name must be provided")
 		}
 		sauerDir = new File(sauerDir)
-		maps = new File(sauerDir, 'packages/p2pmud')
-		maps.mkdirs()
+		new File(sauerDir, mapPrefix).mkdirs()
 		names = [p0: name]
 		ids[name] = 'p0'
 		pastryCmds.login = {l ->
@@ -262,14 +261,14 @@ public class Test {
 		dumpCommands()
 	}
 	def uniqify(name) {
-		"name-${TIME_STAMP.format(new Date())}"
+		"$name-${TIME_STAMP.format(new Date())}"
 	}
 	def sendFile(map, id) {
-		println "Saved map, storing in PAST"
-		peer.wimpyStoreFile("${mapname}.ogz", maps, "${map}.ogz", [
+		println "Saved map, storing in PAST, branch: packages/p2pmud/${mapname}.ogz, path: packages/p2pmud/${map}.ogz"
+		peer.wimpyStoreFile("packages/p2pmud/${mapname}.ogz", sauerDir, "packages/p2pmud/${map}.ogz", [
 			receiveResult: {file ->
 				if (file) {
-					println "Sending load cmd for file: $file"
+					println "Sending load cmd for file: $file: loadmap ${file.getId().toStringFull()}"
 					peer.sendCmds(Id.build(id), ["loadmap ${file.getId().toStringFull()}"] as String[])
 				} else {
 					println "Could not store file for $mapname"
@@ -280,14 +279,15 @@ public class Test {
 	}
 	def loadMap(id) {
 		println "Received load cmd for map: ${id}"
-		peer.wimpyGetFile(Id.build(id), maps, [
+		peer.wimpyGetFile(Id.build(id), sauerDir, [
 			receiveResult: {result ->
 				def file = result[0]
-				def missing = result[3]
+				def p2pFile = result[1]
+				def missing = result[2]
 
 				if (missing.isEmpty()) {
-					println "Retrieved map from PAST: $file, loading..."
-					sauer('load', "echo loading new map: [$file]; map [$file]")
+					println "Retrieved map from PAST: $file, executing: map [p2pmud/$p2pFile.path]"
+					sauer('load', "echo loading new map: [p2pmud/$p2pFile.path]; map [p2pmud/$p2pFile.path]")
 					dumpCommands()
 				} else {
 					println "Couldn't load file: $file"

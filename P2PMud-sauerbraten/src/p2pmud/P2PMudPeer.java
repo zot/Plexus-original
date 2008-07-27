@@ -395,7 +395,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 						}
 					}
 					if (missing.isEmpty()) {
-						File filename = new File(base, file.branch);
+						File filename = new File(base, file.path);
 						FileOutputStream output = new FileOutputStream(filename);
 						Object value[] = {filename, file, missing};
 						StringBuffer buf = new StringBuffer();
@@ -405,6 +405,8 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 						}
 						byte[] bytes = Tools.decode(buf.toString());
 						output.write(bytes, 0, file.size);
+						output.flush();
+						output.getFD().sync();
 						output.close();
 						handler.receiveResult(value);
 					} else {

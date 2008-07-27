@@ -2,7 +2,7 @@ package p2pmud
 
 import rice.p2p.past.ContentHashPastContentimport rice.p2p.util.SecurityUtilsimport rice.p2p.past.PastContentimport rice.p2p.commonapi.Idpublic class P2PMudFile extends ContentHashPastContent {
 	public ArrayList<Id> chunks
-	public path
+	public String path
 	public String branch
 	public int size
 	
