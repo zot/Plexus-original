@@ -4,6 +4,7 @@ import rice.p2p.past.ContentHashPastContentimport rice.p2p.util.SecurityUtilsi
 	public ArrayList<Id> chunks
 	public path
 	public String branch
+	public int size
 	
 	public static chunkSize = 10000
 
@@ -13,7 +14,8 @@ import rice.p2p.past.ContentHashPastContentimport rice.p2p.util.SecurityUtilsi
 		try {
 			def result = []
 			def ids = []
-			def data = Tools.encode(new File(base as File, path as String).readBytes());
+			def bytes = new File(base as File, path as String).readBytes()
+			def data = Tools.encode(bytes)
 			def id = Tools.contentId(data.getBytes())
 
 			for (def i = 0; i < data.length(); i += chunkSize) {
@@ -22,7 +24,7 @@ import rice.p2p.past.ContentHashPastContentimport rice.p2p.util.SecurityUtilsi
 				result.add(chunk)
 				ids.add(chunk.getId())
 			}
-			def file = new P2PMudFile(id, branch, path, ids);
+			def file = new P2PMudFile(id, branch, path, ids, bytes.length);
 			result.add(file)
 			return result as ArrayList
 		} catch (Exception ex) {
@@ -31,11 +33,12 @@ import rice.p2p.past.ContentHashPastContentimport rice.p2p.util.SecurityUtilsi
 		}
 	}
 
-	public P2PMudFile(Id id, branch, path, chunks) {
+	public P2PMudFile(Id id, branch, path, chunks, size) {
 		super(id)
 		this.branch = branch
 		this.path = path
 		this.chunks = chunks
+		this.size = size
 	}
 	def String toString() {
 		"P2PMudFile $branch ($path) ${getId().toStringFull()}"

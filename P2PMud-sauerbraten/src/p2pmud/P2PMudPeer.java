@@ -148,10 +148,10 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 										Thread.sleep(5000);
 										test.wimpyGetFile(rice.pastry.Id.build(args[i]), base, new Continuation<Object[], Exception>() {
 											public void receiveResult(Object[] result) {
-												if (((Collection)result[1]).isEmpty()) {
+												if (((Collection)result[2]).isEmpty()) {
 													System.out.println("Loaded file: " + result[0]);
 												} else {
-													System.out.println("Could not load data for file: " + result[0] + ", missing ids: " + result[1]);
+													System.out.println("Could not load data for file: " + result[0] + ", missing ids: " + result[2]);
 												}
 											}
 											public void receiveException(Exception exception) {
@@ -395,14 +395,16 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 						}
 					}
 					if (missing.isEmpty()) {
-						FileOutputStream output = new FileOutputStream(new File(base, file.branch));
-						Object value[] = {file, missing};
+						File filename = new File(base, file.branch);
+						FileOutputStream output = new FileOutputStream(filename);
+						Object value[] = {filename, file, missing};
 						StringBuffer buf = new StringBuffer();
 
 						for (int i = 0; i < data.length; i++) {
 							buf.append(data[i]);
 						}
-						output.write(Tools.decode(buf.toString()));
+						byte[] bytes = Tools.decode(buf.toString());
+						output.write(bytes, 0, file.size);
 						output.close();
 						handler.receiveResult(value);
 					} else {

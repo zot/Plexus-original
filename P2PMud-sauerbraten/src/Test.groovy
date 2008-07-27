@@ -283,11 +283,15 @@ public class Test {
 		peer.wimpyGetFile(Id.build(id), maps, [
 			receiveResult: {result ->
 				def file = result[0]
-				def missing = result[1]
+				def missing = result[3]
 
-				println "Retrieved map from PAST: $file, loading..."
-				sauer('load', "echo loading new map: [$file]; map [$file]")
-				dumpCommands()
+				if (missing.isEmpty()) {
+					println "Retrieved map from PAST: $file, loading..."
+					sauer('load', "echo loading new map: [$file]; map [$file]")
+					dumpCommands()
+				} else {
+					println "Couldn't load file: $file"
+				}
 			},
 			receiveException: {exception -> err("Error retrieving file: $id", exception)}
 		] as Continuation)
