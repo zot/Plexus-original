@@ -282,8 +282,11 @@ public class Test {
 		println "Received load cmd for map: ${id}"
 		peer.wimpyGetFile(Id.build(id), maps, [
 			receiveResult: {result ->
-				println "Retrieved map from PAST: $result, loading..."
-				sauer('load', "echo loading new map: ${result.branch}; loadmap ${new File(maps, result.path)}")
+				def file = result[0]
+				def missing = result[1]
+
+				println "Retrieved map from PAST: $file, loading..."
+				sauer('load', "echo loading new map: $file; loadmap $file")
 				dumpCommands()
 			},
 			receiveException: {exception -> err("Error retrieving file: $id", exception)}

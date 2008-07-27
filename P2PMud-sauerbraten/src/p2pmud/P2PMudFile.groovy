@@ -7,6 +7,8 @@ import rice.p2p.past.ContentHashPastContentimport rice.p2p.util.SecurityUtilsi
 	
 	public static chunkSize = 10000
 
+	private static final long serialVersionUID = 1L
+
 	public static ArrayList<PastContent> create(branch, base, path) {
 		try {
 			def result = []
