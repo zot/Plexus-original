@@ -7,16 +7,19 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
 
 import javolution.util.FastTable;
 import rice.Continuation;
+import rice.Continuation.MultiContinuation;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.RouteMessage;
+import rice.p2p.past.PastContent;
 import rice.p2p.past.PastImpl;
 import rice.p2p.scribe.ScribeContent;
 import rice.p2p.scribe.ScribeImpl;
@@ -50,7 +53,8 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	private static final P2PMudPeer test = new P2PMudPeer();
 	private static final int SCRIBE = 0;
 	private static final int PAST = 1;
-	private static final int CMD = 2;
+	private static final int PAST_GET = 2;
+	private static final int CMD = 3;
 
 	public static void main(P2PMudCommandHandler handler, String args[]) throws Exception {
 		cmdHandler = handler;
@@ -105,8 +109,6 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 			if (args.length > 3) {
 				new Thread() {
 					public void run() {
-						int count = 0;
-
 						try {
 							Thread.sleep(5000);
 							mode = SCRIBE;
@@ -115,6 +117,8 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 									mode = SCRIBE;
 								} else if (args[i].equals("-past")) {
 									mode = PAST;
+								} else if (args[i].equals("-pastget")) {
+									mode = PAST_GET;
 								} else if (args[i].equals("-cmd")) {
 									mode = CMD;
 								} else if (args[i].equals("-clean")) {
@@ -124,8 +128,8 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 										test.broadcastCmds(new String[]{args[i]});
 										break;
 									case PAST:
-										test.wimpyStoreFile("map.ogz", new File(System.getProperty("sauerdir")), args[i], new Continuation() {
-											public void receiveResult(Object result) {
+										test.wimpyStoreFile("map.ogz", new File(System.getProperty("sauerdir")), args[i], new Continuation<File, Exception>() {
+											public void receiveResult(File result) {
 												if (result != null) {
 													System.out.println("Stored file: " + result);
 												} else {
@@ -134,6 +138,19 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 											}
 											public void receiveException(Exception exception) {
 												System.err.println("Error while attempting to store file: branch");
+												exception.printStackTrace();
+											}
+										});
+										break;
+									case PAST_GET:
+										File base = new File(new File(System.getProperty("sauerdir")), "/packages/p2pmud");
+
+										Thread.sleep(5000);
+										test.wimpyGetFile(rice.pastry.Id.build(args[i]), base, new Continuation<P2PMudFile, Exception>() {
+											public void receiveResult(P2PMudFile result) {
+												System.out.println("Loaded file: " + result);
+											}
+											public void receiveException(Exception exception) {
 												exception.printStackTrace();
 											}
 										});
@@ -183,7 +200,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		env = new Environment();
 //		env.getParameters().setInt("loglevel", Logger.FINE);
 		// disable the UPnP setting (in case you are testing this on a NATted LAN)
-		env.getParameters().setInt("p2p_past_messageTimeout", Integer.parseInt(System.getProperty("past.timeout", "60000")));
+		env.getParameters().setInt("p2p_past_messageTimeout", Integer.parseInt(System.getProperty("past.timeout", "10000")));
 		env.getParameters().setString("nat_search_policy", "never");
 		env.getParameters().setString("probe_for_external_address", "true");
 		String probeHost = null;
@@ -316,63 +333,76 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	public void sendCmds(Id id, String cmds[]) {
 		endpoint.route(id, new P2PMudMessage(new P2PMudCommand(endpoint.getId(), cmds)), null);
 	}
-	public void wimpyStoreFile(final String branchName, File base, final String path, final Continuation cont) {
+	public void wimpyStoreFile(String branchName, final File base, final String path, final Continuation<File, Exception> cont) {
 		if (branchName.equals(path)) {
 			cont.receiveException(new RuntimeException("Branch name and path must be different!"));
 		} else {
-			wimpyStoreFile(P2PMudFile.create(idFactory.buildId(path), branchName, base, path), cont);
-		}
-	}
-	public void wimpyStoreFile(final P2PMudFile file, final Continuation cont) {
-		System.out.println("WIMPY STORE FILE: " + file.getId().toStringFull());
-		if (file != null) {
-			past.insert(file, new Continuation() {
-				public void receiveResult(final Object result) {          
-					final P2PMudFilePath filePath = new P2PMudFilePath(idFactory.buildId(file.branch), file.path, file.getId());
-					Boolean[] results = ((Boolean[]) result);
-					int numSuccessfulStores = 0;
+			ArrayList<PastContent> chunks = P2PMudFile.create(branchName, base, path);
+			MultiContinuation multi = new MultiContinuation(new Continuation<Object[], Exception>() {
+				public void receiveResult(Object[] result) {
+					cont.receiveResult(new File(base, path));
+				}
+				public void receiveException(Exception exception) {
+					cont.receiveException(exception);
+				}
+			}, chunks.size());
 
-					for (int ctr = 0; ctr < results.length; ctr++) {
-						if (results[ctr].booleanValue()) 
-							numSuccessfulStores++;
-					}
-					System.out.println(file + " successfully stored at " + numSuccessfulStores + " locations.");
-//					past.insert(filePath, new Continuation() {
-//						public void receiveResult(Object result) {        
-//							Boolean[] results = ((Boolean[]) result);
-//							int numSuccessfulStores = 0;
-//							for (int ctr = 0; ctr < results.length; ctr++) {
-//								if (results[ctr].booleanValue()) 
-//									numSuccessfulStores++;
-//							}
-//							System.out.println(filePath + " successfully stored at " + numSuccessfulStores + " locations.");
-							cont.receiveResult(file);
-//						}
-//						public void receiveException(Exception exception) {
-//							cont.receiveException(exception);
-//						}
-//					});
-				}
-				public void receiveException(Exception result) {
-					cont.receiveException(result);
-				}
-			});
-		} else {
-			cont.receiveResult(null);
+			System.out.println("STORING FILE: " + chunks.get(chunks.size() - 1));
+			for (int i = 0; i < chunks.size(); i++) {
+				System.out.println("INSERTING CHUNK: " + chunks.get(i));
+				past.insert(chunks.get(i), multi.getSubContinuation(i));
+			}
 		}
 	}
 	public void wimpyGetFile(Id id, final File base, final Continuation handler) {
 		System.out.println("LOOKING UP: " + id.toStringFull());
 		base.mkdirs();
-		past.lookup(id, new Continuation() {
-			public void receiveResult(Object result) {
-				P2PMudFile file = (P2PMudFile)result;
+		past.lookup(id, new Continuation<P2PMudFile, Exception>() {
+			public void receiveResult(final P2PMudFile file) {
+				String data[] = new String[file.chunks.size()];
 
+				System.out.println("RETRIEVED FILE OBJECT: " + file + ", getting chunks");
+				getChunks(base, handler, file, file.chunks, data, 0);
+			}
+			public void receiveException(Exception exception) {
+				handler.receiveException(exception);
+			}
+		});
+	}
+	protected void getChunks(final File base, final Continuation handler, final P2PMudFile file, final ArrayList<Id> chunks, final String data[], final int attempt) {
+		System.out.println("GETTING " + chunks.size() + " CHUNKS...");
+		if (attempt > 5) {
+			//maybe pass the missing chunks in this exception
+			handler.receiveException(new RuntimeException("Made " + attempt + " attempts to get file and failed"));
+			return;
+		}
+		final MultiContinuation cont = new MultiContinuation(new Continuation<Object[], Exception>() {
+			public void receiveResult(Object result[]) {
 				try {
-					FileOutputStream output = new FileOutputStream(new File(base, file.branch + ".ogz"));
-					output.write(file.data);
-					output.close();
-					handler.receiveResult(result);
+					ArrayList<Id> missing = new ArrayList<Id>();
+
+					for (int i = 0; i < result.length; i++) {
+						if (result[i] instanceof Exception) {
+							missing.add(chunks.get(i));
+						} else {
+							P2PMudFileChunk chunk = (P2PMudFileChunk)result[i];
+
+							data[chunk.offset] = chunk.data;
+						}
+					}
+					if (missing.isEmpty()) {
+						File outputFile = new File(base, file.branch + ".ogz");
+						FileOutputStream output = new FileOutputStream(outputFile);
+						Object value[] = {file, missing};
+
+						for (int i = 0; i < data.length; i++) {
+							output.write(Tools.decode(((P2PMudFileChunk)result[i]).data));
+						}
+						output.close();
+						handler.receiveResult(value);
+					} else {
+						getChunks(base, handler, file, missing, data, attempt + 1);
+					}
 				} catch (Exception ex) {
 					handler.receiveException(ex);
 				}
@@ -380,6 +410,11 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 			public void receiveException(Exception exception) {
 				handler.receiveException(exception);
 			}
-		});
+		}, chunks.size());
+
+		for (int i = 0; i < chunks.size(); i++) {
+			System.out.println("LOOKING UP CHUNK: " + chunks.get(i).toStringFull());
+			past.lookup(chunks.get(i), cont.getSubContinuation(i));
+		}
 	}
 }
