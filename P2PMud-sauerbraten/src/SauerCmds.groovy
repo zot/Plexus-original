@@ -57,7 +57,9 @@ public class SauerCmds {
 	}
 	def mapname() {
 		println "Setting mapname: ${args[0]}"
-		main.mapname = new File(args[0]).getName()
+		if (args[0]) {
+			main.mapname = new File(args[0]).getName()
+		}
 	}
 	def requestmap() {
 		main.anycast(['requestmap'])

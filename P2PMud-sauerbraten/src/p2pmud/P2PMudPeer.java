@@ -1,6 +1,7 @@
 package p2pmud;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.Inet4Address;
@@ -358,15 +359,19 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 			}
 		}
 	}
-	public void wimpyGetFile(Id id, final File base, final Continuation handler) {
+	public void wimpyGetFile(final Id id, final File base, final Continuation handler) {
 		System.out.println("LOOKING UP: " + id.toStringFull());
 		base.mkdirs();
 		past.lookup(id, new Continuation<P2PMudFile, Exception>() {
 			public void receiveResult(final P2PMudFile file) {
-				String data[] = new String[file.chunks.size()];
+				if (file != null) {
+					String data[] = new String[file.chunks.size()];
 
-				System.out.println("RETRIEVED FILE OBJECT: " + file + ", getting chunks");
-				getChunks(base, handler, file, file.chunks, data, 0);
+					System.out.println("RETRIEVED FILE OBJECT: " + file + ", getting chunks");
+					getChunks(base, handler, file, file.chunks, data, 0);
+				} else {
+					handler.receiveException(new FileNotFoundException("No file found for " + id.toStringFull()));
+				}
 			}
 			public void receiveException(Exception exception) {
 				handler.receiveException(exception);

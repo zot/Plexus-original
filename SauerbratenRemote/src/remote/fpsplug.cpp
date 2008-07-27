@@ -101,7 +101,7 @@ fpsent *getplayer(char *id) {
 		for (int i = 0; i < fpscl->players.length(); ++i)
 		{
 			fpsent *p = fpscl->players[i];
-			if (p->tc_id == tc_id) return p;
+			if (p && p->tc_id == tc_id) return p;
 		}
 	}
 	return NULL;
@@ -113,7 +113,7 @@ fpsclient::monsterset::monster *getmonster(char *id) {
 		for (int i = 0; i < fpscl->ms.monsters.length(); ++i)
 		{
 			fpsclient::monsterset::monster *m = fpscl->ms.monsters[i];
-			if (m->tc_id == tc_id) return m;
+			if (m && m->tc_id == tc_id) return m;
 		}
 	}
 	return NULL;
@@ -125,7 +125,7 @@ fpsclient::movableset::movable *getitem(char *id) {
 
 		for (int i = 0; i < fpscl->mo.movables.length(); ++i) {
 			fpsclient::movableset::movable *mv = fpscl->mo.movables[i];
-			if (mv->tc_id == tc_id) return mv;
+			if (mv && mv->tc_id == tc_id) return mv;
 		}
 	}
 	return NULL;

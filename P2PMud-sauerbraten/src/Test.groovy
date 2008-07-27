@@ -286,8 +286,10 @@ public class Test {
 				def missing = result[2]
 
 				if (missing.isEmpty()) {
-					println "Retrieved map from PAST: $file, executing: map [p2pmud/$p2pFile.path]"
-					sauer('load', "echo loading new map: [p2pmud/$p2pFile.path]; map [p2pmud/$p2pFile.path]")
+					def mapPath = "p2pmud/${new File(p2pFile.path).getName()}"
+
+					println "Retrieved map from PAST: $file, executing: map [$mapPath]"
+					sauer('load', "echo loading new map: [$mapPath]; map [$mapPath]")
 					dumpCommands()
 				} else {
 					println "Couldn't load file: $file"
