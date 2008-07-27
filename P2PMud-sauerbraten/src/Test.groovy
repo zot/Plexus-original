@@ -266,7 +266,7 @@ public class Test {
 	}
 	def sendFile(map, id) {
 		println "Saved map, storing in PAST"
-		peer.wimpyStoreFile(mapname, maps, "${map}.ogz", [
+		peer.wimpyStoreFile("${mapname}.ogz", maps, "${map}.ogz", [
 			receiveResult: {file ->
 				if (file) {
 					println "Sending load cmd for file: $file"
@@ -286,7 +286,7 @@ public class Test {
 				def missing = result[1]
 
 				println "Retrieved map from PAST: $file, loading..."
-				sauer('load', "echo loading new map: $file; loadmap $file")
+				sauer('load', "echo loading new map: [$file]; map [$file]")
 				dumpCommands()
 			},
 			receiveException: {exception -> err("Error retrieving file: $id", exception)}

@@ -128,8 +128,8 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 										test.broadcastCmds(new String[]{args[i]});
 										break;
 									case PAST:
-										test.wimpyStoreFile("map.ogz", new File(System.getProperty("sauerdir")), args[i], new Continuation<File, Exception>() {
-											public void receiveResult(File result) {
+										test.wimpyStoreFile("map.ogz", new File(System.getProperty("sauerdir")), args[i], new Continuation<P2PMudFile, Exception>() {
+											public void receiveResult(P2PMudFile result) {
 												if (result != null) {
 													System.out.println("Stored file: " + result);
 												} else {
@@ -337,14 +337,14 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	public void sendCmds(Id id, String cmds[]) {
 		endpoint.route(id, new P2PMudMessage(new P2PMudCommand(endpoint.getId(), cmds)), null);
 	}
-	public void wimpyStoreFile(String branchName, final File base, final String path, final Continuation<File, Exception> cont) {
+	public void wimpyStoreFile(String branchName, final File base, final String path, final Continuation<P2PMudFile, Exception> cont) {
 		if (branchName.equals(path)) {
 			cont.receiveException(new RuntimeException("Branch name and path must be different!"));
 		} else {
-			ArrayList<PastContent> chunks = P2PMudFile.create(branchName, base, path);
+			final ArrayList<PastContent> chunks = P2PMudFile.create(branchName, base, path);
 			MultiContinuation multi = new MultiContinuation(new Continuation<Object[], Exception>() {
 				public void receiveResult(Object[] result) {
-					cont.receiveResult(new File(base, path));
+					cont.receiveResult((P2PMudFile) chunks.get(chunks.size() - 1));
 				}
 				public void receiveException(Exception exception) {
 					cont.receiveException(exception);
