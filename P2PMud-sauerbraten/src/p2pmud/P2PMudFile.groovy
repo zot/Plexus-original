@@ -3,9 +3,9 @@ package p2pmud
 import rice.p2p.past.ContentHashPastContentimport rice.p2p.util.SecurityUtilsimport rice.p2p.past.PastContentimport rice.p2p.commonapi.Idpublic class P2PMudFile extends ContentHashPastContent {
 	public ArrayList<Id> chunks
 	public path
-	public branch
+	public String branch
 	
-	public static chunkSize = 20000
+	public static chunkSize = 10000
 
 	public static ArrayList<PastContent> create(branch, base, path) {
 		try {

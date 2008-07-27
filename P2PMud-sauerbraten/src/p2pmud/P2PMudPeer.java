@@ -146,9 +146,13 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 										File base = new File(new File(System.getProperty("sauerdir")), "/packages/p2pmud");
 
 										Thread.sleep(5000);
-										test.wimpyGetFile(rice.pastry.Id.build(args[i]), base, new Continuation<P2PMudFile, Exception>() {
-											public void receiveResult(P2PMudFile result) {
-												System.out.println("Loaded file: " + result);
+										test.wimpyGetFile(rice.pastry.Id.build(args[i]), base, new Continuation<Object[], Exception>() {
+											public void receiveResult(Object[] result) {
+												if (((Collection)result[1]).isEmpty()) {
+													System.out.println("Loaded file: " + result[0]);
+												} else {
+													System.out.println("Could not load data for file: " + result[0] + ", missing ids: " + result[1]);
+												}
 											}
 											public void receiveException(Exception exception) {
 												exception.printStackTrace();
@@ -382,7 +386,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 					ArrayList<Id> missing = new ArrayList<Id>();
 
 					for (int i = 0; i < result.length; i++) {
-						if (result[i] instanceof Exception) {
+						if (result[i] instanceof Exception || result[i] == null) {
 							missing.add(chunks.get(i));
 						} else {
 							P2PMudFileChunk chunk = (P2PMudFileChunk)result[i];
@@ -391,13 +395,14 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 						}
 					}
 					if (missing.isEmpty()) {
-						File outputFile = new File(base, file.branch + ".ogz");
-						FileOutputStream output = new FileOutputStream(outputFile);
+						FileOutputStream output = new FileOutputStream(new File(base, file.branch));
 						Object value[] = {file, missing};
+						StringBuffer buf = new StringBuffer();
 
 						for (int i = 0; i < data.length; i++) {
-							output.write(Tools.decode(((P2PMudFileChunk)result[i]).data));
+							buf.append(data[i]);
 						}
+						output.write(Tools.decode(buf.toString()));
 						output.close();
 						handler.receiveResult(value);
 					} else {
