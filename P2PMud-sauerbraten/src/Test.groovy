@@ -136,6 +136,7 @@ public class Test {
 				field('edit: ', 'e')
 				field('move: ', 'm')
 				field('physics state: ', 'ps')
+				field('max speed: ', 'ms')
 				label(text: "Command: ")
 				fields.cmd = textField(actionPerformed: {cmd()}, constraints: 'wrap, growx')
 				button(text: "update", actionPerformed: {pastryCmds.update(["floopy", "x", "1597.093994", "y", "1620.530884", "z", "2062.024658", "rol", "0.000000", "pit", "-55.000015", "yaw", "348.454498"])})

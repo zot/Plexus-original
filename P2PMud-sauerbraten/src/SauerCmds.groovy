@@ -38,8 +38,8 @@ public class SauerCmds {
 		])
 	}
 	def tc_editent() {
-		main.pastry([
-			"tc_editend ${args.join(' ')}"
+		main.broadcast([
+			"tc_editent ${args.join(' ')}"
 		])
 	}
 	def position() {
