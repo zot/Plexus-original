@@ -64,12 +64,24 @@ void removegui(menu *m)
     }
 }    
 
+#ifdef TC
+bool tc_aremenuspresent()
+{
+	return !guistack.empty(); //  || !guis3d.length();
+}
+#endif
+
 void pushgui(menu *m, int pos = -1)
 {
     if(guistack.empty())
     {
         menupos = menuinfrontofplayer();
+#ifdef TC
+		//extern int wowmode;
+		//if (!wowmode) g3d_resetcursor();
+#else
         g3d_resetcursor();
+#endif
     }
     if(pos < 0) guistack.add(m);
     else guistack.insert(pos, m);

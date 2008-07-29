@@ -573,13 +573,15 @@ void setWowMode(int wm) {
 
 VARF(wowmode, 0, 0, 1, setWowMode(wowmode));
 
+bool tc_amgrabbingmouse = false;
+
 #endif
 
 void checkinput()
 {
 #ifdef TC
 	Uint8 ms = 0;
-	static bool lastmiddle = false, autorun = false, amgrabbingmouse = false;
+	static bool lastmiddle = false, autorun = false;
 	static int restoreX, restoreY;
 	static float grabbedX = 0.0, grabbedY = 0.0;
 	physent *p = (physent *) cl->iterdynents(0);
@@ -645,17 +647,20 @@ void checkinput()
                 #endif
 #ifdef TC
 				{
-                	if (wowmode > 0 && !editMode) {
+					if (wowmode > 0) { // && !editMode) {
                 		// make the mouse track only when a button is held down
                 		extern void tc_movecursor(int x, int y, bool hide);
-                		if (amgrabbingmouse) {
-                			//if(!g3d_movecursor(event.motion.xrel, event.motion.yrel))
+                		if (tc_amgrabbingmouse) {
+                			// only call mousemove() to spin the camera when we are grabbing
                 			mousemove(event.motion.xrel * 5.0, event.motion.yrel * 5.0);
-                			tc_movecursor(event.motion.x, event.motion.y, true);
+							// keep the crosshairs locked in dead center while grabbing
+							g3d_resetcursor();
                 		} else {
+							// not grabbing? freely move the cursor, but not the player/camera
                 			tc_movecursor(event.motion.x, event.motion.y, false);
                 		}
                 	} else {
+						// not in wow mode? do the default annoying cursor forced to the center of the screen
                 		if(!g3d_movecursor(event.motion.xrel, event.motion.yrel))
                 			mousemove(event.motion.xrel, event.motion.yrel);
                 	}
@@ -669,7 +674,7 @@ void checkinput()
             case SDL_MOUSEBUTTONDOWN:
             case SDL_MOUSEBUTTONUP:
 #ifdef TC
-			if (wowmode > 0 && !editMode) {
+			if (wowmode > 0) { // trying wowmode & edit... && !editMode) {
 				ms = SDL_GetMouseState(NULL, NULL);
 				extern void tc_getcursorpos(float &x, float &y);
 				extern void tc_setcursorpos(float x, float y);
@@ -677,18 +682,32 @@ void checkinput()
 				// grab the mouse only if left or right mouse button are clicked
 				if (event.button.button == 3 || event.button.button == 1) {
 					if (event.type == SDL_MOUSEBUTTONDOWN) {
-						SDL_WM_GrabInput(SDL_GRAB_ON); 
-						amgrabbingmouse = true;
-						restoreX = event.motion.x;
-						restoreY = event.motion.y;
-						tc_getcursorpos(grabbedX, grabbedY); 
-						//fprintf(stderr, "grabbing mouse\n");
+						//if we already clicked one and are grabbing, don't bother regrabbing!  also, don't grab while menus are up
+						bool tc_aremenuspresent();
+						fprintf(stderr, "mouse up/down  grab: %d  menus: %d\n", (int) tc_amgrabbingmouse, (int) tc_aremenuspresent());
+						if (!tc_amgrabbingmouse && !tc_aremenuspresent())
+						{
+							SDL_WM_GrabInput(SDL_GRAB_ON); 
+							tc_amgrabbingmouse = true;
+							restoreX = event.motion.x;
+							restoreY = event.motion.y;
+							// save where the cursor was so we can put it back where it was on release
+							tc_getcursorpos(grabbedX, grabbedY); 
+							// move the cursor to the center of the screen where it's going to become a crosshair instead
+							g3d_resetcursor();
+                			//extern void tc_movecursor(int x, int y, bool hide);
+							//tc_movecursor(0.5, 0.5, false);
+							//fprintf(stderr, "grabbing mouse\n");
+						}
 					} else if (0 == ms) { // only release if they let go of both buttons, if still holding one, don't let go yet
-						SDL_WM_GrabInput(SDL_GRAB_OFF);
-						amgrabbingmouse = false;
-						SDL_WarpMouse(restoreX, restoreY);
-						tc_setcursorpos(grabbedX, grabbedY); 
-						//fprintf(stderr, "releasing mouse\n");
+						if (tc_amgrabbingmouse)
+						{
+							SDL_WM_GrabInput(SDL_GRAB_OFF);
+							tc_amgrabbingmouse = false;
+							SDL_WarpMouse(restoreX, restoreY);
+							tc_setcursorpos(grabbedX, grabbedY); 
+							//fprintf(stderr, "releasing mouse\n");
+						}
 					}
 				}
 				int savemiddle = lastmiddle;

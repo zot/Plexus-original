@@ -925,6 +925,7 @@ void tc_setcursorpos(float x, float y)
 	cursorx = x;
 	cursory = y;
 }
+
 #endif
 
 bool g3d_movecursor(int dx, int dy)

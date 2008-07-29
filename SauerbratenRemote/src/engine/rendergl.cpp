@@ -1352,8 +1352,8 @@ void writecrosshairs(FILE *f)
 void drawcrosshair(int w, int h, bool windowhit)
 {
 	//fprintf(stderr, "rndering cursor/crosshairs %d x %d, %d %d\n", w, h, (int) windowhit, (int) hidehud); 
-	extern int wowmode;
-	if (!wowmode) windowhit = g3d_windowhit(true, false);
+	//extern int wowmode;
+	//if (!wowmode) windowhit = g3d_windowhit(true, false);
 #else
 void drawcrosshair(int w, int h)
 {
@@ -1490,7 +1490,8 @@ void gl_drawhud(int w, int h, int fogmat, float fogblend, int abovemat)
     glOrtho(0, w*3, h*3, 0, -1, 1);
 
 #ifdef TC
-    drawcrosshair(w, h, true);
+	extern bool tc_amgrabbingmouse;
+    drawcrosshair(w, h, !tc_amgrabbingmouse);
 #else
     drawcrosshair(w, h);
 #endif
