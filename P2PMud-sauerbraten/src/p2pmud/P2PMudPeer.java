@@ -382,7 +382,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		System.out.println("GETTING " + chunks.size() + " CHUNKS...");
 		if (attempt > 5) {
 			//maybe pass the missing chunks in this exception
-			handler.receiveException(new RuntimeException("Made " + attempt + " attempts to get file and failed"));
+			handler.receiveException(new RuntimeException("Made " + attempt + " attempts to get file without receiving any new data"));
 			return;
 		}
 		final MultiContinuation cont = new MultiContinuation(new Continuation<Object[], Exception>() {
@@ -419,7 +419,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 							public void run() {
 								try {
 									Thread.sleep(3000);
-									getChunks(base, handler, file, missing, data, attempt + 1);
+									getChunks(base, handler, file, missing, data, missing.size() == chunks.size() ? attempt + 1 : 0);
 								} catch (Exception ex) {
 									handler.receiveException(ex);
 								}

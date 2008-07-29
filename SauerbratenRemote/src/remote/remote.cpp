@@ -3,6 +3,10 @@
 #include <fcntl.h>
 #include <errno.h>
 #include "remote.h"
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 
 #define UNSET 0
 #define SET 1
@@ -75,7 +79,7 @@ ICOMMAND(remoteallow, "si", (char *host, int *port), remoteallow(host, port););
 
 static char *remoteconnect() {
 	if (mysocket != -1) {
-		conoutf("REMOTE ERROR: attempt to connect when already connected.");
+//		conoutf("REMOTE ERROR: attempt to connect when already connected.");
 		return NULL;
 	}
 	switch (initialized) {
@@ -87,29 +91,39 @@ static char *remoteconnect() {
 		break;
 	case SET:
 		static ENetAddress address;
+		bool isIPAddr = true;
 
 		address.port = remotePort;
 		address.host = 0;
         conoutf("attempting to connect to %s", remoteHost);
-        if(!resolverwait(remoteHost, &address))
-        {
-            conoutf("REMOTE ERROR: could not resolve server %s", remoteHost);
-            break;
+        for (char *p = remoteHost; *p; p++) {
+        	if ((*p < '0' || '9' < *p) && *p != '.') {
+        		isIPAddr = false;
+        		break;
+        	}
         }
+        if (isIPAddr) {
+        	printf("USING IP ADDR: %s\n", remoteHost);
+        	static struct in_addr addr;
 
-		if (-1 == (mysocket = enet_socket_create(ENET_SOCKET_TYPE_STREAM, NULL)))
-		{
+        	inet_aton(remoteHost, &addr);
+        	address.host = addr.s_addr;
+        } else {
+        	printf("USING HOST NAME: %s\n", remoteHost);
+        	if(!resolverwait(remoteHost, &address)) {
+        		conoutf("REMOTE ERROR: could not resolve server %s", remoteHost);
+        		break;
+        	}
+        }
+		if (-1 == (mysocket = enet_socket_create(ENET_SOCKET_TYPE_STREAM, NULL))) {
 			conoutf("REMOTE ERROR: Could not create remote socket");
 			break;
 		}
-
-		if (enet_socket_connect(mysocket, &address))
-		{
+		if (enet_socket_connect(mysocket, &address)) {
 			conoutf("REMOTE ERROR: Could not connect to remote host %s:%d", remoteHost, remotePort);
 			mysocket = -1;
 			break;
 		}
-
 		enet_socket_set_option(mysocket, ENET_SOCKOPT_NONBLOCK, 1);
 		conoutf("Connected to %s:%d", remoteHost, remotePort);
 		break;
@@ -119,6 +133,7 @@ static char *remoteconnect() {
 ICOMMAND(remoteconnect, "", (), remoteconnect(););
 
 void tc_remotesend(char *line) {
+	remoteconnect();
 	if (mysocket != -1) {
 		output.put(line, strlen(line));
 		output.add('\n');

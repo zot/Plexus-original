@@ -594,14 +594,27 @@ Part of this is putting in hooks for moderated play, for instance, chain of comm
 <pre>relaying (if using Sauerbraten's server)
 *to prevent, set curmsg = p.length(), otherwise it multicasts the current message</pre>
 </div>
-<div title="Reloaded" modifier="WRB" created="200806171638" modified="200807101234" changecount="14">
+<div title="Reloaded" modifier="BillBurdick" created="200806171638" modified="200807281538" changecount="18">
 <pre>P2PMud traces its roots back to the murky depths history in 1988 when Roy Riggs first wrote a tiny multi-user dungeon in C, one of the earliest ~MMORPGs that ran over the Internet (while, maybe an MORPG, anyway.)  It took only a matter of days, or perhaps even hours, for Bill Burdick to join Roy in this glorious endevour and together they formed the sinister TEAM CTHULHU!
 
 Since that time, TEAM CTHULHU's MUD has metamophosed many times, each time shedding its carapace to reveal something bizarrely different from its predecessor.
 
-You can even see a reference to TEAM CTHULHU in the CREDITS file of [[LPMud|http://www.genesismud.org/]].  We came up with an idea called &quot;forwarders&quot; which became &quot;shadows&quot; in ~LPMud.  There's a fairly early version of ~LPMud [[here|http://ibiblio.net/pub/historic-linux/ftp-archives/sunsite.unc.edu/Nov-06-1994/games/muds/]].</pre>
+You can even see a reference to TEAM CTHULHU in the CREDITS file of [[LPMud|http://www.genesismud.org/]].  We came up with an idea called &quot;forwarders&quot; for our original MUD which became &quot;shadows&quot; in ~LPMud.  There's a fairly early version of ~LPMud [[here|http://ibiblio.net/pub/historic-linux/ftp-archives/sunsite.unc.edu/Nov-06-1994/games/muds/]].
+
+!TEAM CTHULHU Timeline
+#Fall 1988, Roy Riggs write a miniscule MUD in C
+#Fall 1988, Bill Burdick jumps on board and we write a Franz LISP-based version, quickly switching to KCL
+#Fall 1988, we switch to our own language, MOB, a multiple-inheritance, OOPL on top of LISP, with Smalltalk-like syntax in square brackets (ala Objective-C)
+**over the next two years, we get 4 semesters of credit for enhancements to this version
+#Summer 1990, we switch to Sean Barrett's excellent Sludge VM, which supports prototype-based inheritance.
+#...
+#Spring 2002, we start p2pmud in using JXTA and Kawa, a Scheme implementation on top of Java
+#Early 2004, we switch to Mozilla and Javascript.  The MUD lives entirely in one HTML file on your disk (like tiddly wiki).  Your browser hooks up to other browsers via a PHP &quot;switchboard&quot;
+**Several releases on the p2pmud.com website
+#Fall 2005, we commission Steven Missal to create Lovecraftian art
+#Spring 2008, we switch to Sauerbraten, Groovy, and Pastry (on top of Java)</pre>
 </div>
-<div title="RoadMap" modifier="BillBurdick" created="200806191122" modified="200807240558" changecount="28">
+<div title="RoadMap" modifier="BillBurdick" created="200806191122" modified="200807280551" changecount="29">
 <pre>!Milestones
 *[''DONE''] The Wedge
 **Remote scripting
@@ -617,6 +630,7 @@ You can even see a reference to TEAM CTHULHU in the CREDITS file of [[LPMud|http
 **use Scribe instead of point-to-point messaging
 *~Shub-Niggurath
 **map sharing with PAST
+**resend createplayer cmds for new maps
 **Create, destroy, and move objects
 **Guns and weapons
 *Toys
