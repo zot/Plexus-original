@@ -179,7 +179,7 @@ public class Test {
 					output = it.getOutputStream()
 					init()
 					it.getInputStream().eachLine {
-						sauerCmds.invoke(it)
+						try { sauerCmds.invoke(it)} catch (Exception ex) {}
 					}
 					try {it.shutdownInput()} catch (Exception ex) {}
 					try {it.shutdownOutput()} catch (Exception ex) {}
@@ -245,10 +245,10 @@ public class Test {
 	 	dumpCommands()
 	}
 	def broadcast(cmds) {
-		peer.broadcastCmds(cmds as String[])
+		if (peer) peer.broadcastCmds(cmds as String[])
 	}
 	def anycast(cmds) {
-		peer.anycastCmds(cmds as String[])
+		if (peer) peer.anycastCmds(cmds as String[])
 	}
 	def cvtNewlines(str) {
 		println "${str.replaceAll(/\n/, ';')}"
