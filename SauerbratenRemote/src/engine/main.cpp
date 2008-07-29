@@ -684,7 +684,7 @@ void checkinput()
 					if (event.type == SDL_MOUSEBUTTONDOWN) {
 						//if we already clicked one and are grabbing, don't bother regrabbing!  also, don't grab while menus are up
 						bool tc_aremenuspresent();
-						fprintf(stderr, "mouse up/down  grab: %d  menus: %d\n", (int) tc_amgrabbingmouse, (int) tc_aremenuspresent());
+						//fprintf(stderr, "mouse up/down  grab: %d  menus: %d\n", (int) tc_amgrabbingmouse, (int) tc_aremenuspresent());
 						if (!tc_amgrabbingmouse && !tc_aremenuspresent())
 						{
 							SDL_WM_GrabInput(SDL_GRAB_ON); 

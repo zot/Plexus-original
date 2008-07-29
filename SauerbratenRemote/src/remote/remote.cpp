@@ -3,7 +3,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include "remote.h"
-
+#include "tc.h"
 
 #define UNSET 0
 #define SET 1
@@ -13,6 +13,7 @@ static int initialized = UNSET;
 static int remotePort = -1;
 static char *remoteHost;
 static ENetSocket mysocket = -1;
+static long totalBytesRead = 0L, totalBytesWritten = 0L;
 static vector<char> input;
 static vector<char> output;
 
@@ -21,12 +22,24 @@ static char *remotedisconnect(char *msg) {
 		enet_socket_destroy(mysocket); //close(mysocket);
 		mysocket = -1;
 		conoutf("Disconnected from remote host: %s", msg ? msg : "");
-		output.setsize(0);
-		input.setsize(0);
-		perror(msg ? msg : "");
 	}
+	output.setsize(0);
+	input.setsize(0);
+	perror(msg ? msg : "");
+	totalBytesRead = totalBytesWritten = 0L;
 	return NULL;
 }
+	//extern int remotePort;
+	//extern char *remoteHost;
+	//extern ENetSocket mysocket;
+	//extern long totalBytesRead, totalBytesWritten;
+
+ICOMMAND(remotestatus, "", (), {
+	char buf[512];
+	snprintf(buf, sizeof(buf), "hostname %s port %d socket %d read %ld written %ld", remoteHost, remotePort, mysocket, totalBytesRead, totalBytesWritten);
+	result(buf);
+});
+
 ICOMMAND(remotedisconnect, "s", (char *msg), remotedisconnect(msg));
 
 ICOMMAND(remotedisable, "", (),
@@ -76,7 +89,7 @@ ICOMMAND(remoteallow, "si", (char *host, int *port), remoteallow(host, port););
 
 static char *remoteconnect() {
 	if (mysocket != -1) {
-//		conoutf("REMOTE ERROR: attempt to connect when already connected.");
+		conoutf("REMOTE ERROR: attempt to connect when already connected.");
 		return NULL;
 	}
 	switch (initialized) {
@@ -113,6 +126,7 @@ static char *remoteconnect() {
 			conoutf("REMOTE ERROR: Could not create remote socket");
 			break;
 		}
+		//fprintf(stderr, "Host internal %ld, port %d\n", (long) address.host, address.port);
 		if (enet_socket_connect(mysocket, &address)) {
 			conoutf("REMOTE ERROR: Could not connect to remote host %s:%d", remoteHost, remotePort);
 			mysocket = -1;
@@ -127,7 +141,7 @@ static char *remoteconnect() {
 ICOMMAND(remoteconnect, "", (), remoteconnect(););
 
 void tc_remotesend(char *line) {
-	remoteconnect();
+	//remoteconnect();
 	if (mysocket != -1) {
 		output.put(line, strlen(line));
 		output.add('\n');
@@ -148,6 +162,7 @@ static void readChunk() {
 	if (bytesRead < 0 && errno != EAGAIN && bytesRead != EAGAIN) {
 		remotedisconnect("connection closed while reading");
 	} else if (bytesRead > 0) {
+		totalBytesRead += bytesRead;
 		int lastNl = -1;
 		int oldLen = input.length();
 
@@ -188,6 +203,7 @@ static void writeChunk() {
 		if (written == EOF) {
 			remotedisconnect("connection closed while writing");
 		} else {
+			totalBytesWritten += written;
 			if (written < output.length()) {
 				output.remove(0, written);
 			} else {
@@ -200,8 +216,10 @@ static void writeChunk() {
 vector<void (*)()> *tickhooks = NULL;
 
 void remotetick() {
-	writeChunk();
-	readChunk();
+	if (-1 != mysocket) {
+		writeChunk();
+		readChunk();
+	}
 	if (tickhooks) {
 		loopi(tickhooks->length()) {
 			((*tickhooks)[i])();
