@@ -3,9 +3,6 @@
 #include <fcntl.h>
 #include <errno.h>
 #include "remote.h"
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 
 
 #define UNSET 0
@@ -104,10 +101,7 @@ static char *remoteconnect() {
         }
         if (isIPAddr) {
         	printf("USING IP ADDR: %s\n", remoteHost);
-        	static struct in_addr addr;
-
-        	inet_aton(remoteHost, &addr);
-        	address.host = addr.s_addr;
+        	enet_address_set_host_ip(&address, remoteHost);
         } else {
         	printf("USING HOST NAME: %s\n", remoteHost);
         	if(!resolverwait(remoteHost, &address)) {

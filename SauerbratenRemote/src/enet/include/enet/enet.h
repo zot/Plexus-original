@@ -417,6 +417,14 @@ ENET_API void       enet_socket_destroy (ENetSocket);
 /** @defgroup Address ENet address functions
     @{
 */
+#ifdef TC
+/** set the ip address from dotted quad notation
+    @param address destination to store resolved address
+    @param dotted quad notation IP address
+*/
+ENET_API void enet_address_set_host_ip(ENetAddress * address, const char * hostName);
+#endif
+
 /** Attempts to resolve the host named by the parameter hostName and sets
     the host field in the address parameter if successful.
     @param address destination to store resolved address

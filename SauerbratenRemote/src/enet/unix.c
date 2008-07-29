@@ -71,6 +71,17 @@ enet_time_set (enet_uint32 newTimeBase)
     timeBase = timeVal.tv_sec * 1000 + timeVal.tv_usec / 1000 - newTimeBase;
 }
 
+#ifdef TC
+void
+enet_address_set_host_ip(ENetAddress * address, const char * name)
+{
+	static struct in_addr addr;
+
+	inet_aton(name, &addr);
+	address->host = addr.s_addr;
+}
+#endif
+
 int
 enet_address_set_host (ENetAddress * address, const char * name)
 {
