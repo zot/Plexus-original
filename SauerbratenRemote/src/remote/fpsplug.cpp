@@ -91,6 +91,19 @@ char *idfor(void *ent, char *buf, int buflen) {
 	return buf;
 }
 
+void deleteplayer(fpsent *p)
+{
+	for (int i = 0; i < fpscl->players.length(); ++i)
+	{
+		fpsent *who = fpscl->players[i];
+		if (who && who == p) {
+			delete who;
+			fpscl->players[i] = 0;
+			return;
+		}
+	}
+
+}
 
 fpsent *getplayer(char *id) {
 	if (id[0] == TC_PLAYER) {
@@ -198,24 +211,27 @@ ICOMMAND(dumpents, "", (),
 	for (int i = 0; i < fpscl->players.length(); ++i)
 	{
 		fpsent *p = fpscl->players[i];
-		snprintf(buf, sizeof(buf), "p%d", p->tc_id);
-
-		dumpent(buf);
+		if (p) {
+			snprintf(buf, sizeof(buf), "p%d", p->tc_id);
+			dumpent(buf);
+		}
 	}
 
 	for (int j = 0; j < fpscl->ms.monsters.length(); ++j)
 	{
 		fpsclient::monsterset::monster *m = fpscl->ms.monsters[j];
-		snprintf(buf, sizeof(buf), "m%d", m->tc_id);
-
-		dumpent(buf);
+		if (m) {
+			snprintf(buf, sizeof(buf), "m%d", m->tc_id);
+			dumpent(buf);
+		}
 	}
 
 	for (int k = 0; k < fpscl->mo.movables.length(); ++k) {
 		fpsclient::movableset::movable *mv = fpscl->mo.movables[k];
-		snprintf(buf, sizeof(buf), "i%d", mv->tc_id);
-
-		dumpent(buf);
+		if (mv) {
+			snprintf(buf, sizeof(buf), "i%d", mv->tc_id);
+			dumpent(buf);
+		}
 	}
 );
 

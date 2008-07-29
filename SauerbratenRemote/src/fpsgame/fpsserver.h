@@ -846,6 +846,10 @@ struct fpsserver : igameserver
             demonextmatch = false;
             setupdemorecord();
         }
+#ifdef TC
+		extern void tc_newmaphook(char *name);
+		tc_newmaphook("unknown");
+#endif
     }
 
     savedscore &findscore(clientinfo *ci, bool insert)

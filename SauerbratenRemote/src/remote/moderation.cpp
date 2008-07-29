@@ -543,6 +543,7 @@ struct mapupdate {
 	char *update;
 
 	mapupdate(char *up) : next(0), update(strdup(up)) { }
+	~mapupdate() { free(update); }
 };
 
 //#define UNSENT ((struct mapupdate*) -1)
@@ -566,54 +567,66 @@ struct mapwatcher {
 		if (ret) lastSent = ret;
 		return ret;
 	}
+
+	void deleteUpdates()
+	{
+		struct mapupdate *up = first;
+		while (up)
+		{
+			struct mapupdate *next = up->next;
+			delete up;
+			up = next;
+		}
+		first = last = lastSent = 0;
+	}
 };
 static struct mapwatcher *map_watcher = NULL;
 
-    void tc_edittrigger(const selinfo &sel, int op, int arg1, int arg2, int arg3)
+void tc_edittrigger(const selinfo &sel, int op, int arg1, int arg2, int arg3)
+{
+	//fprintf(stderr, "Calling tc_edittrigger\n");
+	char buf[256];
+    switch(op)
     {
-		//fprintf(stderr, "Calling tc_edittrigger\n");
-		char buf[256];
-        switch(op)
+        case EDIT_FLIP:
+        case EDIT_COPY:
+        case EDIT_PASTE:
+        case EDIT_DELCUBE:
         {
-            case EDIT_FLIP:
-            case EDIT_COPY:
-            case EDIT_PASTE:
-            case EDIT_DELCUBE:
-            {
-				snprintf(buf, sizeof(buf), "tc_upmap %d %d %d %d %d %d %d %d %d %d %d %d %d %d", SV_EDITF + op,
-                   sel.o.x, sel.o.y, sel.o.z, sel.s.x, sel.s.y, sel.s.z, sel.grid, sel.orient,
-                   sel.cx, sel.cxs, sel.cy, sel.cys, sel.corner);
-                break;
-            }
-            case EDIT_MAT:
-            case EDIT_ROTATE:
-            {
-				snprintf(buf, sizeof(buf), "tc_upmap %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d", SV_EDITF + op,
-                   sel.o.x, sel.o.y, sel.o.z, sel.s.x, sel.s.y, sel.s.z, sel.grid, sel.orient,
-                   sel.cx, sel.cxs, sel.cy, sel.cys, sel.corner,
-                   arg1);
-                break;
-            }
-            case EDIT_FACE:
-            case EDIT_TEX:
-            case EDIT_REPLACE:
-            {
-				snprintf(buf, sizeof(buf), "tc_upmap %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d", SV_EDITF + op,
-                   sel.o.x, sel.o.y, sel.o.z, sel.s.x, sel.s.y, sel.s.z, sel.grid, sel.orient,
-                   sel.cx, sel.cxs, sel.cy, sel.cys, sel.corner,
-                   arg1, arg2);
-                break;
-            }
-            case EDIT_REMIP:
-            {
-				snprintf(buf, sizeof(buf), "tc_upmap %d r", SV_EDITF + op);
-                //cc.addmsg(SV_EDITF + op, "r");
-                break;
-            }
+			snprintf(buf, sizeof(buf), "tc_upmap %d %d %d %d %d %d %d %d %d %d %d %d %d %d", SV_EDITF + op,
+               sel.o.x, sel.o.y, sel.o.z, sel.s.x, sel.s.y, sel.s.z, sel.grid, sel.orient,
+               sel.cx, sel.cxs, sel.cy, sel.cys, sel.corner);
+            break;
         }
-		//fprintf(stderr, "Finished tc_edittrigger: %s\n", buf);
-		if (map_watcher) map_watcher->addMapUpdate(buf);
+        case EDIT_MAT:
+        case EDIT_ROTATE:
+        {
+			snprintf(buf, sizeof(buf), "tc_upmap %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d", SV_EDITF + op,
+               sel.o.x, sel.o.y, sel.o.z, sel.s.x, sel.s.y, sel.s.z, sel.grid, sel.orient,
+               sel.cx, sel.cxs, sel.cy, sel.cys, sel.corner,
+               arg1);
+            break;
+        }
+        case EDIT_FACE:
+        case EDIT_TEX:
+        case EDIT_REPLACE:
+        {
+			snprintf(buf, sizeof(buf), "tc_upmap %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d", SV_EDITF + op,
+               sel.o.x, sel.o.y, sel.o.z, sel.s.x, sel.s.y, sel.s.z, sel.grid, sel.orient,
+               sel.cx, sel.cxs, sel.cy, sel.cys, sel.corner,
+               arg1, arg2);
+            break;
+        }
+        case EDIT_REMIP:
+        {
+			snprintf(buf, sizeof(buf), "tc_upmap %d r", SV_EDITF + op);
+            //cc.addmsg(SV_EDITF + op, "r");
+            break;
+        }
     }
+	//fprintf(stderr, "Finished tc_edittrigger: %s\n", buf);
+	if (map_watcher) map_watcher->addMapUpdate(buf);
+}
 
 
 static void moderationTick() {
@@ -706,6 +719,16 @@ static void tc_editent(char *info)
 	safeParseInt(attr4);
 
     mpeditent(i, vec(x/DMF, y/DMF, z/DMF), type, attr1, attr2, attr3, attr4, false);
+}
+
+// hook to be called when a new map is created or loaded in
+void tc_newmaphook(char *name)
+{
+	snprintf(buf, sizeof(buf), ")tc_newmap %s", name);
+	extern void tc_remotesend(char *s);
+	tc_remotesend(buf);
+
+	map_watcher->deleteUpdates();
 }
 
 void tc_editenttrigger(int i, entity &e)
@@ -808,6 +831,9 @@ ICOMMAND(deleteplayer, "s", (char *ent), {
 			conoutf("/deleteplayer error: cannot delete yourself!");
 			return;
 		}
+
+		extern void deleteplayer(fpsent *p);
+		deleteplayer(p);
 
 		loopi(watchers.length()) {
 			watcher &w = watchers[i];

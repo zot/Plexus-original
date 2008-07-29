@@ -943,7 +943,12 @@ struct fpsclient : igameclient
 
     void newmap(int size)
     {
+#ifdef TC
+		extern void tc_newmaphook(char *name);
+		tc_newmaphook("unknown");
+#else
         cc.addmsg(SV_NEWMAP, "ri", size);
+#endif
     }
 
     void edittrigger(const selinfo &sel, int op, int arg1, int arg2, int arg3)
