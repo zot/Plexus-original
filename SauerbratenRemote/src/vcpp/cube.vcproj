@@ -31,6 +31,9 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+				Description="Copy .exe to SauerCTF"
+				CommandLine="copy $(TargetPath) &quot;C:\Program Files\SauerCTF\bin&quot;"
+				Outputs="C:\Program Files\SauerCTF\bin\Sauerbraten.exe"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
