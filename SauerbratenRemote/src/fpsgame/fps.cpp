@@ -844,7 +844,7 @@ struct fpsclient : igameclient
         glOrtho(0, w, h, 0, -1, 1);
 		settexture(-1 == mysocket ? "hud_disconnect.png" : "hud_connect.png", true);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        quad(w - 56, h-120, 48, 48);   
+        quad(w - 46, h-126, 44, 44);   
 
   //      glLoadIdentity();
   //      glOrtho(0, w*900/h, 900, 0, -1, 1);
@@ -855,9 +855,9 @@ struct fpsclient : igameclient
 		//	draw_textf("Connected",  90, 822);
 
         glLoadIdentity();
-        glOrtho(0, w*900/h, 900, 0, -1, 1);
+        glOrtho(0, w*900/h, 830, 0, -1, 1);
 
-		draw_textf("%d",  800, 770, peers);
+		draw_textf("Online: %d",  800, 770, peers);
 	}
 #else
     void gameplayhud(int w, int h)
