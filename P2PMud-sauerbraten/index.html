@@ -501,9 +501,10 @@ Also see AdvancedOptions</pre>
 <div title="Commands" modifier="Zot" created="200806191121" changecount="1">
 <pre></pre>
 </div>
-<div title="DefaultTiddlers" modifier="WRB" created="200806171607" modified="200807151409" changecount="13">
+<div title="DefaultTiddlers" modifier="BillBurdick" created="200806171607" modified="200807300611" changecount="14">
 <pre>P2PMud
 StartingOut
+UseCases
 RoadMap
 [[News]]</pre>
 </div>
@@ -549,9 +550,10 @@ Interaction
 *MUD (automatic moderation)
 *MudLingua</pre>
 </div>
-<div title="MainMenu" modifier="WRB" created="200806171608" modified="200807151410" changecount="11">
+<div title="MainMenu" modifier="BillBurdick" created="200806171608" modified="200807300611" changecount="12">
 <pre>[img[TEAM CTHULHU|docs/images/cthulhu.jpg][http://teamcthulhu.com]]
 ToDo
+UseCases
 PotentialIssues
 [[Commands|docs/COMMANDS.txt]]
 PeerToPeer
@@ -614,7 +616,7 @@ You can even see a reference to TEAM CTHULHU in the CREDITS file of [[LPMud|http
 #Fall 2005, we commission Steven Missal to create Lovecraftian art
 #Spring 2008, we switch to Sauerbraten, Groovy, and Pastry (on top of Java)</pre>
 </div>
-<div title="RoadMap" modifier="BillBurdick" created="200806191122" modified="200807280551" changecount="29">
+<div title="RoadMap" modifier="BillBurdick" created="200806191122" modified="200807300620" changecount="30">
 <pre>!Milestones
 *[''DONE''] The Wedge
 **Remote scripting
@@ -633,6 +635,12 @@ You can even see a reference to TEAM CTHULHU in the CREDITS file of [[LPMud|http
 **resend createplayer cmds for new maps
 **Create, destroy, and move objects
 **Guns and weapons
+*Tiny Plexus
+**Wow Mode
+**delete player on peer disconnect
+**HUD
+***peer count
+***remotestatus
 *Toys
 **jet pack
 **physics for wall splat
@@ -721,6 +729,32 @@ die roll
 !Network
 slaverequest req
 mastercommand cmd</pre>
+</div>
+<div title="UseCases" modifier="BillBurdick" created="200807300630" modified="200807300650" changecount="3">
+<pre>#Items
+##player rolls over an item
+##item adds to inventory
+##player presses &quot;i&quot; key
+##inventory menu pops up
+##player chooses a different item from menu
+##submenu pops up
+##player chooses drop
+##item leaves inventory and appears on map
+#Keys and Doors
+##player approaches door
+##door says &quot;locked&quot;
+##player finds key and reapproaches door
+##door opens
+#The Shop Keeper
+##player enters shop
+##shop keeper says &quot;welcome to the shop&quot;
+##player switches to shopping gun
+##items are visible on the counter
+##player shoots item
+##menu pops up and offers buy choice
+##player selects &quot;buy&quot; and item gets added to inventory and gold is deducted
+##player shoots shop keeper
+##shop keeper menu pops up and offers to buy items</pre>
 </div>
 <div title="Zot" modifier="Zot" created="200806171649" changecount="1">
 <pre>Zot is one of the founding members of [[TEAM CTHULHU|http://teamcthulhu.com]]</pre>
