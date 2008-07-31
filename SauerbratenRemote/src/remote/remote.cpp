@@ -12,7 +12,7 @@
 static int initialized = UNSET;
 static int remotePort = -1;
 static char *remoteHost;
-static ENetSocket mysocket = -1;
+ENetSocket mysocket = -1;
 static long totalBytesRead = 0L, totalBytesWritten = 0L;
 static vector<char> input;
 static vector<char> output;

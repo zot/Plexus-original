@@ -11,6 +11,8 @@
 
 #ifdef TC
 	#include "../remote/fpsplug.h"
+
+	VAR(peers, 0, 0, 9999);
 #endif
 
 #ifndef STANDALONE
@@ -814,6 +816,50 @@ struct fpsclient : igameclient
         return 1650.0f/1800.0f;
     }
 
+#ifdef TC
+	void quad(int x, int y, int xs, int ys)
+    {
+        glBegin(GL_QUADS);
+        glTexCoord2f(0, 0); glVertex2i(x,    y);
+        glTexCoord2f(1, 0); glVertex2i(x+xs, y);
+        glTexCoord2f(1, 1); glVertex2i(x+xs, y+ys);
+        glTexCoord2f(0, 1); glVertex2i(x,    y+ys);
+        glEnd();
+    }
+
+    void gameplayhud(int w, int h)
+    {
+		extern int remotePort;
+		extern char *remoteHost;
+		extern ENetSocket mysocket;
+
+		glLoadIdentity();
+        glOrtho(0, w, h, 0, -1, 1);
+        settexture("hud_plexus.png", true);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        quad(0, h-128, w, 128);   
+
+
+		glLoadIdentity();
+        glOrtho(0, w, h, 0, -1, 1);
+		settexture(-1 == mysocket ? "hud_disconnect.png" : "hud_connect.png", true);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        quad(w - 56, h-120, 48, 48);   
+
+  //      glLoadIdentity();
+  //      glOrtho(0, w*900/h, 900, 0, -1, 1);
+
+		//if (-1 == mysocket)
+		//	draw_textf("Disconnected",  90, 822);
+		//else
+		//	draw_textf("Connected",  90, 822);
+
+        glLoadIdentity();
+        glOrtho(0, w*900/h, 900, 0, -1, 1);
+
+		draw_textf("%d",  800, 770, peers);
+	}
+#else
     void gameplayhud(int w, int h)
     {
         if(player1->state==CS_SPECTATOR)
@@ -877,6 +923,7 @@ struct fpsclient : igameclient
         else if(m_ctf) ctf.drawhud(d, w, h);
         else if(m_assassin && d==player1) asc.drawhud(w, h);
     }
+#endif
 
     IVARP(teamcrosshair, 0, 1, 1);
     IVARP(hitcrosshair, 0, 425, 1000);
