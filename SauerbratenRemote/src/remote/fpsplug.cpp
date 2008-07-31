@@ -387,6 +387,14 @@ ICOMMAND(monsterstate, "s", (char *ent), {
 	}
 });
 
+
+extern void mousemove(int dx, int dy);
+ICOMMAND(spinleft, "s", (char *amt), { int a = amt ? abs(atoi(amt)) : 50; mousemove(-a, 0); });
+ICOMMAND(spinright, "s", (char *amt), { int a = amt ? abs(atoi(amt)) : 50;  mousemove(a, 0); });
+ICOMMAND(spinup, "s", (char *amt), { int a = amt ? abs(atoi(amt)) : 50;  mousemove(0, a); });
+ICOMMAND(spindown, "s", (char *amt), { int a = amt ? abs(atoi(amt)) : 50;  mousemove(0, -a); });
+
+
 static void hit_shooter() {
 	if (moderator.hittype != NONE) {
 		result(idfor(moderator.shooter, idbuf, sizeof (idbuf)));
