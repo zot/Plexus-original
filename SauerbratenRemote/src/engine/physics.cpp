@@ -1199,6 +1199,16 @@ void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curt
         m.normalize();
     }
 
+#ifdef TC
+	if (pl == player)
+	{
+		// added z up/down for 3D mouse
+		extern int zup;
+		if (zup) m.z += zup;
+		fprintf(stderr, "Zup is %d\n", zup);
+	}
+#endif
+
     vec d(m);
     d.mul(pl->maxspeed);
     if(floating) 
