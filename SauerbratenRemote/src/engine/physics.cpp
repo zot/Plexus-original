@@ -1205,7 +1205,6 @@ void modifyvelocity(physent *pl, bool local, bool water, bool floating, int curt
 		// added z up/down for 3D mouse
 		extern int zup;
 		if (zup) m.z += zup;
-		fprintf(stderr, "Zup is %d\n", zup);
 	}
 #endif
 
