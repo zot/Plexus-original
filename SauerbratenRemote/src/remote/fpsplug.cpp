@@ -442,6 +442,9 @@ ICOMMAND(spinleft, "s", (char *amt), { int a = amt ? abs(atoi(amt)) : 50; mousem
 ICOMMAND(spinright, "s", (char *amt), { int a = amt ? abs(atoi(amt)) : 50;  mousemove(a, 0); });
 ICOMMAND(spinup, "s", (char *amt), { int a = amt ? abs(atoi(amt)) : 50;  mousemove(0, a); });
 ICOMMAND(spindown, "s", (char *amt), { int a = amt ? abs(atoi(amt)) : 50;  mousemove(0, -a); });
+int zup = 0;
+ICOMMAND(zup, "s", (char *amt), { int a = amt ? abs(atoi(amt)) : 10;  zup = a; });
+ICOMMAND(zdown, "s", (char *amt), { int a = amt ? abs(atoi(amt)) : 10;  zup = -a; });
 
 
 static void hit_shooter() {
