@@ -312,7 +312,11 @@ bool save_world(const char *mname, bool nolms)
     char *ebuf = new char[et->extraentinfosize()];
     loopv(ents)
     {
+#ifdef TC
+        if((ents[i]->type!=ET_EMPTY && ents[i]->tc_id == 0) || nolms)
+#else
         if(ents[i]->type!=ET_EMPTY || nolms)
+#endif
         {
             entity tmp = *ents[i];
             endianswap(&tmp.o, sizeof(int), 3);
