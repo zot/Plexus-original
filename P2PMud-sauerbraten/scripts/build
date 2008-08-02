@@ -27,8 +27,12 @@ for i in $peer/lib/*.jar ; do
 done
 cp -r $peer/bin/* .
 cp $sauer/src/sauer_client build/plexus/dist/sauerbraten_plexus_linux
-cp -r $plx/* .
+cp -r $plx/bin/* .
 
 echo "PLEXUS BUILD $(date)" > $version
 
+rm -f $build/build/plexus/dist/manifest
+cd $build/build/plexus
+find * -type f >> $build/build/plexus/dist/manifest
+cd $build
 zip -9rDXq /tmp/plexus.jar *

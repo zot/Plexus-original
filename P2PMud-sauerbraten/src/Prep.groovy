@@ -74,11 +74,18 @@ class Prep {
 			println "need new extract"
 			Tools.deleteAll(distdir)
 			distdir.mkdirs()
-			if (verfile) {
-				Tools.copyAll(new File(basedir, 'build/plexus/dist'), distdir)
-			} else {
-				Tools.copyZipDir(jarfile, 'build/plexus/dist', distdir)
+			//use a manifest because windows won't let you read the jar file while it's in use
+			def manifest = Prep.getResourceAsStream('build/plexus/dist/manifest')
+
+			manifest.eachLine {
+				def input = Prep.getResourceAsStream('build/plexus/' + it)
+				def file = new File(plexusdir, it)
+
+				file.getParentFile().mkdirs()
+				Tools.copyStreamToFile(input, file)
+				input.close()
 			}
+			manifest.close()
 			new File(distdir, 'sauerbraten_plexus_linux').setExecutable(true)
 			new File(distdir, 'sauerbraten_plexus_windows.exe').setExecutable(true)
 			patchAutoexec()

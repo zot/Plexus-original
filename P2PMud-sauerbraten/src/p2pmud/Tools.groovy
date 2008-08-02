@@ -40,6 +40,16 @@ import java.util.zip.ZipFilepublic class Tools {	def static digest = new SHA1D
 		tostream.write(from.readBytes())
 		tostream.close()
 	}
+	def static copyStreamToFile(fromStr, to) {
+		def tostream = (to as File).newOutputStream()
+		def bytes = new byte[10240]
+		def count
+
+		while ((count = fromStr.read(bytes)) > -1) {
+			tostream.write(bytes, 0, count)
+		}
+		tostream.close()
+	}
 	def static copyZipDir(zipfile, from, to) {
 		zipfile = new ZipFile(zipfile as File)
 		for (i in zipfile.entries()) {
