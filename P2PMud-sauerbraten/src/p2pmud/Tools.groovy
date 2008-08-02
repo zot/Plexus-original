@@ -19,7 +19,7 @@ import java.util.zip.ZipFilepublic class Tools {	def static digest = new SHA1D
 	def static copyAll(from, to) {
 		from = from as File
 		to = to as File
-		if (from.isDirectory()) {
+		if (from.isFile()) {
 			copyFile(from, to);
 		} else {
 			if (!to.exists()) {
@@ -45,7 +45,19 @@ import java.util.zip.ZipFilepublic class Tools {	def static digest = new SHA1D
 		for (i in zipfile.entries()) {
 			if (i.getName().startsWith(from)) {
 				if (!i.isDirectory()) {
-					println i
+					def tofile = new File(to, i.getName().substring(from.length() + 1))
+					println "copy $i to $tofile"
+					tofile.getParentFile().mkdirs()
+					def fromstream = zipfile.getInputStream(i)
+					def tostream = new File("$to/${i.getName().substring(from.length() + 1)}").newOutputStream()
+					def bytes = new byte[10240]
+					def count
+
+					while ((count = fromstream.read(bytes)) > -1) {
+						tostream.write(bytes, 0, count)
+					}
+					fromstream.close()
+					tostream.close()
 				}
 			}
 		}

@@ -47,6 +47,7 @@ public class Test {
 	def peer
 	def mapname
 	
+	def static sauerExec
 	def static TIME_STAMP = new SimpleDateFormat("yyyyMMdd-HHmmsszzz")
 
 	public static void main(String[] a) {
@@ -162,6 +163,9 @@ public class Test {
 			cmd.msgs.each {runCommand(it, pastryCmds)}
 		} as P2PMudCommandHandler, args[2..-1] as String[])
 		peer = P2PMudPeer.test
+		if (sauerExec) {
+			Runtime.getRuntime().exec(sauerExec)
+		}
 	}
 	def usage(msg) {
 		println msg

@@ -1,6 +1,5 @@
 if (!args.length) {
-	PrepBuild.main()
-	args = PrepBuild.mainArgs
+	Prep.main()
+	args = Prep.mainArgs
 }
-println "args: $args"
-//Test.main(*args)
+Test.main(*args)
