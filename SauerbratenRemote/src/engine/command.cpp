@@ -396,6 +396,7 @@ char *conc(char **w, int n, bool space)
 
 #ifdef TC
 VARN(numargs, _numargs, 0, 0, 50);
+SVAR(tc_args, "");
 #else
 VARN(numargs, _numargs, 0, 0, 25);
 #endif
@@ -552,7 +553,10 @@ char *executeret(const char *p)               // all evaluation happens here, re
                         }
                         pushident(*argids[i-1], w[i]); // set any arguments as (global) arg values so functions can access them
                     }
-                    _numargs = numargs-1;
+#ifdef TC
+                	char *oldArgs = tc_args;
+                    tc_args = conc(w+1, numargs-1, true);
+#endif
                     bool wasoverriding = overrideidents;
                     if(id->override!=NO_OVERRIDE) overrideidents = true;
                     char *wasexecuting = id->isexecuting;
@@ -562,6 +566,10 @@ char *executeret(const char *p)               // all evaluation happens here, re
                     id->isexecuting = wasexecuting;
                     overrideidents = wasoverriding;
                     for(int i = 1; i<numargs; i++) popident(*argids[i-1]);
+#ifdef TC
+                    delete[] tc_args;
+                    tc_args = oldArgs;
+#endif
                     continue;
                 }
             }
