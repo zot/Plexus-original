@@ -1164,7 +1164,10 @@ struct clientcom : iclientcom
     {
         if(spectator && !player1->privilege) return;
         int nextmode = cl.nextmode; // in case stopdemo clobbers cl.nextmode
+#ifndef TC
+		// this causes the clients to disconnect and the remote players to be deleted!
         if(!remote) stopdemo();
+#endif
         addmsg(SV_MAPVOTE, "rsi", name, nextmode);
     }
         

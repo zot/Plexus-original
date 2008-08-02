@@ -848,7 +848,7 @@ struct fpsserver : igameserver
         }
 #ifdef TC
 		extern void tc_newmaphook(char *name);
-		tc_newmaphook("unknown");
+		tc_newmaphook((char *) s);
 #endif
     }
 
