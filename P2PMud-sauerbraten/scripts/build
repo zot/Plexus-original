@@ -1,13 +1,34 @@
 #!/bin/sh
-mkdir -p /tmp/p2pmud-sauer/lib
-mkdir -p /tmp/p2pmud-sauer/bin
-cp -r lib /tmp/p2pmud-sauer
-cp scripts/start.bat /tmp/p2pmud-sauer
-cp -r ../SauerbratenRemote/packages /tmp/p2pmud-sauer
-cp -r ../SauerbratenRemote/scripts/autoexec.cfg /tmp/p2pmud-sauer
-cp -r ../SauerbratenRemote/scripts/cthulhu.cfg /tmp/p2pmud-sauer
-rm -f /tmp/p2pmud-sauer.zip
-dir=$(pwd)
-cd /tmp/p2pmud-sauer
-CLASSPATH=$dir/bin:$dir/lib/bouncycastle.jar:$dir/lib/commons-jxpath-1.1.jar:$dir/lib/commons-logging.jar:$dir/lib/FreePastry-2.1beta.jar:$dir/lib/sbbi-upnplib-1.0.4.jar:$dir/lib/xmlpull_1_1_3_4a.jar:$dir/lib/xpp3-1.1.3.4d_b2.jar:$dir/lib/miglayout-3.5.5-swing.jar:lib/egit-20080715.jar:$dir/lib/javolution-5.2.6.jar:$dir/lib/groovy-all-1.6-beta-1.jar groovyc -d bin $dir/src/Test.groovy $dir/src/SauerCmds.groovy $dir/src/p2pmud/Player.groovy
-zip -9rDX ../p2pmud-sauer.zip *
+peer=$(pwd)
+libs=
+plx=$peer/../../Plexus
+sauer=$peer/../SauerbratenRemote
+build=/tmp/plexus-build
+version=build/plexus/dist/version
+
+if [ "$1" = -clean ] ; then
+	rm -rf $build
+fi
+
+rm -f /tmp/plexus.jar
+mkdir -p $build/build/plexus/dist
+cd $build
+
+for i in $peer/lib/*.jar ; do
+	if [ ! $version -nt $i ] ; then
+		echo extracting $i
+		unzip -o $i
+		if [ -d META-INF ] ; then
+			mv META-INF META-INF-$(basename $i .jar)
+		fi
+	else
+		echo not extracting $i because it is already there
+	fi
+done
+cp -r $peer/bin/* .
+cp $sauer/src/sauer_client build/plexus/dist/sauerbraten_plexus_linux
+cp -r $plx/* .
+
+echo "PLEXUS BUILD $(date)" > $version
+
+zip -9rDXq /tmp/plexus.jar *

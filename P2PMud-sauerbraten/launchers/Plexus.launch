@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launchConfiguration type="org.codehaus.groovy.eclipse.groovyLaunchConfiguration">
+<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
+<listEntry value="/P2PMud-sauerbraten/bin/Plexus.class"/>
+</listAttribute>
+<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
+<listEntry value="1"/>
+</listAttribute>
+<stringAttribute key="org.eclipse.debug.core.source_locator_id" value="org.codehaus.groovy.eclipse.editor.groovySourceLocator"/>
+<stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="Plexus"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="P2PMud-sauerbraten"/>
+<stringAttribute key="org.eclipse.jdt.launching.WORKING_DIRECTORY" value="/Depot/Download/3D/sauerbraten"/>
+</launchConfiguration>

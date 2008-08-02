@@ -56,6 +56,18 @@ public class Test {
 		}
 		new Test()._main(a)
 	}
+	def static verifySauerdir(dir) {
+		if (!dir) return false
+		def f = dir as File
+		def subs = ['data', 'docs', 'packages/base']
+
+		for (s in subs) {
+			if (!new File(f, s).isDirectory()) {
+				return false
+			}
+		}
+		return true
+	}
 
 	def _main(args) {
 		sauerDir = System.getProperty("sauerdir");
@@ -150,18 +162,6 @@ public class Test {
 			cmd.msgs.each {runCommand(it, pastryCmds)}
 		} as P2PMudCommandHandler, args[2..-1] as String[])
 		peer = P2PMudPeer.test
-	}
-	def verifySauerdir(dir) {
-		if (!dir) return false
-		def f = new File(dir)
-		def subs = ['data', 'docs', 'packages/base']
-
-		for (s in subs) {
-			if (!new File(f, s).isDirectory()) {
-				return false
-			}
-		}
-		return true
 	}
 	def usage(msg) {
 		println msg
