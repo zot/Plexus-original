@@ -36,8 +36,12 @@ struct extentity : entity                       // part of the entity that doesn
     entitylight light;
     int lasttrigger;
     extentity *attached;
-
+#ifdef TC
+    int tc_id;
+    extentity() : visible(false), triggerstate(TRIGGER_RESET), lasttrigger(0), attached(NULL), tc_id(0) {}
+#else
     extentity() : visible(false), triggerstate(TRIGGER_RESET), lasttrigger(0), attached(NULL) {}
+#endif
 };
 
 //extern vector<extentity *> ents;                // map entities

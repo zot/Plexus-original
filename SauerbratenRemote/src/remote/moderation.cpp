@@ -13,6 +13,7 @@ int tickmillis;
 typedef hashtable<const char *, ident> identtable;
 VAR(appmouse, 0, 0, 1);
 VAR(updateperiod, 50, 75, 3000);
+#define executehook(s) executeret(s)
 
 struct watcher {
 	char *id;
@@ -537,81 +538,46 @@ static void tc_setinfo(char *info)
 	//fprintf(stderr, "States after interpolation s: %d m: %d\n", (int) ent->strafe, (int) ent->move);
 }
 
-
-struct mapupdate {
-	struct mapupdate *next;
-	char *update;
-
-	mapupdate(char *up) : next(0), update(strdup(up)) { }
-	~mapupdate() { free(update); }
-};
-
-//#define UNSENT ((struct mapupdate*) -1)
-struct mapwatcher {
-	struct mapupdate *first, *last, *lastSent;
-
-	mapwatcher() : first(0), last(0), lastSent(0) { }
-
-	void addMapUpdate(char *up) {
-		struct mapupdate *update = new mapupdate(up);
-		if (!first) first = update;
-		if (last) last->next = update;
-		last = update;
-	}
-
-	struct mapupdate *getNextUpdate() {
-		if (NULL == first || lastSent == last) return NULL;
-		//fprintf(stderr, "getNextUpdate  f: %p l: %p sn: %p\n", first, last, lastSent);
-		if (NULL == lastSent) { return lastSent = first; }
-		struct mapupdate *ret = lastSent->next;
-		if (ret) lastSent = ret;
-		return ret;
-	}
-
-	void deleteUpdates()
-	{
-		struct mapupdate *up = first;
-		while (up)
-		{
-			struct mapupdate *next = up->next;
-			delete up;
-			up = next;
-		}
-		first = last = lastSent = 0;
-	}
-};
-static struct mapwatcher *map_watcher = NULL;
-
 void tc_edittrigger(const selinfo &sel, int op, int arg1, int arg2, int arg3)
 {
 	//fprintf(stderr, "Calling tc_edittrigger\n");
-	char buf[256];
+	const char *opType = NULL;
+
     switch(op)
     {
         case EDIT_FLIP:
+        	opType = "tc_edit_flip_hook";
         case EDIT_COPY:
+        	opType = opType ? opType : "tc_edit_copy_hook";
         case EDIT_PASTE:
+        	opType = opType ? opType : "tc_edit_paste_hook";
         case EDIT_DELCUBE:
         {
-			snprintf(buf, sizeof(buf), "tc_upmap %d %d %d %d %d %d %d %d %d %d %d %d %d %d", SV_EDITF + op,
+        	opType = opType ? opType : "tc_edit_delcube_hook";
+			snprintf(buf, sizeof(buf), "%s %d %d %d %d %d %d %d %d %d %d %d %d %d %d", opType, SV_EDITF + op,
                sel.o.x, sel.o.y, sel.o.z, sel.s.x, sel.s.y, sel.s.z, sel.grid, sel.orient,
                sel.cx, sel.cxs, sel.cy, sel.cys, sel.corner);
             break;
         }
         case EDIT_MAT:
+        	opType = "tc_edit_mat_hook";
         case EDIT_ROTATE:
         {
-			snprintf(buf, sizeof(buf), "tc_upmap %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d", SV_EDITF + op,
+        	opType = opType ? opType : "tc_edit_rotate_hook";
+			snprintf(buf, sizeof(buf), "%s %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d", opType, SV_EDITF + op,
                sel.o.x, sel.o.y, sel.o.z, sel.s.x, sel.s.y, sel.s.z, sel.grid, sel.orient,
                sel.cx, sel.cxs, sel.cy, sel.cys, sel.corner,
                arg1);
             break;
         }
         case EDIT_FACE:
+        	opType = "tc_edit_face_hook";
         case EDIT_TEX:
+        	opType = opType ? opType : "tc_edit_tex_hook";
         case EDIT_REPLACE:
         {
-			snprintf(buf, sizeof(buf), "tc_upmap %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d", SV_EDITF + op,
+        	opType = opType ? opType : "tc_edit_replace_hook";
+			snprintf(buf, sizeof(buf), "%s %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d", opType, SV_EDITF + op,
                sel.o.x, sel.o.y, sel.o.z, sel.s.x, sel.s.y, sel.s.z, sel.grid, sel.orient,
                sel.cx, sel.cxs, sel.cy, sel.cys, sel.corner,
                arg1, arg2);
@@ -619,13 +585,12 @@ void tc_edittrigger(const selinfo &sel, int op, int arg1, int arg2, int arg3)
         }
         case EDIT_REMIP:
         {
-			snprintf(buf, sizeof(buf), "tc_upmap %d r", SV_EDITF + op);
+			snprintf(buf, sizeof(buf), "tc_edit_remip_hook %d r", SV_EDITF + op);
             //cc.addmsg(SV_EDITF + op, "r");
             break;
         }
     }
-	//fprintf(stderr, "Finished tc_edittrigger: %s\n", buf);
-	if (map_watcher) map_watcher->addMapUpdate(buf);
+    executehook(buf);
 }
 
 
@@ -638,14 +603,10 @@ static void moderationTick() {
 			w->update(); // update AFTER execute to reset last known info
 		}
 	}
-
-	if (!map_watcher) return;
-	//fprintf(stderr, "I have a map_watcher!\n");
-	struct mapupdate *up = NULL;
-	extern void tc_remotesend(char *s);
-	while (NULL != (up = map_watcher->getNextUpdate())) {
-		//fprintf(stderr, "Sending out map update: %s\n", up->update);
-		tc_remotesend(up->update);
+	static int lastupdate = 0;
+	if (tickmillis - lastupdate > updateperiod) {
+		lastupdate = tickmillis;
+		executehook("tc_tick_hook");
 	}
 }
 
@@ -724,26 +685,21 @@ static void tc_editent(char *info)
 // hook to be called when a new map is created or loaded in
 void tc_newmaphook(char *name)
 {
-	snprintf(buf, sizeof(buf), ")tc_newmap %s", name);
-	extern void tc_remotesend(char *s);
-	tc_remotesend(buf);
-
-	map_watcher->deleteUpdates();
+	snprintf(buf, sizeof(buf), "tc_newmap_hook %s", name);
+	executehook(buf);
 }
 
 void tc_editenttrigger(int i, entity &e)
 {
-	char buf[256];
-	snprintf(buf, sizeof(buf), "tc_editent %d %d %d %d %d %d %d %d %d %d",
+	snprintf(buf, sizeof(buf), "tc_editent_hook %d %d %d %d %d %d %d %d %d %d",
 		SV_EDITENT, i, (int)(e.o.x*DMF), (int)(e.o.y*DMF), (int)(e.o.z*DMF), e.type, e.attr1, e.attr2, e.attr3, e.attr4);
-	if (map_watcher) map_watcher->addMapUpdate(buf);
+	executehook(buf);
 }
 
 static bool initModeration() {
 	printf("INITIALIZING\n");
 	extern void addTickHook(void (*hook)());
 	addTickHook(moderationTick);
-	map_watcher = new mapwatcher();
 
 	addcommand("tc_info", (void(*)())tc_info, "s");
 	addcommand("tc_setinfo", (void(*)())tc_setinfo, "C");
@@ -854,4 +810,20 @@ ICOMMAND(maxspeed, "ss", (char *ent, char *speed), {
 			floatVal(d->maxspeed, speed);
 		}
 	}
+});
+static vector<char> strbuf;
+ICOMMAND(bufadd, "C", (char *str), {
+	int len = strlen(str);
+	databuf<char> buf = strbuf.reserve(len);
+	buf.len = len;
+	strcpy(buf.buf, str);
+	strbuf.addbuf(buf);
+});
+ICOMMAND(bufget, "", (), {
+	strbuf.add('\0');
+	strbuf.setsize(0);
+	result(strbuf.buf);
+});
+ICOMMAND(buflen, "", (), {
+	intret(strbuf.length());
 });

@@ -343,20 +343,43 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 			cont.receiveException(new RuntimeException("Branch name and path must be different!"));
 		} else {
 			final ArrayList<PastContent> chunks = P2PMudFile.create(branchName, base, path);
-			MultiContinuation multi = new MultiContinuation(new Continuation<Object[], Exception>() {
-				public void receiveResult(Object[] result) {
+
+			System.out.println("STORING FILE: " + chunks.get(0));
+			storeChunks(new Continuation<P2PMudFile, Exception>() {
+				public void receiveResult(P2PMudFile result) {
 					cont.receiveResult((P2PMudFile) chunks.get(0));
 				}
 				public void receiveException(Exception exception) {
 					cont.receiveException(exception);
 				}
-			}, chunks.size());
-
-			System.out.println("STORING FILE: " + chunks.get(0));
-			for (int i = 0; i < chunks.size(); i++) {
-				System.out.println("INSERTING CHUNK: " + chunks.get(i));
-				past.insert(chunks.get(i), multi.getSubContinuation(i));
+			}, chunks, 5);
+		}
+	}
+	protected void storeChunks(final Continuation<P2PMudFile, Exception> cont, final ArrayList<PastContent> chunks, final int attempts) {
+		final ArrayList<PastContent> failed = new ArrayList<PastContent>();
+		MultiContinuation multi = new MultiContinuation(new Continuation<Object[], Exception>() {
+			public void receiveResult(Object[] result) {
+				for (int i = 0; i < result.length; i++) {
+					if (result[i] instanceof Exception) {
+						failed.add(chunks.get(i));
+					}
+				}
+				if (failed.isEmpty()) {
+					cont.receiveResult(null);
+				} else if (attempts == 0) {
+					cont.receiveException(new RuntimeException("Failed to store chunks"));
+				} else {
+					storeChunks(cont, failed, attempts - 1);
+				}
 			}
+			public void receiveException(Exception exception) {
+				cont.receiveException(exception);
+			}
+		}, chunks.size());
+
+		for (int i = 0; i < chunks.size(); i++) {
+			System.out.println("INSERTING CHUNK: " + chunks.get(i));
+			past.insert(chunks.get(i), multi.getSubContinuation(i));
 		}
 	}
 	public void wimpyGetFile(final Id id, final File base, final Continuation handler) {

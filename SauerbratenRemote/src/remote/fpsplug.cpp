@@ -48,7 +48,7 @@ void dynent::rendermovable(fpsclient &cl, vec dir, const char *suggestion) {
 	//rendermodel(color, dir, suggestion, ANIM_MAPMODEL|ANIM_LOOP, 0, 0, o, yaw, 0, 0, 0, this, MDL_SHADOW | MDL_CULL_VFC | MDL_CULL_DIST | MDL_CULL_OCCLUDED, NULL);
 }
 
-enum ENT_TYPE {TC_ERROR = 'e', TC_PLAYER = 'p', TC_MONSTER = 'm', TC_ITEM = 'i'};
+enum ENT_TYPE {TC_ERROR = 'E', TC_PLAYER = 'p', TC_MONSTER = 'm', TC_ITEM = 'i', TC_ENT = 'e'};
 
 
 char *idfor(void *ent, char *buf, int buflen) {
@@ -127,6 +127,19 @@ fpsclient::monsterset::monster *getmonster(char *id) {
 		{
 			fpsclient::monsterset::monster *m = fpscl->ms.monsters[i];
 			if (m && m->tc_id == tc_id) return m;
+		}
+	}
+	return NULL;
+}
+
+extentity *getent(char *id) {
+	if (id[0] == TC_ENT) {
+		int tc_id = atoi(id + 1);
+
+		loopv(fpscl->et.ents) {
+			extentity *ent = fpscl->et.ents[i];
+
+			if (ent->tc_id == tc_id) return ent;
 		}
 	}
 	return NULL;
@@ -314,7 +327,7 @@ ICOMMAND(psay, "ss", (char *ent, char *txt), {
 });
 
 ICOMMAND(mfreeze, "s", (char *ent), {
-       if (ent && ent[0] == 'm') {
+       if (ent && ent[0] == TC_MONSTER) {
                fpsclient::monsterset::monster *m = getmonster(ent);
 
                if (m) {
@@ -322,9 +335,45 @@ ICOMMAND(mfreeze, "s", (char *ent), {
                }
        }
 });
+//this can have 1, 2, 3, or 4 args
+ICOMMAND(createitem, "siiii", (char *ent, int *triggerType, char *x, char *y, int *z), {
+	if (ent && ent[0] == 'e') {
+		extentity *t = getent(ent);
+		vec pos;
+		int numArgs = !*x ? 2 : !*y ? 3 : 4;
+		int trig = *triggerType;
+
+		if (NULL == t) {
+			if (numArgs > 2) {
+				pos.x = numArgs == 4 ? atoi(x) : *triggerType;
+				pos.y = numArgs == 4 ? atoi(y) : atoi(x);
+				pos.z = numArgs == 4 ? *z : atoi(y);
+				if (numArgs == 3) {
+					trig = 0;
+				}
+			} else {
+				pos = fpscl->player1->o;
+			}
+			conoutf("num args: %d, coord args: [%d, %d, %d]\n", numArgs, pos.x, pos.y, pos.z);
+			extern void tc_newentity(vec &o, int type, int a1, int a2, int a3, int a4);
+			tc_newentity(pos, ET_MAPMODEL, 0, trig, numArgs != 3 ? 12345 : 0, 0);
+			t = fpscl->et.getents()[fpscl->et.getents().length() - 1];
+			conoutf("trigger type: %d, number: %d, coords: [%d, %d, %d]\n", t->attr3, t->attr4, t->o.x, t->o.y, t->o.z);
+			t->tc_id = atoi(ent + 1);
+			intret(1);
+		} else {
+			conoutf("/createitem error: attempt to reuse existing item %s", ent);
+			intret(0);
+		}
+    } else if (!ent) {
+    	conoutf("/createitem error: No item id given");
+    } else {
+    	conoutf("/createitem error: Wrong id format. Expected e<number>.");
+    }
+});
 
 ICOMMAND(createplayer, "ss", (char *ent, char *name), {
-	if (ent && ent[0] == 'p') {
+	if (ent && ent[0] == TC_PLAYER) {
 		// if we try to recreate a new player of the same id, just reuse the existing one
 		fpsent *p = getplayer(ent);
 		if (p == fpscl->player1) {
@@ -349,7 +398,7 @@ void playersetmodel(fpsent *p, char *model)
 }
 
 ICOMMAND(playerinfo, "sss", (char *ent, char *team, char *model), {
-	if (ent && ent[0] == 'p') {
+	if (ent && ent[0] == TC_PLAYER) {
 		// if we try to recreate a new player of the same id, just reuse the existing one
 		fpsent *p = getplayer(ent);
 		if (NULL == p) {
@@ -367,7 +416,7 @@ ICOMMAND(playerinfo, "sss", (char *ent, char *team, char *model), {
 });
 
 ICOMMAND(createmonster, "s", (char *ent), {
-	if (ent && ent[0] == 'm') {
+	if (ent && ent[0] == TC_MONSTER) {
 		fpsent *p = new fpsent();
         findplayerspawn(p, -1, 0);
         //spawnstate(p);
@@ -377,7 +426,7 @@ ICOMMAND(createmonster, "s", (char *ent), {
 });
 
 ICOMMAND(monsterstate, "s", (char *ent), {
-	if (ent && ent[0] == 'm') {
+	if (ent && ent[0] == TC_MONSTER) {
 		fpsclient::monsterset::monster *m = getmonster(ent);
 
 		if (m) {

@@ -813,9 +813,19 @@ extentity *newentity(bool local, const vec &o, int type, int v1, int v2, int v3,
     return &e;
 }
 
+#ifdef TC
+void tc_newentity(vec &o, int type, int a1, int a2, int a3, int a4);
+void newentity(int type, int a1, int a2, int a3, int a4) {
+	tc_newentity(player->o, type, a1, a2, a3, a4);
+}
+void tc_newentity(vec &o, int type, int a1, int a2, int a3, int a4)
+{
+    extentity *t = newentity(true, o, type, a1, a2, a3, a4);
+#else
 void newentity(int type, int a1, int a2, int a3, int a4)
 {
     extentity *t = newentity(true, player->o, type, a1, a2, a3, a4);
+#endif
     dropentity(*t);
     et->getents().add(t);
     int i = et->getents().length()-1;
@@ -1163,6 +1173,10 @@ void doleveltrigger(int trigger, int state)
     }
 }
 
+#ifdef TC
+IVAR(triggerent, 0, 0, 65535);
+#endif
+
 void checktriggers()
 {
     if(player->state != CS_ALIVE) return;
@@ -1172,6 +1186,11 @@ void checktriggers()
     loopv(ents)
     {
         extentity &e = *ents[i];
+#ifdef TC
+        if (e.tc_id) {
+        	triggerent.val.i = e.tc_id;
+        }
+#endif
         if(e.type != ET_MAPMODEL || !e.attr3) continue;
         switch(e.triggerstate)
         {
