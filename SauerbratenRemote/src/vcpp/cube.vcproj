@@ -32,7 +32,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copy .exe to SauerCTF"
-				CommandLine="copy $(TargetPath) &quot;C:\Program Files\SauerCTF\bin&quot;"
+				CommandLine="copy $(TargetPath) &quot;C:\Program Files\SauerCTF\bin&quot;&#x0D;&#x0A;"
 				Outputs="C:\Program Files\SauerCTF\bin\Sauerbraten.exe"
 			/>
 			<Tool
@@ -163,14 +163,13 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\enet\include;..\include;..\engine;..\fpsgame;..\shared"
-				PreprocessorDefinitions="WIN32,_DEBUG,_CONSOLE"
+				PreprocessorDefinitions="WIN32,_DEBUG,_CONSOLE,TC"
 				ExceptionHandling="2"
 				BasicRuntimeChecks="1"
 				RuntimeLibrary="3"
 				FloatingPointModel="2"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderThrough="cube.h"
-				PrecompiledHeaderFile=".\Debug/cube.pch"
+				PrecompiledHeaderThrough="pch.h"
 				AssemblerListingLocation=".\Debug/"
 				ObjectFile=".\Debug/"
 				ProgramDataBaseFileName=".\Debug/"
