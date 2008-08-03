@@ -505,6 +505,20 @@ vec worldpos, camdir, camright, camup;
 
 void findorientation()
 {
+#ifdef TC
+	extern int wowmode;
+	extern physent *mousecamera;
+	physent *cam = (wowmode && mousecamera) ? mousecamera : camera1;
+
+    vecfromyawpitch(cam->yaw, cam->pitch, 1, 0, camdir);
+    vecfromyawpitch(cam->yaw, 0, 0, -1, camright);
+    vecfromyawpitch(cam->yaw, cam->pitch+90, 1, 0, camup);
+
+    if(raycubepos(cam->o, camdir, worldpos, 0, RAY_CLIPMAT|RAY_SKIPFIRST) == -1)
+        worldpos = vec(camdir).mul(2*hdr.worldsize).add(cam->o); //otherwise 3dgui won't work when outside of map
+
+    setviewcell(cam->o);
+#else
     vecfromyawpitch(camera1->yaw, camera1->pitch, 1, 0, camdir);
     vecfromyawpitch(camera1->yaw, 0, 0, -1, camright);
     vecfromyawpitch(camera1->yaw, camera1->pitch+90, 1, 0, camup);
@@ -513,6 +527,7 @@ void findorientation()
         worldpos = vec(camdir).mul(2*hdr.worldsize).add(camera1->o); //otherwise 3dgui won't work when outside of map
 
     setviewcell(camera1->o);
+#endif
 }
 
 void transplayer()
@@ -582,6 +597,54 @@ physent *camera1 = NULL;
 bool detachedcamera = false;
 bool isthirdperson() { return player!=camera1 || detachedcamera || reflecting; }
 
+
+#ifdef TC
+// we're going track where the mouse is, not the center of the screen
+vec worldmouse;
+physent *mousecamera = NULL;
+
+void fixcamerarange(physent *cam)
+{
+    const float MAXPITCH = 90.0f;
+    if(cam->pitch>MAXPITCH) cam->pitch = MAXPITCH;
+    if(cam->pitch<-MAXPITCH) cam->pitch = -MAXPITCH;
+    while(cam->yaw<0.0f) cam->yaw += 360.0f;
+    while(cam->yaw>=360.0f) cam->yaw -= 360.0f;
+}
+
+// splitting this camera spinning code out separate, so we can call with a diff camera than camera1
+void tc_adjustcamera(physent *camera, int dx, int dy)
+{
+    float cursens = sensitivity;
+    if(zoom)
+    {
+        if(zoomautosens) cursens = float(sensitivity*zoomfov)/fov;
+        else cursens = zoomsens;
+    }
+    cursens /= 33.0f*sensitivityscale;
+    camera->yaw += dx*cursens;
+    camera->pitch -= dy*cursens*(invmouse ? -1 : 1);
+}
+
+void copyVec(vec &dst, vec &src)
+{
+	dst.x = src.x;
+	dst.y = src.y;
+	dst.z = src.z;
+}
+
+// take the current camera, copy it over to the mouse and use that instead
+void tc_copycamera(int dx, int dy)
+{
+	if (NULL == mousecamera) mousecamera = new physent();
+
+	memcpy(mousecamera, camera1, sizeof(struct physent));
+	
+	tc_adjustcamera(mousecamera, dx, dy);
+	fixcamerarange(mousecamera);
+}
+
+#else
 void fixcamerarange()
 {
     const float MAXPITCH = 90.0f;
@@ -591,8 +654,14 @@ void fixcamerarange()
     while(camera1->yaw>=360.0f) camera1->yaw -= 360.0f;
 }
 
+#endif
+
 void mousemove(int dx, int dy)
 {
+#ifdef TC
+	tc_adjustcamera(camera1, dx, dy);
+    fixcamerarange(camera1);
+#else
     float cursens = sensitivity;
     if(zoom)
     {
@@ -603,6 +672,7 @@ void mousemove(int dx, int dy)
     camera1->yaw += dx*cursens;
     camera1->pitch -= dy*cursens*(invmouse ? -1 : 1);
     fixcamerarange();
+#endif
     if(camera1!=player && !detachedcamera)
     {
         player->yaw = camera1->yaw;
