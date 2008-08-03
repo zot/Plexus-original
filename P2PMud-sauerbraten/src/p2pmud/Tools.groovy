@@ -16,6 +16,20 @@ import java.util.zip.ZipFilepublic class Tools {	def static digest = new SHA1D
 			f.delete()
 		}
 	}
+	def static hexDigit(num) {
+		(char)(num > 9 ? num - 10 + (int)'A' : num + (int)'0')
+	}
+	def static hexForIp(ip) {
+		def buf = ""
+
+		ip.split(/\./).each {
+			def i = Integer.parseInt(it)
+
+			buf += hexDigit((i >> 4) & 0xF)
+			buf += hexDigit(i & 0xF)
+		}
+		buf
+	}
 	def static copyAll(from, to) {
 		from = from as File
 		to = to as File

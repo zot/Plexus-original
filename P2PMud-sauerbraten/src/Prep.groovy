@@ -10,6 +10,7 @@ class Prep {
 	def static plexusdir
 	def static propsFile
 	def static lock = new Object()
+	def static lastPeerName
 	def static defaultProps = [
 		sauer_port: '12345',
 		name: 'bubba-' + System.currentTimeMillis(),
@@ -75,10 +76,10 @@ class Prep {
 			Tools.deleteAll(distdir)
 			distdir.mkdirs()
 			//use a manifest because windows won't let you read the jar file while it's in use
-			def manifest = Prep.getResourceAsStream('build/plexus/dist/manifest')
+			def manifest = Prep.getResourceAsStream('/build/plexus/dist/manifest')
 
 			manifest.eachLine {
-				def input = Prep.getResourceAsStream('build/plexus/' + it)
+				def input = Prep.getResourceAsStream('/build/plexus/' + it)
 				def file = new File(plexusdir, it)
 
 				file.getParentFile().mkdirs()
@@ -109,8 +110,14 @@ class Prep {
 		if (start) {
 			def output = propsFile.newOutputStream()
 
+			if ((!props.guid || lastPeerName != props.name) && props.external_ip.length()) {
+				props.guid = "$props.name-${Tools.hexForIp(props.external_ip)}" as String
+				println "GUID: $props.guid"
+			}
 			props.store(output, "Plexus Properties")
 			output.close()
+			Plexus.guid = props.guid
+			Plexus.props = props
 			mainArgs = [
 				props.sauer_port,
 				props.name,
@@ -139,6 +146,7 @@ class Prep {
 			props.load(input)
 			input.close()
 		}
+		lastPeerName = props.name
 		println props
 		def p = props
 		def f
