@@ -557,6 +557,7 @@ char *executeret(const char *p)               // all evaluation happens here, re
                 	char *oldArgs = tc_args;
                     tc_args = conc(w+1, numargs-1, true);
 #endif
+                    _numargs = numargs-1;
                     bool wasoverriding = overrideidents;
                     if(id->override!=NO_OVERRIDE) overrideidents = true;
                     char *wasexecuting = id->isexecuting;
