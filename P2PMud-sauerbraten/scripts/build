@@ -26,8 +26,8 @@ for i in $peer/lib/*.jar ; do
 	fi
 done
 cp -r $peer/bin/* .
-cp $sauer/src/sauer_client build/plexus/dist/sauerbraten_plexus_linux
 cp -r $plx/bin/* .
+cp $sauer/src/sauer_client build/plexus/dist/sauerbraten_plexus_linux
 
 echo "PLEXUS BUILD $(date)" > $version
 

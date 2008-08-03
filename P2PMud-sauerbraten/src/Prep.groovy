@@ -4,7 +4,7 @@ import groovy.swing.SwingBuilder
 import p2pmud.Tools
 import javax.swing.JFileChooser
 
-class Prep {
+public class Prep {
 	def static success = false
 	def static mainArgs
 	def static plexusdir
@@ -23,12 +23,13 @@ class Prep {
 	def static props = [:] as Properties
 	def static fields = [:]
 	def static sauerDir
+
 	public static void main(String[] args) {
 		for (e in defaultProps) {
 			props[e.key] = e.value
 		}
 		if (System.getProperty('os.name').equalsIgnoreCase('linux')) {
-			props.sauer_cmd = 'plexus/dist/sauerbraten_plexus_linux -f -t'
+			props.sauer_cmd = 'plexus/dist/sauerbraten_plexus_linux -t'
 		} else {
 			props.sauer_cmd = 'plexus/dist/sauerbraten_plexus_windows.exe -t'
 		}
@@ -92,7 +93,7 @@ class Prep {
 			patchAutoexec()
 		}
 		synchronized (lock) {
-			getProps()
+			readProps()
 			lock.wait()
 		}
 	}
@@ -116,8 +117,6 @@ class Prep {
 			}
 			props.store(output, "Plexus Properties")
 			output.close()
-			Plexus.guid = props.guid
-			Plexus.props = props
 			mainArgs = [
 				props.sauer_port,
 				props.name,
@@ -138,7 +137,7 @@ class Prep {
 	def static setprop(key) {
 		props[key] = fields[key].text
 	}
-	def static getProps() {
+	def static readProps() {
 		if (propsFile.exists()) {
 			def input = new FileInputStream(propsFile)
 
