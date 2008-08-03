@@ -814,7 +814,7 @@ ICOMMAND(maxspeed, "ss", (char *ent, char *speed), {
 static vector<char> strbuf;
 ICOMMAND(bufadd, "C", (char *str), {
 	int len = strlen(str);
-	databuf<char> buf = strbuf.reserve(len);
+	databuf<char> buf = strbuf.reserve(len + 1);
 	buf.len = len;
 	strcpy(buf.buf, str);
 	strbuf.addbuf(buf);
