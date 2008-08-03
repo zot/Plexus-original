@@ -103,8 +103,7 @@ class Prep {
 				return
 			}
 		}
-		autoexecFile.append("//THIS LINE ADDED BY TEAM CTHULHU: DO NOT EDIT THIS LINE OR THE NEXT ONE\n");
-		autoexecFile.append("exec plexus/dist/plexus.cfg\n")
+		autoexecFile.append("\n//THIS LINE ADDED BY TEAM CTHULHU: DO NOT EDIT THIS LINE OR THE NEXT ONE\nexec plexus/dist/plexus.cfg\n")
 	}
 	def static finished(start) {
 		if (start) {
