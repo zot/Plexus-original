@@ -510,14 +510,12 @@ void findorientation()
 	extern physent *mousecamera;
 	physent *cam = (wowmode && mousecamera) ? mousecamera : camera1;
 
-    vecfromyawpitch(cam->yaw, cam->pitch, 1, 0, camdir);
-    vecfromyawpitch(cam->yaw, 0, 0, -1, camright);
-    vecfromyawpitch(cam->yaw, cam->pitch+90, 1, 0, camup);
+	vecfromyawpitch(cam->yaw, cam->pitch, 1, 0, camdir);
+	vecfromyawpitch(cam->yaw, 0, 0, -1, camright);
+	vecfromyawpitch(cam->yaw, cam->pitch+90, 1, 0, camup);
 
-    if(raycubepos(cam->o, camdir, worldpos, 0, RAY_CLIPMAT|RAY_SKIPFIRST) == -1)
-        worldpos = vec(camdir).mul(2*hdr.worldsize).add(cam->o); //otherwise 3dgui won't work when outside of map
-
-    setviewcell(cam->o);
+	if(raycubepos(cam->o, camdir, worldpos, 0, RAY_CLIPMAT|RAY_SKIPFIRST) == -1)
+		worldpos = vec(camdir).mul(2*hdr.worldsize).add(cam->o); //otherwise 3dgui won't work when outside of map
 #else
     vecfromyawpitch(camera1->yaw, camera1->pitch, 1, 0, camdir);
     vecfromyawpitch(camera1->yaw, 0, 0, -1, camright);
@@ -525,9 +523,8 @@ void findorientation()
 
     if(raycubepos(camera1->o, camdir, worldpos, 0, RAY_CLIPMAT|RAY_SKIPFIRST) == -1)
         worldpos = vec(camdir).mul(2*hdr.worldsize).add(camera1->o); //otherwise 3dgui won't work when outside of map
-
-    setviewcell(camera1->o);
 #endif
+    setviewcell(camera1->o);
 }
 
 void transplayer()
@@ -640,7 +637,19 @@ void tc_copycamera(int dx, int dy)
 
 	memcpy(mousecamera, camera1, sizeof(struct physent));
 	
-	tc_adjustcamera(mousecamera, dx, dy);
+	double pi = 3.1415926535;
+	double fovhalf = (fov / 2.0) * pi / 180.0;
+	double dist = (screen->w / 2.0) / tan(fovhalf);
+	//fprintf(stderr, "fov is %d fovhalf is %lf dist is %lf\n", fov, fovhalf, dist);
+	double yaw = atan( dx / dist) / pi * 180.0;
+	double fovhalfy = (fov / 2.0) * pi / 180.0 * screen->h / (double) screen->w;
+	double disty = (screen->h / 2.0) / tan(fovhalfy);
+	double pitch = atan(dy / disty) / pi * 180.0;
+	//fprintf(stderr, "w/2 is %lf, h/2 is %lf, yaw %lf, pitch %lf\n", (double) screen->w / 2.0, (double) screen->h / 2.0, yaw, pitch);
+	mousecamera->yaw += yaw;
+	mousecamera->pitch -= pitch;
+
+	//tc_adjustcamera(mousecamera, dx, dy);
 	fixcamerarange(mousecamera);
 }
 
