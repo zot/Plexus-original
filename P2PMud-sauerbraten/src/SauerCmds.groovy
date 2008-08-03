@@ -1,16 +1,19 @@
 public class SauerCmds {
 	def main
-	def args
 
 	public SauerCmds(main) {
 		this.main = main
 	}
 	def invoke(cmdString) {
-		args = cmdString.split()
-		def name = args[0]
-		args = args.size() > 1 ? args[1..-1] : []
-//		println "EXECUTING: $args"
-		invokeMethod(name, null)
+		def args = cmdString.split() as List
+
+		if (args.size() > 0) {
+			if (args.size() == 1) {
+				"${args[0]}"()
+			} else {
+				"${args[0]}"(*args[1..-1])
+			}
+		}
 	}
 	def login() {
 		main.broadcast([
@@ -20,51 +23,48 @@ public class SauerCmds {
 	def showplayergui() {
 		main.player.showGui(main)
 	}
-	def player() {
-		def prop = args[0]
-
-		main.player."$prop" = args[1]
+	def player(prop, value) {
+		main.player."$prop" = value
 		def val = main.player."$prop"
 		println "set player $prop to $val"
 	}
-	def chat() {
+	def chat(String... args) {
 		main.broadcast([
 			"chat ${args.join(' ')}"
 		])
 	}
-	def tc_upmap() {
+	def tc_upmap(String... args) {
 		main.broadcast([
 			"tc_upmap ${args.join(' ')}"
 		])
 	}
-	def tc_editent() {
+	def tc_editent(String... args) {
 		main.broadcast([
 			"tc_editent ${args.join(' ')}"
 		])
 	}
-	def position() {
-		if (main.names[args[0]] == main.name) {
+	def position(name, String... args) {
+		if (main.names[name] == main.name) {
 			main.swing.edt {
-				for (def i = 1; i < args.size(); i += 2) {
+				for (def i = 0; i < args.size(); i += 2) {
 					def field = main.fields[args[i]]
 					
 					if (field) field.text = args[i + 1]
 				}
 			}
-//			println "SENDING: update ${args[1..-1].join(' ')}"
-			main.broadcast(["update ${main.name} ${args[1..-1].join(' ')}"])
+			main.broadcast(["update ${main.name} ${args.join(' ')}"])
 		}
 	}
-	def mapname() {
-		println "Setting mapname: ${args[0]}"
-		if (args[0]) {
-			main.mapname = new File(args[0]).getName()
+	def mapname(name) {
+		println "Setting mapname: $name"
+		if (name) {
+			main.mapname = new File(name).getName()
 		}
 	}
 	def requestmap() {
 		main.anycast(['requestmap'])
 	}
-	def sendfile() {
-		main.sendFile(args[0], args[1])
+	def sendfile(map, id) {
+		main.sendFile(map, id)
 	}
 }

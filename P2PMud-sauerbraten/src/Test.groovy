@@ -43,10 +43,10 @@ public class Test {
 	def pastryCmd
 	def player = new Player()
 	def sauerDir
-	def mapPrefix = 'packages/p2pmud'
+	def mapPrefix = 'packages/dist/storage'
 	def peer
 	def mapname
-	
+
 	def static sauerExec
 	def static TIME_STAMP = new SimpleDateFormat("yyyyMMdd-HHmmsszzz")
 
@@ -69,7 +69,9 @@ public class Test {
 		}
 		return true
 	}
-
+	def tst(a, b) {
+		println "TST: $a, $b"
+	}
 	def _main(args) {
 		sauerDir = System.getProperty("sauerdir");
 		name = args[1]
@@ -152,17 +154,20 @@ public class Test {
 				field('max speed: ', 'ms')
 				label(text: "Command: ")
 				fields.cmd = textField(actionPerformed: {cmd()}, constraints: 'wrap, growx')
-				button(text: "update", actionPerformed: {pastryCmds.update(["floopy", "x", "1597.093994", "y", "1620.530884", "z", "2062.024658", "rol", "0.000000", "pit", "-55.000015", "yaw", "348.454498"])})
 			}
 			f.size = [500, (int)f.size.height] as Dimension
 		}
-		//button(text: "update", actionPerformed: {pastryCmds.update(["floopy", "1597.093994", "1620.530884", "2062.024658", "0.000000", "-55.000015", "348.454498"])})
 		start(args[0])
 		P2PMudPeer.main({cmd ->
 			pastryCmd = cmd
 			cmd.msgs.each {runCommand(it, pastryCmds)}
 		} as P2PMudCommandHandler, args[2..-1] as String[])
 		peer = P2PMudPeer.test
+		println "Node ID: ${peer.node.getId().toStringFull()}"
+		if (!Plexus.props.nodeId) {
+			Plexus.props.nodeId = peer.node.getId().toStringFull()
+			Plexus.saveProps()
+		}
 		if (sauerExec) {
 			Runtime.getRuntime().exec(sauerExec)
 		}
@@ -183,7 +188,7 @@ public class Test {
 					output = it.getOutputStream()
 					init()
 					it.getInputStream().eachLine {
-						try { sauerCmds.invoke(it)} catch (Exception ex) {}
+						try {sauerCmds.invoke(it)} catch (Exception ex) {}
 					}
 					try {it.shutdownInput()} catch (Exception ex) {}
 					try {it.shutdownOutput()} catch (Exception ex) {}

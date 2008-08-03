@@ -50,6 +50,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 
 	private static int mode;
 	private static P2PMudCommandHandler cmdHandler;
+	private static String nodeIdString;
 
 	private static final P2PMudPeer test = new P2PMudPeer();
 	private static final int SCRIBE = 0;
@@ -103,6 +104,8 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 						System.out.println("CLEANING STORAGE");
 						Tools.deleteAll(storage);
 					}
+				} else if (args[i].equalsIgnoreCase("-nodeid")) {
+					nodeIdString = args[++i];
 				}
 			}
 			// launch our node!
@@ -122,8 +125,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 									mode = PAST_GET;
 								} else if (args[i].equals("-cmd")) {
 									mode = CMD;
-								} else if (args[i].equals("-clean")) {
-								} else {
+								} else if (args[i].charAt(0) != '-') {
 									switch (mode) {
 									case SCRIBE:
 										test.broadcastCmds(new String[]{args[i]});
@@ -225,10 +227,11 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 			probes.add(new InetSocketAddress(probeHost, probePort));
 		}
 		SocketPastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, outgoingAddress, bindport, env);
+		rice.pastry.Id nodeId = nodeIdString != null ? rice.pastry.Id.build(nodeIdString) : nidFactory.generateNodeId();
 		if (probes.isEmpty()) {
-			node = factory.newNode();
+			node = factory.newNode(nodeId);
 		} else {
-			node = factory.newNode(probes.get(0));
+			node = factory.newNode(nodeId, probes.get(0));
 		}
 		node.boot(bootaddress);
 		startScribe();

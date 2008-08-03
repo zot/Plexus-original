@@ -1635,7 +1635,11 @@ void gl_drawhud(int w, int h, int fogmat, float fogblend, int abovemat)
         if(!editmode && !showeditstats) 
         {
             cl->gameplayhud(w, h);
+#ifdef TC
+            abovehud = int(h*3);
+#else
             abovehud = int(h*3*cl->abovegameplayhud());
+#endif
             g3d_limitscale((2*abovehud - h*3) / float(h*3));
         }
 

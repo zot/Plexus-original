@@ -13,6 +13,9 @@
 	#include "../remote/fpsplug.h"
 
 	VAR(peers, 0, 0, 9999);
+	SVAR(tc_hud_image, "packages/plexus/dist/hud_plexus.png");
+	SVAR(tc_hud_connect_image, "packages/plexus/dist/hud_connect.png");
+	SVAR(tc_hud_disconnect_image, "packages/plexus/dist/hud_disconnect.png");
 #endif
 
 #ifndef STANDALONE
@@ -826,7 +829,6 @@ struct fpsclient : igameclient
         glTexCoord2f(0, 1); glVertex2i(x,    y+ys);
         glEnd();
     }
-
     void gameplayhud(int w, int h)
     {
 		extern int remotePort;
@@ -835,14 +837,14 @@ struct fpsclient : igameclient
 
 		glLoadIdentity();
         glOrtho(0, w, h, 0, -1, 1);
-        settexture("hud_plexus.png", true);
+        settexture(tc_hud_image, true);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         quad(0, h-128, w, 128);   
 
 
 		glLoadIdentity();
         glOrtho(0, w, h, 0, -1, 1);
-		settexture(-1 == mysocket ? "hud_disconnect.png" : "hud_connect.png", true);
+		settexture(-1 == mysocket ? tc_hud_disconnect_image : tc_hud_connect_image, true);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         quad(w - 46, h-126, 44, 44);   
 

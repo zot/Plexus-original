@@ -4,14 +4,14 @@ libs=
 plx=$peer/../../Plexus
 sauer=$peer/../SauerbratenRemote
 build=/tmp/plexus-build
-version=build/plexus/dist/version
+version=dist/version
 
 if [ "$1" = -clean ] ; then
 	rm -rf $build
 fi
 
 rm -f /tmp/plexus.jar
-mkdir -p $build/build/plexus/dist
+mkdir -p $build/dist
 cd $build
 
 for i in $peer/lib/*.jar ; do
@@ -27,12 +27,12 @@ for i in $peer/lib/*.jar ; do
 done
 cp -r $peer/bin/* .
 cp -r $plx/bin/* .
-cp $sauer/src/sauer_client build/plexus/dist/sauerbraten_plexus_linux
+cp $sauer/src/sauer_client dist/sauerbraten_plexus_linux
 
 echo "PLEXUS BUILD $(date)" > $version
 
-rm -f $build/build/plexus/dist/manifest
-cd $build/build/plexus
-find * -type f >> $build/build/plexus/dist/manifest
+rm -f $build/dist/manifest
+cd $build
+find dist -type f >> dist/manifest
 cd $build
 zip -9rDXq /tmp/plexus.jar *

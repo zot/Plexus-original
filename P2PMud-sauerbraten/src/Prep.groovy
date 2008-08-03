@@ -29,11 +29,11 @@ public class Prep {
 			props[e.key] = e.value
 		}
 		if (System.getProperty('os.name').equalsIgnoreCase('linux')) {
-			props.sauer_cmd = 'plexus/dist/sauerbraten_plexus_linux -t'
+			props.sauer_cmd = 'packages/plexus/dist/sauerbraten_plexus_linux -t'
 		} else {
-			props.sauer_cmd = 'plexus/dist/sauerbraten_plexus_windows.exe -t'
+			props.sauer_cmd = 'packages/plexus/dist/sauerbraten_plexus_windows.exe -t'
 		}
-		def str = Plexus.getResourceAsStream('/build/plexus/version')
+		def str = Plexus.getResourceAsStream('/dist/version')
 		if (str) {
 			str.eachLine {
 				println it
@@ -57,19 +57,19 @@ public class Prep {
 		}
 		System.setProperty('sauerdir', dir as String)
 		sauerDir = dir
-		def testresource = Plexus.getResource('Plexus.class').getFile()
 		def basedir
 		def jarfile
 		def verfile
-		plexusdir = new File(dir, 'plexus')
+		def testresource = Plexus.getResource('Plexus.class').getFile()
+		plexusdir = new File(dir, 'packages/plexus')
 		propsFile = new File(plexusdir, 'plexus.properties')
-		def distdir = new File(dir, 'plexus/dist')
-		def plexusver = new File(plexusdir, 'dist/version')
+		def distdir = new File(plexusdir, 'dist')
+		def plexusver = new File(distdir, 'version')
 		if (testresource ==~ /file:.*!.*/) {
 			jarfile = new URL(testresource[0..testresource.indexOf('!') - 1]).getFile() as File
 		} else {
 			basedir = (testresource as File).getParent()
-			verfile = new File(basedir, 'build/plexus/dist/version')
+			verfile = new File(basedir, '/dist/version')
 		}
 		println "comparing $plexusver with ${verfile ?: jarfile}"
 		if (!new File(plexusdir, 'dist').exists() || plexusver.lastModified() < (verfile ?: jarfile).lastModified()) {
@@ -77,10 +77,10 @@ public class Prep {
 			Tools.deleteAll(distdir)
 			distdir.mkdirs()
 			//use a manifest because windows won't let you read the jar file while it's in use
-			def manifest = Prep.getResourceAsStream('/build/plexus/dist/manifest')
+			def manifest = Prep.getResourceAsStream('/dist/manifest')
 
 			manifest.eachLine {
-				def input = Prep.getResourceAsStream('/build/plexus/' + it)
+				def input = Prep.getResourceAsStream('/' + it)
 				def file = new File(plexusdir, it)
 
 				file.getParentFile().mkdirs()
@@ -100,23 +100,13 @@ public class Prep {
 	def static patchAutoexec() {
 		def autoexecFile = new File(sauerDir, 'autoexec.cfg')
 
-		if (autoexecFile.exists()) {
-			if (autoexecFile.getText() ==~ /.*ADDED BY TEAM CTHULHU.*/) {
-				return
-			}
+		if (!autoexecFile.exists() || (autoexecFile.getText() =~ /ADDED BY TEAM CTHULHU/).size() == 0) {
+			autoexecFile.append("\n//THIS LINE ADDED BY TEAM CTHULHU'S PLEXUS: PLEASE DO NOT EDIT THIS LINE OR THE NEXT ONE\nexec packages/plexus/dist/plexus.cfg\n")
 		}
-		autoexecFile.append("\n//THIS LINE ADDED BY TEAM CTHULHU: DO NOT EDIT THIS LINE OR THE NEXT ONE\nexec plexus/dist/plexus.cfg\n")
 	}
 	def static finished(start) {
 		if (start) {
-			def output = propsFile.newOutputStream()
-
-			if ((!props.guid || lastPeerName != props.name) && props.external_ip.length()) {
-				props.guid = "$props.name-${Tools.hexForIp(props.external_ip)}" as String
-				println "GUID: $props.guid"
-			}
-			props.store(output, "Plexus Properties")
-			output.close()
+			saveProps()
 			mainArgs = [
 				props.sauer_port,
 				props.name,
@@ -125,7 +115,12 @@ public class Prep {
 				props.pastry_boot_port,
 				'-external',
 				"$props.external_ip:$props.external_port"
-			] as String[]
+			]
+			if (props.nodeId) {
+				mainArgs.add('-nodeId')
+				mainArgs.add(props.nodeId)
+			}
+			mainArgs = mainArgs as String[]
 			Test.sauerExec = props.sauer_cmd
 			synchronized (lock) {
 				lock.notifyAll()
@@ -133,6 +128,12 @@ public class Prep {
 		} else {
 			System.exit(0)
 		}
+	}
+	def static saveProps() {
+		def output = propsFile.newOutputStream()
+
+		props.store(output, "Plexus Properties")
+		output.close()
 	}
 	def static setprop(key) {
 		props[key] = fields[key].text
@@ -163,6 +164,8 @@ public class Prep {
 				field('External IP: ', 'external_ip')
 				field('External port: ', 'external_port')
 				field('Sauer cmd: ', 'sauer_cmd')
+				label(text: "Node id: ")
+				label(text: props.nodeId ?: "none", constraints: 'wrap, growx')
 				button(text: "Start", actionPerformed: {f.dispose(); finished(true)})
 				button(text: "Exit", actionPerformed: {f.dispose(); finished(false)})
 			}
