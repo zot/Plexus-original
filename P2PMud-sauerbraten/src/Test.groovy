@@ -134,7 +134,7 @@ public class Test {
 				label(text: lbl)
 				fields[key] = textField(actionPerformed: {sauerEnt(key)}, focusLost: {sauerEnt(key)}, constraints: 'wrap, growx')
 			}
-			def f = frame(title: 'Position', windowClosing: {System.exit(0)}, layout: new MigLayout('fillx'), pack: true, show: true) {
+			def f = frame(title: 'Plexus', windowClosing: {System.exit(0)}, layout: new MigLayout('fillx'), pack: true, show: true) {
 				field('x: ', 'x')
 				field('y: ', 'y')
 				field('z: ', 'z')

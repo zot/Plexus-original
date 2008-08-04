@@ -155,7 +155,7 @@ public class Prep {
 				label(text: lbl)
 				fields[key] = textField(actionPerformed: {setprop(key)}, focusLost: {setprop(key)}, text: p[key], constraints: 'wrap, growx')
 			}
-			f = frame(title: 'Position', windowClosing: {System.exit(0)}, layout: new MigLayout('fillx'), pack: true, show: true) {
+			f = frame(title: 'Plexus', windowClosing: {System.exit(0)}, layout: new MigLayout('fillx'), pack: true, show: true) {
 				field('Sauer port: ', 'sauer_port')
 				field('Peer name: ', 'name')
 				field('Pastry port: ', 'pastry_port')
