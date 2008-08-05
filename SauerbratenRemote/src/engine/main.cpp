@@ -572,6 +572,8 @@ void setWowMode(int wm) {
 }
 
 VARF(wowmode, 0, 0, 1, setWowMode(wowmode));
+VAR(tc_autorun_normal, 0, 1, 1);
+VAR(tc_autorun_edit, 0, 0, 1);
 
 bool tc_amgrabbingmouse = false;
 
@@ -585,7 +587,6 @@ void checkinput()
 	static int restoreX, restoreY;
 	static float grabbedX = 0.0, grabbedY = 0.0;
 	physent *p = (physent *) cl->iterdynents(0);
-	bool editMode = !!p->editstate;
 #define SDL_BUTTON_BOTHMASK (SDL_BUTTON_LMASK|SDL_BUTTON_RMASK)
 #endif
 
@@ -717,10 +718,12 @@ void checkinput()
 				lastmiddle = false;
 				// run if both mouse buttons held down, ignore middle mouse button clicks while doing this so autorun still works
 				if ((ms & SDL_BUTTON(SDL_BUTTON_MIDDLE)) && event.type == SDL_MOUSEBUTTONDOWN) { // || lastmiddle) {
-					p->move = !p->move;
-					autorun = !!p->move;
-					//fprintf(stderr, "middle button pressed, move is now %d\n", p->move);
-					lastmiddle = true;
+					if (editmode ? tc_autorun_edit : tc_autorun_normal) {
+						p->move = !p->move;
+						autorun = !!p->move;
+						//fprintf(stderr, "middle button pressed, move is now %d\n", p->move);
+						lastmiddle = true;
+					}
 				} else if (event.type == SDL_MOUSEBUTTONUP && savemiddle) {
 					//fprintf(stderr, "middle button released\n");
 					// eat the mouse up event here so that we don't stop autorun
