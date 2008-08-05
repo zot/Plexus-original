@@ -32,8 +32,8 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copy .exe to SauerCTF"
-				CommandLine="copy $(TargetPath) &quot;C:\Program Files\SauerCTF\bin&quot;&#x0D;&#x0A;"
-				Outputs="C:\Program Files\SauerCTF\bin\Sauerbraten.exe"
+				CommandLine="copy $(TargetPath) &quot;C:\Program Files\SauerCTF\packages\plexus\dist\sauerbraten_plexus_windows.exe&quot;&#x0D;&#x0A;"
+				Outputs="C:\Program Files\SauerCTF\packages\plexus\dist\sauerbraten_plexus_windows.exe"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
