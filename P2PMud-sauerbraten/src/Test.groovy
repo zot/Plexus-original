@@ -159,9 +159,14 @@ public class Test {
 		}
 		start(args[0])
 		P2PMudPeer.main({cmd ->
-			pastryCmd = cmd
-			cmd.msgs.each {runCommand(it, pastryCmds)}
-		} as P2PMudCommandHandler, args[2..-1] as String[])
+				pastryCmd = cmd
+				cmd.msgs.each {runCommand(it, pastryCmds)}
+			} as P2PMudCommandHandler,
+			{
+				sauer('peers', "peers ${peer.getNeighborCount()}")
+				dumpCommands()
+			},
+			args[2..-1] as String[])
 		peer = P2PMudPeer.test
 		println "Node ID: ${peer.node.getId().toStringFull()}"
 		if (!Plexus.props.nodeId) {
@@ -249,6 +254,8 @@ public class Test {
 			'bind SEMICOLON [saycommand [/emote ""]]',
 			'editbind SEMICOLON [saycommand [/emote ""]]',
 			"remotesend mapname (mapname)",
+			"cleargui 1",
+			"showgui Plexus",
 			'echo INIT'
 		].join(';'))
 	 	dumpCommands()
