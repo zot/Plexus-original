@@ -90,8 +90,8 @@ public class Prep {
 			manifest.close()
 			new File(distdir, 'sauerbraten_plexus_linux').setExecutable(true)
 			new File(distdir, 'sauerbraten_plexus_windows.exe').setExecutable(true)
-			patchAutoexec()
 		}
+		patchAutoexec()
 		synchronized (lock) {
 			readProps()
 			lock.wait()
