@@ -33,6 +33,7 @@ public class Prep {
 		} else {
 			props.sauer_cmd = 'packages/plexus/dist/sauerbraten_plexus_windows.exe -t'
 		}
+		props.sauer_cmd += " -lplexus/dist/limbo/limbo"
 		def str = Plexus.getResourceAsStream('/dist/version')
 		if (str) {
 			str.eachLine {
