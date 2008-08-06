@@ -1568,10 +1568,7 @@ void gl_drawhud(int w, int h, int fogmat, float fogblend, int abovemat)
     glLoadIdentity();
     glOrtho(0, w*3, h*3, 0, -1, 1);
 
-#ifdef TC
-	extern bool tc_amgrabbingmouse;
-    drawcrosshair(w, h, !tc_amgrabbingmouse);
-#else
+#ifndef TC
     drawcrosshair(w, h);
 #endif
 
@@ -1644,6 +1641,13 @@ void gl_drawhud(int w, int h, int fogmat, float fogblend, int abovemat)
         }
 
         render_texture_panel(w, h);
+
+#ifdef TC
+    glLoadIdentity();
+    glOrtho(0, w*3, h*3, 0, -1, 1);
+	extern bool tc_amgrabbingmouse;
+    drawcrosshair(w, h, !tc_amgrabbingmouse);
+#endif
     }
     else g3d_limitscale((2*abovehud - h*3) / float(h*3));
 
