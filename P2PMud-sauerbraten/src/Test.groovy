@@ -82,6 +82,8 @@ public class Test {
 		}
 		sauerDir = new File(sauerDir)
 		new File(sauerDir, mapPrefix).mkdirs()
+		launchSauer();
+		
 		names = [p0: name]
 		ids[name] = 'p0'
 		pastryCmds.login = {l ->
@@ -154,6 +156,7 @@ public class Test {
 				field('max speed: ', 'ms')
 				label(text: "Command: ")
 				fields.cmd = textField(actionPerformed: {cmd()}, constraints: 'wrap, growx')
+				button(text: "Launch 3D", actionPerformed: { launchSauer()})
 			}
 			f.size = [500, (int)f.size.height] as Dimension
 		}
@@ -168,9 +171,15 @@ public class Test {
 			Plexus.props.nodeId = peer.node.getId().toStringFull()
 			Plexus.saveProps()
 		}
-		if (sauerExec) {
-			Runtime.getRuntime().exec(sauerExec)
-		}
+	}
+	// launch sauer in its own thread
+	def launchSauer() {
+		println ("Going to exec $sauerExec")
+		Thread.start {
+			if (sauerExec) {
+				Runtime.getRuntime().exec(sauerExec)
+			}
+		};
 	}
 	def usage(msg) {
 		println msg
