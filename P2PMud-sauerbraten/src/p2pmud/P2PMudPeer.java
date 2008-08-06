@@ -58,6 +58,9 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	private static final int PAST = 1;
 	private static final int PAST_GET = 2;
 	private static final int CMD = 3;
+	private static ArrayList<String> savedCmds = new ArrayList<String>();
+	private static String probeHost;
+	private static int probePort;
 
 	public static void main(P2PMudCommandHandler handler, Runnable neighborChangeBlock, String args[]) throws Exception {
 		cmdHandler = handler;
@@ -108,35 +111,46 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 					}
 				} else if (args[i].equalsIgnoreCase("-nodeid")) {
 					nodeIdString = args[++i];
+				} else if (args[i].equalsIgnoreCase("-external")) {
+					int col = args[++i].indexOf(':');
+
+					probeHost = args[i].substring(0, col);
+					probePort = Integer.parseInt(args[i].substring(col + 1));
+				} else if (args[i].equalsIgnoreCase("-scribe")
+						|| args[i].equalsIgnoreCase("-past")
+						|| args[i].equalsIgnoreCase("-pastget")
+						|| args[i].equalsIgnoreCase("-cmd")
+						|| args[i].charAt(0) != '-') {
+					savedCmds.add(args[i]);
 				}
 			}
 			// launch our node!
 			test.connect(args, bindport, bootaddress);
-			if (args.length > 3) {
+			if (!savedCmds.isEmpty()) {
 				new Thread() {
 					public void run() {
 						try {
 							Thread.sleep(5000);
 							mode = SCRIBE;
-							for (int i = 3; i < args.length; i++) {
-								if (args[i].equalsIgnoreCase("-scribe")) {
+							for (int i = 3; i < savedCmds.size(); i++) {
+								if (savedCmds.get(i).equalsIgnoreCase("-scribe")) {
 									mode = SCRIBE;
-								} else if (args[i].equalsIgnoreCase("-past")) {
+								} else if (savedCmds.get(i).equalsIgnoreCase("-past")) {
 									mode = PAST;
-								} else if (args[i].equalsIgnoreCase("-pastget")) {
+								} else if (savedCmds.get(i).equalsIgnoreCase("-pastget")) {
 									mode = PAST_GET;
-								} else if (args[i].equalsIgnoreCase("-cmd")) {
+								} else if (savedCmds.get(i).equalsIgnoreCase("-cmd")) {
 									mode = CMD;
-								} else if (args[i].equalsIgnoreCase("-external")) {
+								} else if (savedCmds.get(i).equalsIgnoreCase("-external")) {
 									i++;
 									continue;
-								} else if (args[i].charAt(0) != '-') {
+								} else if (savedCmds.get(i).charAt(0) != '-') {
 									switch (mode) {
 									case SCRIBE:
-										test.broadcastCmds(new String[]{args[i]});
+										test.broadcastCmds(new String[]{savedCmds.get(i)});
 										break;
 									case PAST:
-										test.wimpyStoreFile("map.ogz", new File(System.getProperty("sauerdir")), args[i], new Continuation<P2PMudFile, Exception>() {
+										test.wimpyStoreFile("map.ogz", new File(System.getProperty("sauerdir")), savedCmds.get(i), new Continuation<P2PMudFile, Exception>() {
 											public void receiveResult(P2PMudFile result) {
 												if (result != null) {
 													System.out.println("Stored file: " + result);
@@ -154,7 +168,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 										File base = new File(new File(System.getProperty("sauerdir")), "/packages/p2pmud");
 
 										Thread.sleep(5000);
-										test.wimpyGetFile(rice.pastry.Id.build(args[i]), base, new Continuation<Object[], Exception>() {
+										test.wimpyGetFile(rice.pastry.Id.build(savedCmds.get(i)), base, new Continuation<Object[], Exception>() {
 											public void receiveResult(Object[] result) {
 												if (((Collection)result[2]).isEmpty()) {
 													System.out.println("Loaded file: " + result[0]);
@@ -176,7 +190,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 												}
 											}
 										};
-										test.sendCmds(new String[]{args[i]});
+										test.sendCmds(new String[]{savedCmds.get(i)});
 										break;
 									}
 								}
@@ -215,20 +229,10 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		env.getParameters().setInt("p2p_past_messageTimeout", Integer.parseInt(System.getProperty("past.timeout", "10000")));
 		env.getParameters().setString("nat_search_policy", "never");
 		env.getParameters().setString("probe_for_external_address", "true");
-		String probeHost = null;
-		int probePort = 0;
-		for (int i = 3; i < args.length; i++) {
-			if (args[i].equalsIgnoreCase("-external")) {
-				int col = args[++i].indexOf(':');
-
-				probeHost = args[i].substring(0, col);
-				probePort = Integer.parseInt(args[i].substring(col + 1));
-				env.getParameters().setString("external_address", args[i]);
-			}
-		}
 		NodeIdFactory nidFactory = new RandomNodeIdFactory(env);
 		FastTable<InetSocketAddress> probes = new FastTable<InetSocketAddress>();
 		if (probeHost != null) {
+			env.getParameters().setString("external_address", probeHost + ":" + probePort);
 			probes.add(new InetSocketAddress(probeHost, probePort));
 		}
 		SocketPastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, outgoingAddress, bindport, env);
