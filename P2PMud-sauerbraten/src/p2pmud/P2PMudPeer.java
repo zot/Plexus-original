@@ -99,7 +99,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 			int bootport = Integer.parseInt(args[2]);
 			InetSocketAddress bootaddress = host.equals("-") ? null : new InetSocketAddress(bootaddr,bootport);
 			for (int i = 3; i < args.length; i++) {
-				if (args[i].equals("-clean") && System.getProperty("past.storage") != null) {
+				if (args[i].equalsIgnoreCase("-clean") && System.getProperty("past.storage") != null) {
 					File storage = new File(System.getProperty("past.storage"));
 
 					if (storage.exists()) {
@@ -119,14 +119,17 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 							Thread.sleep(5000);
 							mode = SCRIBE;
 							for (int i = 3; i < args.length; i++) {
-								if (args[i].equals("-scribe")) {
+								if (args[i].equalsIgnoreCase("-scribe")) {
 									mode = SCRIBE;
-								} else if (args[i].equals("-past")) {
+								} else if (args[i].equalsIgnoreCase("-past")) {
 									mode = PAST;
-								} else if (args[i].equals("-pastget")) {
+								} else if (args[i].equalsIgnoreCase("-pastget")) {
 									mode = PAST_GET;
-								} else if (args[i].equals("-cmd")) {
+								} else if (args[i].equalsIgnoreCase("-cmd")) {
 									mode = CMD;
+								} else if (args[i].equalsIgnoreCase("-external")) {
+									i++;
+									continue;
 								} else if (args[i].charAt(0) != '-') {
 									switch (mode) {
 									case SCRIBE:
@@ -215,7 +218,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		String probeHost = null;
 		int probePort = 0;
 		for (int i = 3; i < args.length; i++) {
-			if (args[i].equals("-external")) {
+			if (args[i].equalsIgnoreCase("-external")) {
 				int col = args[++i].indexOf(':');
 
 				probeHost = args[i].substring(0, col);
