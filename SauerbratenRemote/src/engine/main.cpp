@@ -197,6 +197,14 @@ void computescreen(const char *text, Texture *t, const char *overlaytext)
         }
         if(overlaytext)
         {
+#ifdef TC
+			const char *shortname = strrchr(overlaytext, '/');
+			if (shortname) overlaytext = shortname + 1;
+			else {
+				shortname = strrchr(overlaytext, '\\');
+				if (shortname) overlaytext = shortname + 1;
+			}
+#endif
             int sz = 256, x = (w-sz)/2, y = min(384, h-256), tw = text_width(overlaytext);
             int tx = t && tw < sz*2 - FONTH/3 ? 
                         2*(x + sz) - tw - FONTH/3 : 
