@@ -673,7 +673,11 @@ struct fpsclient : igameclient
 
         if(*name && openmainmenu && startmenu())
         {
+#ifdef TC
+			showgui("Plexus");
+#else
             showgui("main");
+#endif
             openmainmenu = false;
         }
 
