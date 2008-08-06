@@ -973,12 +973,14 @@ void drawglare()
     rendermaterials();
     render_particles(0);
 
+#ifndef TC
     if(!isthirdperson())
     {
         project(curhgfov, aspect, farplane);
         cl->drawhudgun();
         project(fovy, aspect, farplane);
     }
+#endif
 
     glFogf(GL_FOG_START, oldfogstart);
     glFogf(GL_FOG_END, oldfogend);
@@ -1301,12 +1303,14 @@ void gl_drawframe(int w, int h)
     rendermaterials();
     render_particles(curtime);
 
+#ifndef TC
     if(!isthirdperson())
     {
         project(curhgfov, aspect, farplane);
         cl->drawhudgun();
         project(fovy, aspect, farplane);
     }
+#endif
 
     glDisable(GL_FOG);
     glDisable(GL_CULL_FACE);
