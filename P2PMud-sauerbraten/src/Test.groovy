@@ -250,13 +250,6 @@ public class Test {
 	def init() {
 	 	sauer('init', [
 			"alias p2pname [$name]",
-			'alias prep [if (= $arg2 0) edittoggle; mfreeze $arg1; if (= $arg2 0) edittoggle]',
-			'alias chat [echo $p2pname says: $arg1;remotesend chat $p2pname $arg1]',
-			'bind RETURN [saycommand [/chat ""]]',
-			'editbind RETURN [saycommand [/chat ""]]',
-			'alias emote [echo $p2pname $arg1;remotesend chat $p2pname $arg1]',
-			'bind SEMICOLON [saycommand [/emote ""]]',
-			'editbind SEMICOLON [saycommand [/emote ""]]',
 			"remotesend mapname (mapname)",
 			'echo INIT'
 		].join(';'))
