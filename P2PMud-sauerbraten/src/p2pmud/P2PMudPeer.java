@@ -51,6 +51,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	private static int mode;
 	private static P2PMudCommandHandler cmdHandler;
 	private static String nodeIdString;
+	private static Runnable neighborChange;
 
 	private static final P2PMudPeer test = new P2PMudPeer();
 	private static final int SCRIBE = 0;
@@ -58,8 +59,9 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	private static final int PAST_GET = 2;
 	private static final int CMD = 3;
 
-	public static void main(P2PMudCommandHandler handler, String args[]) throws Exception {
+	public static void main(P2PMudCommandHandler handler, Runnable neighborChangeBlock, String args[]) throws Exception {
 		cmdHandler = handler;
+		neighborChange = neighborChangeBlock;
 		main(args);
 	}
 	/**
@@ -188,7 +190,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 			System.out.println("java [-cp FreePastry-<version>.jar] rice.tutorial.lesson1.DistTutorial localbindport bootIP bootPort");
 			System.out.println("example java rice.tutorial.DistTutorial 9001 pokey.cs.almamater.edu 9001");
 			throw e; 
-		} 
+		}
 	}
 
 	public Id buildId(String path) {
@@ -291,6 +293,12 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	}
 	public void update(rice.p2p.commonapi.NodeHandle handle, boolean joined) {
 		System.out.println(handle + (joined ? " joined" : " left"));
+		if (neighborChange != null) {
+			neighborChange.run();
+		}
+	}
+	public int getNeighborCount() {
+		return node.getLeafSet().neighborSet(node.getLeafSet().maxSize()).size();
 	}
 	public boolean anycast(Topic topic, ScribeContent content) {
 		if (content instanceof P2PMudScribeContent) {
