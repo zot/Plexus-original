@@ -77,8 +77,8 @@ void pushgui(menu *m, int pos = -1)
     {
         menupos = menuinfrontofplayer();
 #ifdef TC
-		//extern int wowmode;
-		//if (!wowmode) g3d_resetcursor();
+		//extern int tcmode;
+		//if (!tcmode) g3d_resetcursor();
 #else
         g3d_resetcursor();
 #endif

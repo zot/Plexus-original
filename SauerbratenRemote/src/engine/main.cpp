@@ -566,12 +566,12 @@ bool interceptkey(int sym)
 }
 
 #ifdef TC
-void setWowMode(int wm) {
+void setTCMode(int wm) {
 	SDL_WM_GrabInput(wm ? SDL_GRAB_OFF : SDL_GRAB_ON);
 	if (!wm) g3d_resetcursor();
 }
 
-VARF(wowmode, 0, 0, 1, setWowMode(wowmode));
+VARF(tcmode, 0, 0, 1, setTCMode(tcmode));
 VAR(tc_autorun_normal, 0, 1, 1);
 VAR(tc_autorun_edit, 0, 0, 1);
 
@@ -629,7 +629,7 @@ void checkinput()
                 if(ignoremouse) { ignoremouse--; break; }
                 #ifndef WIN32
 #ifdef TC
-                if(!wowmode && !(screen->flags&SDL_FULLSCREEN) && grabmouse)
+                if(!tcmode && !(screen->flags&SDL_FULLSCREEN) && grabmouse)
 #else
                 if(!(screen->flags&SDL_FULLSCREEN) && grabmouse)
 #endif
@@ -641,14 +641,14 @@ void checkinput()
                     SDL_WarpMouse(screen->w / 2, screen->h / 2);
                 }
 #ifdef TC
-                if(wowmode || (screen->flags&SDL_FULLSCREEN) || grabmouse)
+                if(tcmode || (screen->flags&SDL_FULLSCREEN) || grabmouse)
 #else
                 if((screen->flags&SDL_FULLSCREEN) || grabmouse)
 #endif
                 #endif
 #ifdef TC
 				{
-					if (wowmode > 0) { // && !editMode) {
+					if (tcmode > 0) { // && !editMode) {
                 		// make the mouse track only when a button is held down
                 		extern void tc_movecursor(int x, int y, bool hide);
                 		if (tc_amgrabbingmouse) {
@@ -678,7 +678,7 @@ void checkinput()
             case SDL_MOUSEBUTTONDOWN:
             case SDL_MOUSEBUTTONUP:
 #ifdef TC
-			if (wowmode > 0) { // trying wowmode & edit... && !editMode) {
+			if (tcmode > 0) { // trying tcmode & edit... && !editMode) {
 				ms = SDL_GetMouseState(NULL, NULL);
 				extern void tc_getcursorpos(float &x, float &y);
 				extern void tc_setcursorpos(float x, float y);

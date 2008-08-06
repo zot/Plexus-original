@@ -506,9 +506,9 @@ vec worldpos, camdir, camright, camup;
 void findorientation()
 {
 #ifdef TC
-	extern int wowmode;
+	extern int tcmode;
 	extern physent *mousecamera;
-	physent *cam = (wowmode && mousecamera) ? mousecamera : camera1;
+	physent *cam = (tcmode && mousecamera) ? mousecamera : camera1;
 
 	vecfromyawpitch(cam->yaw, cam->pitch, 1, 0, camdir);
 	vecfromyawpitch(cam->yaw, 0, 0, -1, camright);
@@ -1431,8 +1431,8 @@ void writecrosshairs(FILE *f)
 void drawcrosshair(int w, int h, bool windowhit)
 {
 	//fprintf(stderr, "rndering cursor/crosshairs %d x %d, %d %d\n", w, h, (int) windowhit, (int) hidehud); 
-	//extern int wowmode;
-	//if (!wowmode) windowhit = g3d_windowhit(true, false);
+	//extern int tcmode;
+	//if (!tcmode) windowhit = g3d_windowhit(true, false);
 #else
 void drawcrosshair(int w, int h)
 {

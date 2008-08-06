@@ -931,8 +931,8 @@ void tc_setcursorpos(float x, float y)
 bool g3d_movecursor(int dx, int dy)
 {
 #ifdef TC
-	extern int wowmode;
-	if (wowmode) return false;
+	extern int tcmode;
+	if (tcmode) return false;
 #endif
     if(!guis2d.length() || !hascursor) return false;
     const float CURSORSCALE = 500.0f;
