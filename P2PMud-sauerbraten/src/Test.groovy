@@ -34,7 +34,8 @@ public class Test {
 	def count = 0
 	def pendingCommands = [:]
 	def sauerCmds = new SauerCmds(this)
-	def pastryCmds = [:]
+//	def pastryCmds = [:]
+	def pastryCmds = new PastryCmds(this)
 	def queueRunTime = Long.MAX_VALUE
 	def queueBatchPeriod = 200
 	def swing
@@ -86,6 +87,7 @@ public class Test {
 		
 		names = [p0: name]
 		ids[name] = 'p0'
+		/*
 		pastryCmds.login = {l ->
 			sauer('echo', "echo ${l[0]} has joined!")
 			pastryCmds.update(l)
@@ -103,7 +105,6 @@ public class Test {
 			sauer("${id}.update", "tc_setinfo $id " + u[1..-1].join(' '))
 			dumpCommands()
 		}
-		
 		pastryCmds.sauer = {s ->
 			for (def i = 0; i < s.size(); i++) {
 				sauer(i, s.join(" "))
@@ -130,6 +131,7 @@ public class Test {
 			sauer('tc_editent', "tc_editent ${c.join(' ')}")
 			dumpCommands()
 		}
+		*/
 		swing = new SwingBuilder()
 		swing.build {
 			def field = {lbl, key ->
@@ -163,7 +165,7 @@ public class Test {
 		start(args[0])
 		P2PMudPeer.main({cmd ->
 				pastryCmd = cmd
-				cmd.msgs.each {runCommand(it, pastryCmds)}
+				cmd.msgs.each {pastryCmds.invoke(it)}
 			} as P2PMudCommandHandler,
 			{
 				sauer('peers', "peers ${peer.getNeighborCount()}")
