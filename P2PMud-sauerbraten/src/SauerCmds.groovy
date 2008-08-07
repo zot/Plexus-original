@@ -54,4 +54,7 @@ public class SauerCmds extends Cmds {
 	def sendfile(map, id) {
 		main.sendFile(map, id)
 	}
+	def connectWorld(id) {
+		main.connectWorld(id)
+	}
 }

@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
 
+import javolution.util.FastMap;
 import javolution.util.FastTable;
 import rice.Continuation;
 import rice.Continuation.MultiContinuation;
@@ -38,15 +39,16 @@ import rice.persistence.Storage;
 import rice.persistence.StorageManagerImpl;
 
 public class P2PMudPeer implements Application, ScribeMultiClient {
-	protected PastryNode node;
+	public PastryNode node;
 	private Endpoint endpoint;
 	private ScribeImpl myScribe;
-	private Topic myTopic;
 	private Environment env;
 	private PastImpl past;
 	private PastryIdFactory idFactory;
 	private InetAddress outgoingAddress;
 	private Id other;
+	public rice.pastry.Id nodeId;
+	public FastMap<Topic, Continuation<Topic, Exception>> subscriptionContinuations = new FastMap<Topic, Continuation<Topic,Exception>>();
 
 	private static int mode;
 	private static P2PMudCommandHandler cmdHandler;
@@ -146,9 +148,19 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 									continue;
 								} else if (savedCmds.get(i).charAt(0) != '-') {
 									switch (mode) {
-									case SCRIBE:
-										test.broadcastCmds(new String[]{savedCmds.get(i)});
+									case SCRIBE: {
+										final String cmd = savedCmds.get(i);
+
+										test.subscribe(test.buildId("updates for bubba"), new Continuation<Topic, Exception>() {
+											public void receiveResult(Topic topic) {
+												test.broadcastCmds(topic, new String[]{cmd});
+											}
+											public void receiveException(Exception exception) {
+												System.out.println("Couldn't subscribe to topic");
+											}
+										});
 										break;
+									}
 									case PAST:
 										test.wimpyStoreFile("map.ogz", new File(System.getProperty("sauerdir")), savedCmds.get(i), new Continuation<P2PMudFile, Exception>() {
 											public void receiveResult(P2PMudFile result) {
@@ -183,7 +195,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 										break;
 									case CMD:
 										cmdHandler = new P2PMudCommandHandler() {
-											public void handleCommand(P2PMudCommand cmd) {
+											public void handleCommand(Id forPeer, Topic topic, P2PMudCommand cmd) {
 												System.out.println("Received " + cmd.msgs.length + " commands...");
 												for (String m : cmd.msgs) {
 													System.out.println(m);
@@ -236,14 +248,17 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 			probes.add(new InetSocketAddress(probeHost, probePort));
 		}
 		SocketPastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, outgoingAddress, bindport, env);
-		rice.pastry.Id nodeId = nodeIdString != null ? rice.pastry.Id.build(nodeIdString) : nidFactory.generateNodeId();
+		nodeId = nodeIdString != null ? rice.pastry.Id.build(nodeIdString) : nidFactory.generateNodeId();
 		if (probes.isEmpty()) {
 			node = factory.newNode(nodeId);
 		} else {
 			node = factory.newNode(nodeId, probes.get(0));
 		}
 		node.boot(bootaddress);
-		startScribe();
+		idFactory = new PastryIdFactory(node.getEnvironment());
+		endpoint = node.buildEndpoint(this, "myinstance");
+		endpoint.register();
+		myScribe = new ScribeImpl(node,"myScribeInstance");
 		startPast();
 		System.out.println("Waiting to join ring...");
 		// the node may require sending several messages to fully boot into the ring
@@ -266,13 +281,19 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 			}
 		}
 	}
-	private void startScribe() {
-		endpoint = node.buildEndpoint(this, "myinstance");
-	    myScribe = new ScribeImpl(node,"myScribeInstance");
-	    idFactory = new PastryIdFactory(node.getEnvironment());
-	    myTopic = new Topic(idFactory, "updates for bubba");
-	    endpoint.register();
-	    myScribe.subscribe(myTopic, this);
+	public Topic subscribe(Id topicId, Continuation<Topic, Exception> cont) {
+		Topic topic = new Topic(topicId);
+
+		if (cont != null) {
+			synchronized (subscriptionContinuations) {
+				subscriptionContinuations.put(topic, cont);
+			}
+		}
+		myScribe.subscribe(topic, this);
+		return topic;
+	}
+	public void unsubscribe(Topic topic) {
+		myScribe.unsubscribe(topic, this);
 	}
 	private void startPast() throws IOException {
 		// create a different storage root for each node
@@ -289,7 +310,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	}
 	public void deliver(Id id, rice.p2p.commonapi.Message message) {
 		if (message instanceof P2PMudMessage) {
-			handleCommand(((P2PMudMessage)message).cmd);
+			handleCommand(id, null, ((P2PMudMessage)message).cmd);
 		} else {
 			System.out.println("received message: " + message);
 		}
@@ -309,7 +330,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	}
 	public boolean anycast(Topic topic, ScribeContent content) {
 		if (content instanceof P2PMudScribeContent) {
-			handleCommand(((P2PMudScribeContent)content).cmd);
+			handleCommand(null, topic, ((P2PMudScribeContent)content).cmd);
 		} else {
 			System.out.println("Received anycast: " + content);
 		}
@@ -323,28 +344,51 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	}
 	public void deliver(Topic topic, ScribeContent content) {
 		if (content instanceof P2PMudScribeContent) {
-			handleCommand(((P2PMudScribeContent)content).cmd);
+			handleCommand(null, topic, ((P2PMudScribeContent)content).cmd);
 		} else {
 			System.out.println("Received update: " + content);
 		}
 	}
-	protected void handleCommand(P2PMudCommand mudCommand) {
+	protected void handleCommand(Id id, Topic topic, P2PMudCommand mudCommand) {
 		if (cmdHandler != null && !mudCommand.from.equals(node.getId())) {
 			other = mudCommand.from;
-			cmdHandler.handleCommand(mudCommand);
+			cmdHandler.handleCommand(id, topic, mudCommand);
+		}
+	}
+	public void subscribeFailed(Collection<Topic> topics) {
+		for (Topic topic: topics) {
+			subscribeFailed(topic);
 		}
 	}
 	public void subscribeFailed(Topic topic) {
-		System.err.println("ERROR: Failed to subscribe to topic: " + topic);
+		Continuation<Topic, Exception> cont;
+		
+		synchronized (subscriptionContinuations) {
+			cont = subscriptionContinuations.remove(topic);
+		}
+		if (cont != null) {
+			cont.receiveException(new Exception("Failed to subscribe to topic: " + topic));
+		}
 	}
-	public void subscribeFailed(Collection topics) {
-		System.err.println("ERROR: Failed to subscribe to topics: " + topics);
+	public void subscribeSuccess(Collection<Topic> topics) {
+		for (Topic topic: topics) {
+			subscribeSuccess(topic);
+		}
 	}
-	public void subscribeSuccess(Collection arg0) {}
-	public void anycastCmds(String cmds[]) {
+	public void subscribeSuccess(Topic topic) {
+		Continuation<Topic, Exception> cont;
+		
+		synchronized (subscriptionContinuations) {
+			cont = subscriptionContinuations.remove(topic);
+		}
+		if (cont != null) {
+			cont.receiveResult(topic);
+		}
+	}
+	public void anycastCmds(Topic myTopic, String cmds[]) {
 		myScribe.anycast(myTopic, new P2PMudScribeContent(new P2PMudCommand(node.getId(), cmds))); 
 	}
-	public void broadcastCmds(String cmds[]) {
+	public void broadcastCmds(Topic myTopic, String cmds[]) {
 		myScribe.publish(myTopic, new P2PMudScribeContent(new P2PMudCommand(node.getId(), cmds))); 
 	}
 	public void sendCmds(String cmds[]) {
@@ -354,7 +398,10 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		}
 	}
 	public void sendCmds(Id id, String cmds[]) {
-		endpoint.route(id, new P2PMudMessage(new P2PMudCommand(endpoint.getId(), cmds)), null);
+		sendCmds(id, new P2PMudCommand(nodeId, cmds));
+	}
+	public void sendCmds(Id id, P2PMudCommand cmd) {
+		endpoint.route(id, new P2PMudMessage(cmd), null);
 	}
 	public void wimpyStoreFile(String branchName, final File base, final String path, final Continuation<P2PMudFile, Exception> cont) {
 		if (branchName.equals(path)) {

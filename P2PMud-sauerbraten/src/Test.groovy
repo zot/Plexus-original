@@ -34,7 +34,6 @@ public class Test {
 	def count = 0
 	def pendingCommands = [:]
 	def sauerCmds = new SauerCmds(this)
-//	def pastryCmds = [:]
 	def pastryCmds = new PastryCmds(this)
 	def queueRunTime = Long.MAX_VALUE
 	def queueBatchPeriod = 200
@@ -47,9 +46,15 @@ public class Test {
 	def mapPrefix = 'packages/dist/storage'
 	def peer
 	def mapname
+	def mapsDoc
+	def mapTopic
+	def plexusTopic
 
 	def static sauerExec
 	def static TIME_STAMP = new SimpleDateFormat("yyyyMMdd-HHmmsszzz")
+	def static final PLEXUS_KEY = "Plexus: main"
+	def static final WORLDS_KEY = "Plexus: worlds"
+	def static final SPHINX_KEY = "Plexus: sphinx"
 
 	public static void main(String[] a) {
 		if (a.length < 2) {
@@ -84,54 +89,9 @@ public class Test {
 		sauerDir = new File(sauerDir)
 		new File(sauerDir, mapPrefix).mkdirs()
 		launchSauer();
-		
+
 		names = [p0: name]
 		ids[name] = 'p0'
-		/*
-		pastryCmds.login = {l ->
-			sauer('echo', "echo ${l[0]} has joined!")
-			pastryCmds.update(l)
-		}
-		pastryCmds.update = {u ->
-			def name = u[0] 
-			def id = ids[name]
-			if (!id) {
-				id = "p$id_index"
-				ids[name] = id
-				++id_index
-				names[id] = name
-				sauer('prep', "createplayer $id $name")
-			}
-			sauer("${id}.update", "tc_setinfo $id " + u[1..-1].join(' '))
-			dumpCommands()
-		}
-		pastryCmds.sauer = {s ->
-			for (def i = 0; i < s.size(); i++) {
-				sauer(i, s.join(" "))
-			}
-			dumpCommands()
-		}
-		pastryCmds.chat = {c ->
-			def name = c[0] 
-			def id = ids[name]
-			sauer('chat', "psay $id [${c.join(' ')}]")
-			dumpCommands()
-		}
-		pastryCmds.tc_upmap = {c ->
-			sauer('tc_upmap', "tc_upmap ${c.join(' ')}")
-			dumpCommands()
-		}
-		pastryCmds.requestmap = {c ->
-			requestMap()
-		}
-		pastryCmds.loadmap = {c ->
-			loadMap(c[0])
-		}
-		pastryCmds.tc_editent = {c ->
-			sauer('tc_editent', "tc_editent ${c.join(' ')}")
-			dumpCommands()
-		}
-		*/
 		swing = new SwingBuilder()
 		swing.build {
 			def field = {lbl, key ->
@@ -158,12 +118,12 @@ public class Test {
 				field('max speed: ', 'ms')
 				label(text: "Command: ")
 				fields.cmd = textField(actionPerformed: {cmd()}, constraints: 'wrap, growx')
-				button(text: "Launch 3D", actionPerformed: { launchSauer()})
+				button(text: "Launch 3D", actionPerformed: {launchSauer()})
 			}
 			f.size = [500, (int)f.size.height] as Dimension
 		}
 		start(args[0])
-		P2PMudPeer.main({cmd ->
+		P2PMudPeer.main({id, topic, cmd ->
 				pastryCmd = cmd
 				cmd.msgs.each {pastryCmds.invoke(it)}
 			} as P2PMudCommandHandler,
@@ -173,7 +133,16 @@ public class Test {
 			},
 			args[2..-1] as String[])
 		peer = P2PMudPeer.test
-		println "Node ID: ${peer.node.getId().toStringFull()}"
+		plexusTopic = peer.subscribe(peer.buildId(PLEXUS_KEY), null)
+//		connectWorld(peer.buildId(SPHINX_KEY).toStringFull())
+		if (peer.node.getLeafSet().getUniqueCount() == 1) {
+			initBoot()
+		} else {
+			initJoin()
+		}
+//		mapTopic = peer.subscribe(peer.buildId("updates for bubba"))
+//		mapsDocId = peer.buildId(mapsDocKey)
+//		println "Node ID: ${peer.node.getId().toStringFull()}"
 		if (!Plexus.props.nodeId) {
 			Plexus.props.nodeId = peer.node.getId().toStringFull()
 			Plexus.saveProps()
@@ -222,7 +191,6 @@ public class Test {
 		def a = str.split()
 		def func = cmds[a[0]]
 	
-//		println "EXECUTING: $a"
 		if (func) {
 			func(a.length > 1 ? a[1..-1] : [])
 		}
@@ -232,7 +200,6 @@ public class Test {
 			synchronized (pendingCommands) {
 				if (!pendingCommands.isEmpty()) {
 					output << pendingCommands.collect{it.value}.join(";") + '\n'
-//					println "SENT: ${pendingCommands.collect{it.value}.join(';') + '\n'}"
 					pendingCommands = [:]
 				}
 				output.flush()
@@ -242,7 +209,6 @@ public class Test {
 	def sauerEnt(label) {
 		if (fields[label]?.text && fields[label].text[0]) {
 			def cmd = "ent.$label ${ids[name]} ${fields[label].text}"
-//			println "NEW $label: $cmd"
 			sauer(label, cmd)
 			dumpCommands()
 		}
@@ -265,10 +231,10 @@ public class Test {
 	 	dumpCommands()
 	}
 	def broadcast(cmds) {
-		if (peer) peer.broadcastCmds(cmds as String[])
+		if (peer) peer.broadcastCmds(mapTopic, cmds as String[])
 	}
 	def anycast(cmds) {
-		if (peer) peer.anycastCmds(cmds as String[])
+		if (peer) peer.anycastCmds(mapTopic, cmds as String[])
 	}
 	def cvtNewlines(str) {
 		println "${str.replaceAll(/\n/, ';')}"
@@ -322,5 +288,37 @@ public class Test {
 	def err(msg, err) {
 		System.err.println(msg)
 		err.printStackTrace();
+	}
+	def initBoot() {
+		setMapsDoc([
+			Sphinx: peer.buildId(SPHINX_KEY).toStringFull()
+		])
+	}
+	def setMapsDoc(doc) {
+		def mapsGui = "newgui Worlds ["
+
+		for (world in doc) {
+			mapsGui += "guibutton [$world.key] [connectWorld $world.value]\n"
+		}
+		mapsGui += "]"
+		mapsDoc = doc
+		sauer('maps', cvtNewlines(mapsGui))
+	}
+	def initJoin() {
+		peer.anycastCmds(plexusTopic, "sendMap")
+	}
+	def connectWorld(id) {
+		println "CONNECTING TO WORLD: $id"
+		if (mapTopic) {
+			peer.unsubscribe(mapTopic)
+		}
+		mapTopic = peer.subscribe(Id.build(id), [
+			receiveResult: {topic ->
+				mapTopic = topic
+				println "SUBSCRIBED TO $topic"
+				//peer.anycastCmds(mapTopic, "requestmap")
+			},
+			receiveException: {exception -> err("Couldn't subscribe to topic: ", id)}
+		] as Continuation)
 	}
 }

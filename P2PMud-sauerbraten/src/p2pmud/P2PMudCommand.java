@@ -7,6 +7,7 @@ import rice.p2p.commonapi.Id;
 public class P2PMudCommand implements Serializable {
 	public Id from;
 	public String msgs[];
+	public Object payload;
 
 	private static final long serialVersionUID = 1L;
 

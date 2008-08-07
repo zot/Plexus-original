@@ -1,3 +1,4 @@
+import p2pmud.P2PMudCommand
 public class PastryCmds extends Cmds {
 	public PastryCmds(main) {
 		super(main)
@@ -39,5 +40,14 @@ public class PastryCmds extends Cmds {
 	def tc_editent(String... args) {
 		main.sauer('tc_editent', "tc_editent ${args.join(' ')}")
 		main.dumpCommands()
+	}
+	def sendMap() {
+		def cmd = new P2PMudCommand(main.peer.nodeId, "receiveMap")
+
+		cmd.payload = mapsDoc
+		main.peer.sendCmds(main.pastryCmd.from, cmd)
+	}
+	def receiveMap() {
+		main.setMapsDoc(main.pastryCmd.payload)
 	}
 }
