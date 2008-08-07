@@ -41,13 +41,13 @@ public class PastryCmds extends Cmds {
 		main.sauer('tc_editent', "tc_editent ${args.join(' ')}")
 		main.dumpCommands()
 	}
-	def sendMap() {
-		def cmd = new P2PMudCommand(main.peer.nodeId, "receiveMap")
+	def sendMaps() {
+		def cmd = new P2PMudCommand(main.peer.nodeId, "receiveMaps")
 
-		cmd.payload = mapsDoc
+		cmd.payload = main.mapsDoc
 		main.peer.sendCmds(main.pastryCmd.from, cmd)
 	}
-	def receiveMap() {
+	def receiveMaps() {
 		main.setMapsDoc(main.pastryCmd.payload)
 	}
 }

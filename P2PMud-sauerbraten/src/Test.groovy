@@ -304,7 +304,7 @@ public class Test {
 		sauer('maps', cvtNewlines(mapsGui))
 	}
 	def initJoin() {
-		peer.anycastCmds(plexusTopic, "sendMap")
+		peer.anycastCmds(plexusTopic, "sendMaps")
 	}
 	def connectWorld(id) {
 		println "CONNECTING TO WORLD: $id"
