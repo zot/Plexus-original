@@ -391,6 +391,18 @@ ICOMMAND(createplayer, "ss", (char *ent, char *name), {
     }
 });
 
+ICOMMAND(tc_respawn, "s", (char *ent), {
+	if (ent && ent[0] == 'p') {
+		fpsent *p = (fpsent *) getdynent(ent);
+		if (NULL == p) {
+			conoutf("/tc_respawn error: player %s not found", ent);
+			return;
+		}
+		fpscl->spawnplayer(p);
+		p->state = CS_ALIVE;
+	}
+});
+
 void playersetmodel(fpsent *p, char *model)
 {
 	if (p->modelname) { free(p->modelname); p->modelname = NULL; }

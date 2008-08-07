@@ -89,7 +89,6 @@ public class Test {
 		sauerDir = new File(sauerDir)
 		new File(sauerDir, mapPrefix).mkdirs()
 		launchSauer();
-
 		names = [p0: name]
 		ids[name] = 'p0'
 		swing = new SwingBuilder()
@@ -128,8 +127,8 @@ public class Test {
 				cmd.msgs.each {pastryCmds.invoke(it)}
 			} as P2PMudCommandHandler,
 			{
-				sauer('peers', "peers ${peer.getNeighborCount()}")
-				dumpCommands()
+				//sauer('peers', "peers ${peer.getNeighborCount()}")
+				//dumpCommands()
 			},
 			args[2..-1] as String[])
 		peer = P2PMudPeer.test
