@@ -141,6 +141,9 @@ static void getcomputescreenres(int &w, int &h)
     w = int(ceil(w*wk));
     h = int(ceil(h*hk));
 }
+#ifdef TC
+SVAR(tc_loadmsg, "");
+#endif
 
 void computescreen(const char *text, Texture *t, const char *overlaytext)
 {
@@ -204,6 +207,7 @@ void computescreen(const char *text, Texture *t, const char *overlaytext)
 				shortname = strrchr(overlaytext, '\\');
 				if (shortname) overlaytext = shortname + 1;
 			}
+			if (tc_loadmsg[0]) overlaytext = tc_loadmsg;
 #endif
             int sz = 256, x = (w-sz)/2, y = min(384, h-256), tw = text_width(overlaytext);
             int tx = t && tw < sz*2 - FONTH/3 ? 
