@@ -32,11 +32,13 @@ public class SauerCmds extends Cmds {
 	}
 	def position(name, String... args) {
 		if (main.names[name] == main.name) {
-			main.swing.edt {
-				for (def i = 0; i < args.size(); i += 2) {
-					def field = main.fields[args[i]]
-					
-					if (field) field.text = args[i + 1]
+			if (main.swing) {
+				main.swing.edt {
+					for (def i = 0; i < args.size(); i += 2) {
+						def field = main.fields[args[i]]
+						
+						if (field) field.text = args[i + 1]
+					}
 				}
 			}
 			main.broadcast(["update ${main.name} ${args.join(' ')}"])

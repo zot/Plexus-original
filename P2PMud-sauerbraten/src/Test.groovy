@@ -80,49 +80,53 @@ public class Test {
 	}
 	def _main(args) {
 		soleInstance = this
-		sauerDir = System.getProperty("sauerdir");
-		name = args[1]
-		if (!verifySauerdir(sauerDir)) {
-			usage("sauerdir must be provided")
-		} else if (!name) {
-			usage("name must be provided")
+		if (Plexus.props.headless == '0') {
+			sauerDir = System.getProperty("sauerdir");
+			name = args[1]
+			if (!verifySauerdir(sauerDir)) {
+				usage("sauerdir must be provided")
+			} else if (!name) {
+				usage("name must be provided")
+			}
+			sauerDir = new File(sauerDir)
+			new File(sauerDir, mapPrefix).mkdirs()
+			if (Plexus.props.auto_sauer != '0') launchSauer();
 		}
-		sauerDir = new File(sauerDir)
-		new File(sauerDir, mapPrefix).mkdirs()
-		launchSauer();
 		names = [p0: name]
 		ids[name] = 'p0'
-		swing = new SwingBuilder()
-		swing.build {
-			def field = {lbl, key ->
-				label(text: lbl)
-				fields[key] = textField(actionPerformed: {sauerEnt(key)}, focusLost: {sauerEnt(key)}, constraints: 'wrap, growx')
+		if (Plexus.props.headless == '0') {
+			swing = new SwingBuilder()
+			swing.build {
+				def field = {lbl, key ->
+					label(text: lbl)
+					fields[key] = textField(actionPerformed: {sauerEnt(key)}, focusLost: {sauerEnt(key)}, constraints: 'wrap, growx')
+				}
+				def f = frame(title: 'Plexus', windowClosing: {System.exit(0)}, layout: new MigLayout('fillx'), pack: true, show: true) {
+					field('x: ', 'x')
+					field('y: ', 'y')
+					field('z: ', 'z')
+					field('vx: ', 'vx')
+					field('vy: ', 'vy')
+					field('vz: ', 'vz')
+					field('fx: ', 'fx')
+					field('fy: ', 'fy')
+					field('fz: ', 'fz')
+					field('roll: ', 'rol')
+					field('pitch: ', 'pit')
+					field('yaw: ', 'yaw')
+					field('strafe: ', 's')
+					field('edit: ', 'e')
+					field('move: ', 'm')
+					field('physics state: ', 'ps')
+					field('max speed: ', 'ms')
+					label(text: "Command: ")
+					fields.cmd = textField(actionPerformed: {cmd()}, constraints: 'wrap, growx')
+					button(text: "Launch 3D", actionPerformed: {launchSauer()})
+				}
+				f.size = [500, (int)f.size.height] as Dimension
 			}
-			def f = frame(title: 'Plexus', windowClosing: {System.exit(0)}, layout: new MigLayout('fillx'), pack: true, show: true) {
-				field('x: ', 'x')
-				field('y: ', 'y')
-				field('z: ', 'z')
-				field('vx: ', 'vx')
-				field('vy: ', 'vy')
-				field('vz: ', 'vz')
-				field('fx: ', 'fx')
-				field('fy: ', 'fy')
-				field('fz: ', 'fz')
-				field('roll: ', 'rol')
-				field('pitch: ', 'pit')
-				field('yaw: ', 'yaw')
-				field('strafe: ', 's')
-				field('edit: ', 'e')
-				field('move: ', 'm')
-				field('physics state: ', 'ps')
-				field('max speed: ', 'ms')
-				label(text: "Command: ")
-				fields.cmd = textField(actionPerformed: {cmd()}, constraints: 'wrap, growx')
-				button(text: "Launch 3D", actionPerformed: {launchSauer()})
-			}
-			f.size = [500, (int)f.size.height] as Dimension
+			start(args[0])
 		}
-		start(args[0])
 		P2PMudPeer.main({id, topic, cmd ->
 				pastryCmd = cmd
 				cmd.msgs.each {pastryCmds.invoke(it)}

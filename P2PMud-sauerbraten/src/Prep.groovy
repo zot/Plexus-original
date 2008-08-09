@@ -19,12 +19,17 @@ public class Prep {
 		pastry_boot_port: '9090',
 		external_ip: '',
 		external_port: '9090',
+		headless: '0',
+		upnp: '1',
+		auto_sauer: '1',
+		node_interface: '',
+		past_storage:'/tmp/storage-9090'
 	] as Properties
 	def static props = [:] as Properties
 	def static fields = [:]
 	def static sauerDir
 
-	public static void main(String[] args) {
+	def static initProps() {
 		for (e in defaultProps) {
 			props[e.key] = e.value
 		}
@@ -34,17 +39,9 @@ public class Prep {
 			props.sauer_cmd = 'packages/plexus/dist/sauerbraten_plexus_windows.exe -t'
 		}
 		props.sauer_cmd += " -lplexus/dist/limbo/limbo"
-		def str = Plexus.getResourceAsStream('/dist/version')
-		if (str) {
-			str.eachLine {
-				println it
-			}
-			str.close()
-		} else {
-			println "No version file.  Hope that's OK"
-		}
-		println 'auto start'
-		def dir = new File('fred').getAbsoluteFile().getParent()
+	}
+	
+	def static verifySauerDir(dir) {
 		while (!Test.verifySauerdir(dir)) {
 			def ch = new JFileChooser(dir);
 			ch.setDialogTitle("$dir is not a Sauerbraten directory.  Please specify your Sauerbraten directory");
@@ -58,14 +55,39 @@ public class Prep {
 		}
 		System.setProperty('sauerdir', dir as String)
 		sauerDir = dir
+	}
+	public static void main(String[] args) {
+		initProps()
+		def dir = new File('fred').getAbsoluteFile().getParent()
+		
+		plexusdir = new File(dir, 'packages/plexus')
+		propsFile = new File(plexusdir, 'plexus.properties')
+		readProps()
+		
+		if (props.headless != '0') {
+			buildMainArgs()
+			return
+		}
+		def str = Plexus.getResourceAsStream('/dist/version')
+		if (str) {
+			str.eachLine {
+				println it
+			}
+			str.close()
+		} else {
+			println "No version file.  Hope that's OK"
+		}
+		println 'auto start'
+		
+		verifySauerDir(dir)
+		
 		def basedir
 		def jarfile
 		def verfile
 		def testresource = Plexus.getResource('Plexus.class').getFile()
-		plexusdir = new File(dir, 'packages/plexus')
-		propsFile = new File(plexusdir, 'plexus.properties')
 		def distdir = new File(plexusdir, 'dist')
 		def plexusver = new File(distdir, 'version')
+		
 		if (testresource ==~ /file:.*!.*/) {
 			jarfile = new URL(testresource[0..testresource.indexOf('!') - 1]).getFile() as File
 		} else {
@@ -95,6 +117,7 @@ public class Prep {
 		patchAutoexec()
 		synchronized (lock) {
 			readProps()
+			showPropEditor()
 			lock.wait()
 		}
 	}
@@ -105,23 +128,26 @@ public class Prep {
 			autoexecFile.append("\n//THIS LINE ADDED BY TEAM CTHULHU'S PLEXUS: PLEASE DO NOT EDIT THIS LINE OR THE NEXT ONE\nexec packages/plexus/dist/plexus.cfg\n")
 		}
 	}
+	def static buildMainArgs() {
+		mainArgs = [
+					props.sauer_port,
+					props.name,
+					props.pastry_port,
+					props.pastry_boot_host,
+					props.pastry_boot_port,
+					'-external',
+					"$props.external_ip:$props.external_port"
+				]
+		if (props.nodeId) {
+			mainArgs.add('-nodeId')
+			mainArgs.add(props.nodeId)
+		}
+		mainArgs = mainArgs as String[]
+	}
 	def static finished(start) {
 		if (start) {
 			saveProps()
-			mainArgs = [
-				props.sauer_port,
-				props.name,
-				props.pastry_port,
-				props.pastry_boot_host,
-				props.pastry_boot_port,
-				'-external',
-				"$props.external_ip:$props.external_port"
-			]
-			if (props.nodeId) {
-				mainArgs.add('-nodeId')
-				mainArgs.add(props.nodeId)
-			}
-			mainArgs = mainArgs as String[]
+			buildMainArgs()
 			Test.sauerExec = props.sauer_cmd
 			synchronized (lock) {
 				lock.notifyAll()
@@ -131,6 +157,8 @@ public class Prep {
 		}
 	}
 	def static saveProps() {
+		//println 'saving props'
+		//println props
 		def output = propsFile.newOutputStream()
 
 		props.store(output, "Plexus Properties")
@@ -147,8 +175,14 @@ public class Prep {
 			props.load(input)
 			input.close()
 		}
+		// if there are any missing props after a read, fill them in with defaults
+		for (e in defaultProps) {
+			if (!props[e.key]) props[e.key] = e.value
+		}
 		lastPeerName = props.name
 		println props
+	}
+	def static showPropEditor() {
 		def p = props
 		def f
 		new SwingBuilder().build {
@@ -165,6 +199,8 @@ public class Prep {
 				field('External IP: ', 'external_ip')
 				field('External port: ', 'external_port')
 				field('Sauer cmd: ', 'sauer_cmd')
+				field('Use UPnP: ', 'upnp')
+				field('Auto Run Sauer: ', 'auto_sauer')
 				label(text: "Node id: ")
 				label(text: props.nodeId ?: "none", constraints: 'wrap, growx')
 				button(text: "Start", actionPerformed: {f.dispose(); finished(true)})

@@ -38,6 +38,7 @@ import rice.persistence.PersistentStorage;
 import rice.persistence.Storage;
 import rice.persistence.StorageManagerImpl;
 
+
 public class P2PMudPeer implements Application, ScribeMultiClient {
 	public PastryNode node;
 	private Endpoint endpoint;
@@ -66,7 +67,8 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	private static ArrayList<String> savedCmds = new ArrayList<String>();
 	private static String probeHost;
 	private static int probePort;
-
+	public static String node_interface;
+	
 	public static void main(P2PMudCommandHandler handler, Runnable neighborChangeBlock, String args[]) throws Exception {
 		cmdHandler = handler;
 		neighborChange = neighborChangeBlock;
@@ -85,22 +87,28 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 			String host = args[1];
 			InetAddress bootaddr = null;
 
-			faces: for (Enumeration interfaces = NetworkInterface.getNetworkInterfaces(); interfaces.hasMoreElements(); ) {
-				NetworkInterface face = (NetworkInterface) interfaces.nextElement();
-				
-				for(Enumeration addrs = face.getInetAddresses(); addrs.hasMoreElements(); ) {
-					InetAddress addr = (InetAddress) addrs.nextElement();
+			if (node_interface != null && node_interface != "") {
+				test.outgoingAddress = InetAddress.getByName(node_interface);
+				System.out.println("Using node_interface: " + test.outgoingAddress);
+				bootaddr = test.outgoingAddress;
+			} else {
+				faces: for (Enumeration interfaces = NetworkInterface.getNetworkInterfaces(); interfaces.hasMoreElements(); ) {
+					NetworkInterface face = (NetworkInterface) interfaces.nextElement();
 					
-					if (addr.isAnyLocalAddress()) {
-						break;
-					} else if (addr instanceof Inet4Address && !addr.isLoopbackAddress()) {
-						test.outgoingAddress = addr;
-						System.out.println("Using interface: " + addr);
-						break faces;
+					for(Enumeration addrs = face.getInetAddresses(); addrs.hasMoreElements(); ) {
+						InetAddress addr = (InetAddress) addrs.nextElement();
+						
+						if (addr.isAnyLocalAddress()) {
+							break;
+						} else if (addr instanceof Inet4Address && !addr.isLoopbackAddress()) {
+							test.outgoingAddress = addr;
+							break faces;
+						}
 					}
 				}
+				System.out.println("Using interface: " + test.outgoingAddress);
+				bootaddr = host.equals("-") ? test.outgoingAddress : InetAddress.getByName(host);
 			}
-			bootaddr = host.equals("-") ? test.outgoingAddress : InetAddress.getByName(host);
 			if (bootaddr == null) {
 				throw new RuntimeException("Could not find interface");
 			}
