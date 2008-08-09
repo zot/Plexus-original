@@ -86,6 +86,8 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 
 			if (node_interface != null && node_interface != "") {
 				test.outgoingAddress = InetAddress.getByName(node_interface);
+				System.out.println("Using node_interface: " + test.outgoingAddress);
+				bootaddr = test.outgoingAddress;
 			} else {
 				faces: for (Enumeration interfaces = NetworkInterface.getNetworkInterfaces(); interfaces.hasMoreElements(); ) {
 					NetworkInterface face = (NetworkInterface) interfaces.nextElement();
@@ -101,9 +103,9 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 						}
 					}
 				}
+				System.out.println("Using interface: " + test.outgoingAddress);
+				bootaddr = host.equals("-") ? test.outgoingAddress : InetAddress.getByName(host);
 			}
-			System.out.println("Using interface: " + test.outgoingAddress);
-			bootaddr = host.equals("-") ? test.outgoingAddress : InetAddress.getByName(host);
 			if (bootaddr == null) {
 				throw new RuntimeException("Could not find interface");
 			}

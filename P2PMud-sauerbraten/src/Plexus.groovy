@@ -17,6 +17,7 @@ public class Plexus {
 		props.runCount = String.valueOf(runCount)
 		saveProps()
 
+		System.setProperty('past.storage', props.past.storage)
 		if (props.upnp == '1') pokeHole("Plexus", Integer.parseInt(props.external_port))
 		if (props.node_interface && props.node_interface != '') P2PMudPeer.node_interface = props.node_interface;
 		Test.main(*args)

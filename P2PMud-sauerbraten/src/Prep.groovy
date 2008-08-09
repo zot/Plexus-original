@@ -23,6 +23,7 @@ public class Prep {
 		upnp: '1',
 		auto_sauer: '1',
 		node_interface: '',
+		past_storage:'/tmp/storage-9090'
 	] as Properties
 	def static props = [:] as Properties
 	def static fields = [:]
