@@ -125,8 +125,8 @@ public class Test {
 				}
 				f.size = [500, (int)f.size.height] as Dimension
 			}
+			start(args[0])
 		}
-		start(args[0])
 		P2PMudPeer.main({id, topic, cmd ->
 				pastryCmd = cmd
 				cmd.msgs.each {pastryCmds.invoke(it)}
