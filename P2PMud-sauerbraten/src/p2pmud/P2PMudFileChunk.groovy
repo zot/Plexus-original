@@ -8,8 +8,8 @@ import rice.p2p.past.rawserialization.JavaSerializedPastContentimport rice.p2p.
 import rice.p2p.commonapi.Id;
 
 /**
- * Tempory file representation until we switch to the Git model
- * 
+ * Tempory file representation
+ * need to switch to raw content
  */
 public class P2PMudFileChunk extends ContentHashPastContent {
  	public Id file

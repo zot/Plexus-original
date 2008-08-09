@@ -3,7 +3,6 @@ import rice.p2p.commonapi.IdFactory
 import rice.Continuation
 import rice.pastry.Id
 import p2pmud.P2PMudFile
-import p2pmud.P2PMudFilePath
 import p2pmud.P2PMudPeer
 import p2pmud.P2PMudCommandHandler
 import p2pmud.Player
@@ -51,6 +50,7 @@ public class Test {
 	def plexusTopic
 
 	def static sauerExec
+	def static soleInstance
 	def static TIME_STAMP = new SimpleDateFormat("yyyyMMdd-HHmmsszzz")
 	def static final PLEXUS_KEY = "Plexus: main"
 	def static final WORLDS_KEY = "Plexus: worlds"
@@ -79,6 +79,7 @@ public class Test {
 		println "TST: $a, $b"
 	}
 	def _main(args) {
+		soleInstance = this
 		sauerDir = System.getProperty("sauerdir");
 		name = args[1]
 		if (!verifySauerdir(sauerDir)) {
@@ -250,39 +251,39 @@ public class Test {
 		"$name-${TIME_STAMP.format(new Date())}"
 	}
 	def sendFile(map, id) {
-		println "Saved map, storing in PAST, branch: packages/p2pmud/${mapname}.ogz, path: packages/p2pmud/${map}.ogz"
-		peer.wimpyStoreFile("packages/p2pmud/${mapname}.ogz", sauerDir, "packages/p2pmud/${map}.ogz", [
-			receiveResult: {file ->
-				if (file) {
-					println "Sending load cmd for file: $file: loadmap ${file.getId().toStringFull()}"
-					peer.sendCmds(Id.build(id), ["loadmap ${file.getId().toStringFull()}"] as String[])
-				} else {
-					println "Could not store file for $mapname"
-				}
-			},
-			receiveException: {exception -> err("Error storing file: $mapname", exception)}
-		] as Continuation);
+//		println "Saved map, storing in PAST, branch: packages/p2pmud/${mapname}.ogz, path: packages/p2pmud/${map}.ogz"
+//		peer.wimpyStoreFile(new File(sauerDir, "packages/plexus/cache"), "packages/plexus/${mapname}.ogz", [
+//			receiveResult: {file ->
+//				if (file) {
+//					println "Sending load cmd for file: $file: loadmap ${file.getId().toStringFull()}"
+//					peer.sendCmds(Id.build(id), ["loadmap ${file.getId().toStringFull()}"] as String[])
+//				} else {
+//					println "Could not store file for $mapname"
+//				}
+//			},
+//			receiveException: {exception -> err("Error storing file: $mapname", exception)}
+//		] as Continuation, false);
 	}
 	def loadMap(id) {
-		println "Received load cmd for map: ${id}"
-		peer.wimpyGetFile(Id.build(id), sauerDir, [
-			receiveResult: {result ->
-				def file = result[0]
-				def p2pFile = result[1]
-				def missing = result[2]
-
-				if (missing.isEmpty()) {
-					def mapPath = "p2pmud/${new File(p2pFile.path).getName()}"
-
-					println "Retrieved map from PAST: $file, executing: map [$mapPath]"
-					sauer('load', "echo loading new map: [$mapPath]; map [$mapPath]")
-					dumpCommands()
-				} else {
-					println "Couldn't load file: $file"
-				}
-			},
-			receiveException: {exception -> err("Error retrieving file: $id", exception)}
-		] as Continuation)
+//		println "Received load cmd for map: ${id}"
+//		peer.wimpyGetFile(Id.build(id), sauerDir, [
+//			receiveResult: {result ->
+//				def file = result[0]
+//				def p2pFile = result[1]
+//				def missing = result[2]
+//
+//				if (missing.isEmpty()) {
+//					def mapPath = "p2pmud/${new File(p2pFile.path).getName()}"
+//
+//					println "Retrieved map from PAST: $file, executing: map [$mapPath]"
+//					sauer('load', "echo loading new map: [$mapPath]; map [$mapPath]")
+//					dumpCommands()
+//				} else {
+//					println "Couldn't load file: $file"
+//				}
+//			},
+//			receiveException: {exception -> err("Error retrieving file: $id", exception)}
+//		] as Continuation)
 	}
 	def err(msg, err) {
 		System.err.println(msg)

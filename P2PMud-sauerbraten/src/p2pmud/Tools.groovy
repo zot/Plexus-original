@@ -1,8 +1,13 @@
 package p2pmud
 
 import org.bouncycastle.crypto.digests.SHA1Digest
-import rice.p2p.util.SecurityUtilsimport rice.pastry.Id
-import java.util.zip.ZipFilepublic class Tools {	def static digest = new SHA1Digest()
+import rice.p2p.util.SecurityUtils
+import rice.pastry.Id
+
+import java.util.zip.ZipFile
+
+public class Tools {
+	def static digest = new SHA1Digest()
 
 	def static deleteAll(file) {
 		def f = file as File
@@ -29,6 +34,20 @@ import java.util.zip.ZipFilepublic class Tools {	def static digest = new SHA1D
 			buf += hexDigit(i & 0xF)
 		}
 		buf
+	}
+	def static properties(file) {
+		def input = (file as File).newInputStream()
+		def props = new Properties()
+
+		props.load(input)
+		input.close()
+		props
+	}
+	def static store(properties, file, comment) {
+		def output = (file as File).newOutputStream()
+
+		properties.store(output, comment)
+		output.close()
 	}
 	def static copyAll(from, to) {
 		from = from as File
