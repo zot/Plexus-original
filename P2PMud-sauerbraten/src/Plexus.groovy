@@ -17,7 +17,7 @@ public class Plexus {
 			props.runCount = String.valueOf(runCount)
 			saveProps()
 		}
-		pokeHole("Plexus", Integer.parseInt(props.external_port))
+		if (props.upnp == '1') pokeHole("Plexus", Integer.parseInt(props.external_port))
 		Test.main(*args)
 	}
 	public static saveProps() {
