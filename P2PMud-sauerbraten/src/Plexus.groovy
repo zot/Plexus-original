@@ -3,21 +3,22 @@ import net.sbbi.upnp.devices.*;
 import net.sbbi.upnp.*;
 import static net.sbbi.upnp.Discovery.*;
 import net.sbbi.upnp.impls.InternetGatewayDevice;
+import p2pmud.P2PMudPeer
 
 public class Plexus {
 	def static props
 	def static runCount
 
 	public static void main(String[] args) {
-		if (!args.length) {
-			Prep.main()
-			args = Prep.mainArgs
-			props = Prep.props
-			runCount = props.runCount ? Integer.parseInt(props.runCount) + 1 : 0;
-			props.runCount = String.valueOf(runCount)
-			saveProps()
-		}
+		Prep.main()
+		args = Prep.mainArgs
+		props = Prep.props
+		runCount = props.runCount ? Integer.parseInt(props.runCount) + 1 : 0;
+		props.runCount = String.valueOf(runCount)
+		saveProps()
+
 		if (props.upnp == '1') pokeHole("Plexus", Integer.parseInt(props.external_port))
+		if (props.node_interface && props.node_interface != '') P2PMudPeer.node_interface = props.node_interface;
 		Test.main(*args)
 	}
 	public static saveProps() {

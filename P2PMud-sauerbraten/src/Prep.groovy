@@ -22,6 +22,7 @@ public class Prep {
 		headless: '0',
 		upnp: '1',
 		auto_sauer: '1',
+		node_interface: '',
 	] as Properties
 	def static props = [:] as Properties
 	def static fields = [:]
