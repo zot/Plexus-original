@@ -20,13 +20,13 @@ public class P2PMudFile extends ContentHashPastContent {
 		id = id instanceof Id ? id.toStringFull() : id
 		new File(cacheDir, "${id.substring(0, 2)}/${id.substring(2)}")
 	}
-	def static ArrayList<PastContent> create(cacheDir, file, mutable) {
+	def static ArrayList<PastContent> create(cacheDir, file, mutable, cacheOverride) {
 		try {
 			def result = []
 			def ids = []
 			def bytes = file instanceof byte[] ? file : (file as File).readBytes()
 			def id = Tools.contentId(bytes)
-			def stored = filename(cacheDir, id).exists()
+			def stored = !cacheOverride && filename(cacheDir, id).exists()
 			def data = Tools.encode(bytes)
 
 			for (def i = 0; i < data.length(); i += chunkSize) {
@@ -54,7 +54,6 @@ public class P2PMudFile extends ContentHashPastContent {
 
 		cacheDir = cacheDir as File
 		dir = dir as File
-		def prefixLen = dir.getAbsolutePath().length() + 1
 		dir.eachFileRecurse {
 			println "adding file: $it"
 			files.add(it)
@@ -94,8 +93,8 @@ public class P2PMudFile extends ContentHashPastContent {
 			P2PMudPeer.test.wimpyStoreFile(cacheDir, file, [
 				receiveResult: {res ->
 					println "c: $c"
-					println "relative file: ${files[c].getAbsolutePath().substring(prefixLen)} = ${res.id.toStringFull()}"
-					props[files[c].getAbsolutePath().substring(prefixLen)] = res.id.toStringFull()
+					println "relative file: ${Tools.subpath(dir, files[c])} = ${res.id.toStringFull()}"
+					props[Tools.subpath(dir, files[c])] = res.id.toStringFull()
 					println "added prop to props: $props"
 					mcont.getSubContinuation(c).receiveResult(res)
 				},
