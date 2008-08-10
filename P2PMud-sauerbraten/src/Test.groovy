@@ -284,7 +284,7 @@ public class Test {
 //		] as Continuation, false);
 	}
 	def loadMap(name, id) {
-		def tmpDir = new File("loadMap-${System.currentTimeMillis()}")
+		def tmpDir = new File(plexusDir, "loadMap-${System.currentTimeMillis()}")
 
 		println "Loading map: ${id}"
 		if (id instanceof String) {
@@ -306,13 +306,15 @@ public class Test {
 					Tools.deleteAll(tmpDir)
 					return
 				}
-				tmpDir.renameTo(mapDir)
-				def prefixLen = new File(sauerDir, "packages").getAbsolutePath().length() + 1
-				def mapPath = mapDir.getAbsolutePath().substring(prefixLen)
+				if (!tmpDir.renameTo(mapDir)) {
+					err("Couldn't rename temporary load map dir to $mapDir")
+				} else {
+					def mapPath = Tools.subpath(new File(sauerDir, "packages"), mapDir)
 
-				println "Retrieved map from PAST: $mapDir, executing: map [$mapPath/$name]"
-				sauer('load', "echo loading new map: [$mapPath/$name]; map [$mapPath/$name]")
-				dumpCommands()
+					println "Retrieved map from PAST: $mapDir, executing: map [$mapPath/$name]"
+					sauer('load', "echo loading new map: [$mapPath/$name]; map [$mapPath/$name]")
+					dumpCommands()
+				}
 			},
 			receiveException: {err("Couldn't load map: $id", it)}
 		] as Continuation, false)
@@ -437,8 +439,7 @@ public class Test {
 				}
 			] as Continuation);
 		} else {
-			def prefixLen = sauerDir.getAbsolutePath().length() + 1
-			def errTitle = "Error, There is more than one map in the folder ${parent.getAbsolutePath().substring(prefixLen)}"
+			def errTitle = "Error, There is more than one map in the folder ${Tools.subpath(sauerDir, parent)}"
 			def errMsg = "Please put this map and its requirements in its own map folder"
 
 			println "$errTitle: $errMsg"

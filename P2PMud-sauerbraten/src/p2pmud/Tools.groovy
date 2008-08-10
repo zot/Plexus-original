@@ -77,6 +77,9 @@ public class Tools {
 		copyStreamToFile(from, to)
 		from.close()
 	}
+	def static subpath(file, child) {
+		child.getAbsolutePath().substring(file.getAbsolutePath().length() + 1).replace('\\', '/')
+	}
 	def static copyStreamToFile(fromStr, to) {
 		def tostream = (to as File).newOutputStream()
 		def bytes = new byte[10240]
