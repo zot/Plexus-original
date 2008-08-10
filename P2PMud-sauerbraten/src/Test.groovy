@@ -193,6 +193,7 @@ public class Test {
 						def y = j * 32
 						//println "x: $x y: $y"
 						sauer('delcube', "selcube $x $y 480 1 1 1 32 5; delcube")
+						dumpCommands()
 						
 						if (blocks[i][j] == 'e') {
 							
@@ -201,7 +202,6 @@ public class Test {
 						}
 					}
 				}
-				dumpCommands()
 			}
 			
 			sauer('tex', 'texturereset; setshader stdworld; texture 0 "egyptsoc/lig_b064-02d.jpg"; texture 0 "egyptsoc/stone01a.jpg"; texture 0 "tech1soc/sqrlig03bc.jpg"; ')
@@ -323,7 +323,7 @@ public class Test {
 //		] as Continuation, false);
 	}
 	def loadMap(name, id) {
-		def tmpDir = new File(plexusDir, "loadMap-${System.currentTimeMillis()}")
+		def tmpDir = new File(plexusDir, "maps/loadMap-${System.currentTimeMillis()}")
 
 		println "Loading map: ${id}"
 		if (id instanceof String) {
