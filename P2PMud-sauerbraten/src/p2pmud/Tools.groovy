@@ -64,21 +64,18 @@ public class Tools {
 		}
 	}
 	def static copyFile(from, to) {
+		to = to as File
+		if (to.exists() && to.isDirectory()) {
+			throw new RuntimeException("Cannot copy file as directory");
+		}
 		if (from instanceof byte[]) {
 			from = new ByteArrayInputStream(from)
 		}
-		if (from instanceof InputStream) {
-			copyStreamToFile(from, to)
-		} else {
-			from = from as File
-			to = to as File
-			if (to.exists() && to.isDirectory()) {
-				throw new RuntimeException("Cannot copy file as directory");
-			}
-			def tostream = to.newOutputStream()
-			tostream.write(from.readBytes())
-			tostream.close()
+		if (!(from instanceof InputStream)) {
+			from = (from as File).newInputStream()
 		}
+		copyStreamToFile(from, to)
+		from.close()
 	}
 	def static copyStreamToFile(fromStr, to) {
 		def tostream = (to as File).newOutputStream()
