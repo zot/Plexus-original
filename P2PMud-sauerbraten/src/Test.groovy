@@ -372,8 +372,6 @@ public class Test {
 		} else {
 			setMapsDoc([:] as Properties, true)
 		}
-		setPlayesrDoc([ name : [:] ])
-		peer.broadcastCmds(plexusTopic, "addPlayer $name blah")
 		storeCache()
 	}
 	def setPlayersDoc(doc) {
@@ -393,9 +391,11 @@ public class Test {
 			def friendGui = 'newgui Friends [ guititle "Friends List"\n'
 
 			for (player in playersDoc) {
-				friendGui += "guibutton [$player.key] [echo $player.key ]\n"
+				friendGui += "guibutton [$player.value] [echo $player.key ]\n"
 			}
-			friendGui += "]"
+			if (playersDoc == null || playersDoc.length == 0) friendGui += 'guitext "Sorry, no friends are online!"\n'
+				
+			friendGui += "guibar\n guibutton Close [cleargui] ]"
 			sauer('friend', cvtNewlines(friendGui))
 			dumpCommands()
 		}
@@ -439,6 +439,7 @@ public class Test {
 			for (world in doc) {
 				mapsGui += "guibutton [$world.key] [remotesend connectWorld $world.key $world.value]\n"
 			}
+			
 			mapsGui += "]"
 			mapsDoc = doc
 			sauer('maps', cvtNewlines(mapsGui))
