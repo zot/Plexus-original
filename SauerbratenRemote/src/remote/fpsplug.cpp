@@ -479,14 +479,15 @@ ICOMMAND(selcube, "ssssssss", (char *oX, char *oY, char *oZ, char *sX, char *sY,
 	sel.corner = 0;
 });
 
-ICOMMAND(tc_delcube, "", (), {
+/* ICOMMAND(tc_delcube, "", (), {
 	extern selinfo sel;
 	mpdelcube(sel, true);
-});
+}); */
 
-ICOMMAND(tc_settex, "i", (int index), {
-	extern void edittex(int i);
-	edittex(index);
+ICOMMAND(tc_settex, "ii", (int t, int allfaces), {
+	extern void mpedittex(int tex, int allfaces, selinfo &sel, bool local);
+	extern selinfo sel;
+	mpedittex(t, allfaces, sel, true);
 });
 
 ICOMMAND(debugsel, "", (), {

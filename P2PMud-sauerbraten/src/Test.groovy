@@ -192,8 +192,7 @@ public class Test {
 						def x = i * 32
 						def y = j * 32
 						//println "x: $x y: $y"
-						sauer('delcube', "selcube $x $y 480 1 1 1 32 5; tc_delcube")
-						dumpCommands()
+						sauer('delcube', "selcube $x $y 480 1 1 1 32 5; delcube")
 						
 						if (blocks[i][j] == 'e') {
 							
@@ -202,11 +201,12 @@ public class Test {
 						}
 					}
 				}
+				dumpCommands()
 			}
 			
-			sauer("tex", 'texturereset; texture 0 "egyptsoc/lig_b064-02d.jpg"; texture 0 "egyptsoc/stone01a.jpg"; texture 0 "tech1soc/sqrlig03bc.jpg"; ')
-			for (def side = 0; side < 6; ++side)
-				sauer("texture$side", "selcube 0 0 480 2 2 2 512 $side; tc_settex 1")
+			sauer('tex', 'texturereset; setshader stdworld; texture 0 "egyptsoc/lig_b064-02d.jpg"; texture 0 "egyptsoc/stone01a.jpg"; texture 0 "tech1soc/sqrlig03bc.jpg"; ')
+			sauer("texture$side", "selcube 0 0 480 2 2 2 512 $side; tc_settex 1 1")
+			sauer('finished', 'tc_allowedit 0')
 			dumpCommands()
 			
 		};
