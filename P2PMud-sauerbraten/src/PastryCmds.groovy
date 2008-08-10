@@ -50,7 +50,18 @@ public class PastryCmds extends Cmds {
 	def receiveMaps() {
 		main.setMapsDoc(main.pastryCmd.payload, true)
 	}
+	def receivePlayers() {
+		main.setPlayersDoc(main.pastryCmd.payload)
+	}
 	def addMap(map, id) {
 		main.addMap(map, id)
 	}
-}
+	def addPlayer(name, info) {
+		main.addPlayer(name, info)
+	}
+	def sendPlayers() {
+		def cmd = new P2PMudCommand(main.peer.nodeId, "receivePlayers")
+
+		cmd.payload = main.playersDoc
+		main.peer.sendCmds(main.pastryCmd.from, cmd)
+	}

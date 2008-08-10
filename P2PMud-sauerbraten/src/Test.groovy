@@ -54,7 +54,9 @@ public class Test {
 	def mapTopic
 	def plexusTopic
 	def mapsLock = new Object()
-
+	def playersDoc
+	def playersLock = new Object()
+	
 	def static sauerExec
 	def static soleInstance
 	def static TIME_STAMP = new SimpleDateFormat("yyyyMMdd-HHmmsszzz")
@@ -205,7 +207,7 @@ public class Test {
 			}
 			
 			sauer('tex', 'texturereset; setshader stdworld; texture 0 "egyptsoc/lig_b064-02d.jpg"; texture 0 "egyptsoc/stone01a.jpg"; texture 0 "tech1soc/sqrlig03bc.jpg"; ')
-			sauer("texture$side", "selcube 0 0 480 2 2 2 512 $side; tc_settex 1 1")
+			sauer("texture", "selcube 0 0 480 2 2 2 512 0; tc_settex 1 1")
 			sauer('finished', 'tc_allowedit 0')
 			dumpCommands()
 			
@@ -370,7 +372,33 @@ public class Test {
 		} else {
 			setMapsDoc([:] as Properties, true)
 		}
+		setPlayesrDoc([ name : [:] ])
+		peer.broadcastCmds(plexusTopic, "addPlayer $name blah")
 		storeCache()
+	}
+	def setPlayersDoc(doc) {
+		synchronized (playersLock) {
+			playersDoc = doc
+		}
+		updateFriendList()
+	}
+	def addPlayer(name, info) {
+		synchronized (playersLock) {
+			playersDoc[name] = info
+		}
+		updateFriendList()
+	}
+	def updateFriendList() {
+		synchronized (playersLock) {
+			def friendGui = 'newgui Friends [ guititle "Friends List"\n'
+
+			for (player in playersDoc) {
+				friendGui += "guibutton [$player.key] [echo $player.key ]\n"
+			}
+			friendGui += "]"
+			sauer('friend', cvtNewlines(friendGui))
+			dumpCommands()
+		}
 	}
 	def storeCache() {
 		if (cacheDir.exists()) {
@@ -422,6 +450,7 @@ public class Test {
 	}
 	def initJoin() {
 		peer.anycastCmds(plexusTopic, "sendMaps")
+		peer.anycastCmds(plexusTopic, "sendPlayers")
 	}
 	def connectWorld(name, id) {
 		println "CONNECTING TO WORLD: $id"
