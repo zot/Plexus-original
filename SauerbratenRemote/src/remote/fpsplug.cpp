@@ -458,6 +458,35 @@ int zup = 0;
 ICOMMAND(zup, "s", (char *amt), { int a = amt ? abs(atoi(amt)) : 10;  zup = a; });
 ICOMMAND(zdown, "s", (char *amt), { int a = amt ? abs(atoi(amt)) : 10;  zup = -a; });
 
+inline int parse(char *c) {
+	return (c && c[0]) ? atoi(c) : 0;
+}
+
+ICOMMAND(selcube, "ssssssss", (char *oX, char *oY, char *oZ, char *sX, char *sY, char *sZ, char *grid, char *orient), {
+	extern selinfo sel;
+	sel.o.x = parse(oX);
+	sel.o.y = parse(oY);
+	sel.o.z = parse(oZ);
+	sel.s.x = parse(sX);
+	sel.s.y = parse(sY);
+	sel.s.z = parse(sZ);
+	sel.grid = parse(grid);
+	sel.orient = parse(orient);
+	sel.cx = 0;
+	sel.cxs = 0;
+	sel.cy = 0;
+	sel.cys = 0;
+	sel.corner = 0;
+});
+
+ICOMMAND(debugsel, "", (), {
+	extern selinfo sel;
+	char buf[512];
+	snprintf(buf, sizeof(buf), "o (%d %d %d) s (%d %d %d) grd %d or %d, cx (%d %d %d %d) corner %d",
+               sel.o.x, sel.o.y, sel.o.z, sel.s.x, sel.s.y, sel.s.z, sel.grid, sel.orient,
+               sel.cx, sel.cxs, sel.cy, sel.cys, sel.corner);
+	result(buf);
+});
 
 static void hit_shooter() {
 	if (moderator.hittype != NONE) {

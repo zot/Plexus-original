@@ -13,8 +13,9 @@ import groovy.swing.SwingBuilderimport groovy.swing.SwingBuilderimport net.mig
 	def E = 2;
 	def S = 4;
 	def W = 8;
-	def roomsize = 4, hallsize = 1, cellsz = roomsize + (hallsize * 2)
-			
+	def roomsize = 3, hallsize = 1, cellsz = roomsize + (hallsize * 2)
+	def blockRows, blockCols
+	
 	def public Dungeon(r, c) {
 		ROWS = r;
 		COLS = c;
@@ -355,9 +356,11 @@ import groovy.swing.SwingBuilderimport groovy.swing.SwingBuilderimport net.mig
 	}
 	*/
 	def convertTo3DBlocks() {
-		def blocks = new Object[ROWS * cellsz]
+		blockRows = ROWS * cellsz
+		blockCols = COLS * cellsz
+		def blocks = new Object[blockRows]
 		for (def i = 0; i < ROWS * cellsz; ++i) {
-			blocks[i] = new Object[COLS * cellsz]
+			blocks[i] = new Object[blockCols]
 			for (def j = 0; j < COLS * cellsz; ++j) {
 				blocks[i][j] = 'X'
 			}
@@ -403,10 +406,9 @@ import groovy.swing.SwingBuilderimport groovy.swing.SwingBuilderimport net.mig
 				label(text: lbl)
 				//fields[key] = textField(actionPerformed: {setprop(key)}, focusLost: {setprop(key)}, text: p[key], constraints: 'wrap, growx')
 			}
-			def cellwidth = cellsz * COLS
-				f = frame(title: 'Plexus', windowClosing: {System.exit(0)}, layout: new MigLayout("wrap $cellwidth"), pack: true, show: true) {
-			    for (i = 0; i < ROWS * cellsz; i++) {
-			        for (j = 0; j < COLS * cellsz; j++) {
+				f = frame(title: 'Plexus', windowClosing: {System.exit(0)}, layout: new MigLayout("wrap $blockCols"), pack: true, show: true) {
+			    for (i = 0; i < blockRows; i++) {
+			        for (j = 0; j < blockCols; j++) {
 		            	label(text: blocks[i][j])
 		            }
 		        }

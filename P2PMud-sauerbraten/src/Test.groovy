@@ -6,6 +6,7 @@ import p2pmud.P2PMudFile
 import p2pmud.P2PMudPeer
 import p2pmud.P2PMudCommandHandler
 import p2pmud.Player
+import p2pmud.Dungeon
 import java.awt.Dimension
 import java.awt.Component
 import javax.swing.BoxLayout
@@ -122,6 +123,7 @@ public class Test {
 					label(text: "Command: ")
 					fields.cmd = textField(actionPerformed: {cmd()}, constraints: 'wrap, growx')
 					button(text: "Launch 3D", actionPerformed: {launchSauer()})
+					button(text: "Generate Dungeon", actionPerformed: {generateDungeon()})
 				}
 				f.size = [500, (int)f.size.height] as Dimension
 			}
@@ -159,6 +161,43 @@ public class Test {
 			if (sauerExec) {
 				Runtime.getRuntime().exec(sauerExec)
 			}
+		};
+	}
+	// generate a random dungeon
+	def generateDungeon() {
+		println ("Going to generate dungeon")
+		Thread.start {
+			sauer('newmap', 'newmap')
+			sauer('music', 'musicvol 0')
+			dumpCommands()
+			def dungeon = new Dungeon(6, 6)
+			
+		    dungeon.generate_maze();
+			
+			def blocks = dungeon.convertTo3DBlocks()
+			
+			for (def i = 0; i < dungeon.blockRows; ++i) {
+				for (def j = 0; j < dungeon.blockCols; ++j) {
+					if (blocks[i][j] != 'X') {
+						def x = i * 32
+						def y = j * 32
+						//println "x: $x y: $y"
+						sauer('delcube', "selcube $x $y 480 1 1 1 32 5; delcube")
+						dumpCommands()
+						
+						if (blocks[i][j] == 'e') {
+							
+						} else if (blocks[i][j] == 's') {
+							
+						}
+					}
+				}
+			}
+			
+			for (def side = 0; side < 6; ++side)
+				sauer("texture$side", "selcube 0 0 480 2 2 2 512 $side; edittex -999; edittex 261")
+			dumpCommands()
+			
 		};
 	}
 	def usage(msg) {
