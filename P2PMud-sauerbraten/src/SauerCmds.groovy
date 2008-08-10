@@ -30,6 +30,7 @@ public class SauerCmds extends Cmds {
 			"tc_editent ${args.join(' ')}"
 		])
 	}
+	def tc_newmap() {}
 	def position(name, String... args) {
 		if (main.names[name] == main.name) {
 			if (main.swing) {
@@ -56,7 +57,14 @@ public class SauerCmds extends Cmds {
 	def sendfile(map, id) {
 		main.sendFile(map, id)
 	}
-	def connectWorld(id) {
-		main.connectWorld(id)
+	def connectWorld(name, id) {
+		main.connectWorld(name, id)
+	}
+	def initiatePush(mapName) {
+		main.initiatePush(mapName)
+	}
+	def pushMap(mapName) {
+		println "Sauer sent: pushMap $mapName"
+		main.pushMap(mapName)
 	}
 }

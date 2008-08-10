@@ -174,6 +174,6 @@ public class P2PMudFile extends ContentHashPastContent {
 		filename(cacheDir, id.toStringFull())
 	}
 	def fetchDir(cacheDir, dir, cont) {
-		fetchDirFromProperties(cacheDir, Tools.properties(filename(cacheDir)), dir, cont)
+		fetchDirFromProperties(cacheDir, getId(), Tools.properties(filename(cacheDir)), dir, cont)
 	}
 }

@@ -431,10 +431,14 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		}
 	}
 	public void anycastCmds(Topic myTopic, String cmds[]) {
-		myScribe.anycast(myTopic, new P2PMudScribeContent(new P2PMudCommand(node.getId(), cmds))); 
+		if (myTopic != null) {
+			myScribe.anycast(myTopic, new P2PMudScribeContent(new P2PMudCommand(node.getId(), cmds)));
+		}
 	}
 	public void broadcastCmds(Topic myTopic, String cmds[]) {
-		myScribe.publish(myTopic, new P2PMudScribeContent(new P2PMudCommand(node.getId(), cmds))); 
+		if (myTopic != null) {
+			myScribe.publish(myTopic, new P2PMudScribeContent(new P2PMudCommand(node.getId(), cmds)));
+		}
 	}
 	public void sendCmds(String cmds[]) {
 		getOther();
@@ -448,18 +452,25 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	public void sendCmds(Id id, P2PMudCommand cmd) {
 		endpoint.route(id, new P2PMudMessage(cmd), null);
 	}
+	/**
+	 * sends the P2PMudFile to cont
+	 */
 	public void wimpyStoreFile(final File cacheDir, final Object filename, final Continuation<P2PMudFile, Exception> cont, boolean mutable) {
 		final ArrayList<PastContent> chunks = P2PMudFile.create(cacheDir, filename, mutable);
 
 		if (chunks.size() == 1) {
-			System.out.println("NOT STORING FILE: " + (filename instanceof byte[] ? "<data>" : filename) + " because it is already cached");
+			System.out.println("FILE ALREADY CACHED: " + (filename instanceof byte[] ? "<data>" : filename) + " because it is already cached");
 			cont.receiveResult((P2PMudFile) chunks.get(0));
 		} else {
 			System.out.println("STORING FILE: " + chunks.get(0));
 			storeChunks((P2PMudFile)chunks.get(0), new Continuation<P2PMudFile, Exception>() {
 				public void receiveResult(P2PMudFile result) {
-					System.out.println("SUCCEEDED STORING FILE: " + chunks.get(0));
-					cont.receiveResult((P2PMudFile) chunks.get(0));
+					File dest = result.filename(cacheDir);
+
+					System.out.println("SUCCEEDED STORING FILE: " + result);
+					dest.getParentFile().mkdirs();
+					Tools.copyFile(filename, dest);
+					cont.receiveResult(result);
 				}
 				public void receiveException(Exception exception) {
 					System.out.println("FAILED TO STORE FILE: " + chunks.get(0));
@@ -496,6 +507,9 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 			past.insert(chunks.get(i), multi.getSubContinuation(i));
 		}
 	}
+	/**
+	 * Sends {filename, missingChunks, P2PMudFile, id} to handler
+	 */
 	public void wimpyGetFile(final Id id, final File cacheDir, final Continuation handler) {
 		System.out.println("LOOKING UP: " + id.toStringFull());
 		cacheDir.mkdirs();
