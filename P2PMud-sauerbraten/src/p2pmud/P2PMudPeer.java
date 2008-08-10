@@ -536,17 +536,19 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		}
 	}
 	protected void getChunks(final File cacheDir, final Continuation handler, final P2PMudFile file, final ArrayList<Id> chunks, final String data[], final int attempt) {
-		System.out.println("GETTING " + chunks.size() + " CHUNKS...");
+		int count = Math.min(chunks.size(), 5);
+
+		System.out.println("GETTING " + count + " CHUNKS...");
 		if (attempt > 5) {
 			//maybe pass the missing chunks in this exception
 			handler.receiveException(new RuntimeException("Made " + attempt + " attempts to get file without receiving any new data"));
 			return;
 		}
+		final ArrayList<Id> missing = new ArrayList<Id>();
+
 		final MultiContinuation cont = new MultiContinuation(new Continuation<Object[], Exception>() {
 			public void receiveResult(Object result[]) {
 				try {
-					final ArrayList<Id> missing = new ArrayList<Id>();
-
 					for (int i = 0; i < result.length; i++) {
 						if (result[i] instanceof Exception || result[i] == null) {
 							missing.add(chunks.get(i));
@@ -576,7 +578,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 						new Thread() {
 							public void run() {
 								try {
-									Thread.sleep(3000);
+//									Thread.sleep(3000);
 									getChunks(cacheDir, handler, file, missing, data, missing.size() == chunks.size() ? attempt + 1 : 0);
 								} catch (Exception ex) {
 									handler.receiveException(ex);
@@ -591,9 +593,12 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 			public void receiveException(Exception exception) {
 				handler.receiveException(exception);
 			}
-		}, chunks.size());
+		}, count);
 
-		for (int i = 0; i < chunks.size(); i++) {
+		for (int i = count; i < chunks.size(); i++) {
+			missing.add(chunks.get(i));
+		}
+		for (int i = 0; i < count; i++) {
 			System.out.println("LOOKING UP CHUNK: " + chunks.get(i).toStringFull());
 			past.lookup(chunks.get(i), cont.getSubContinuation(i));
 		}

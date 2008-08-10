@@ -284,7 +284,7 @@ public class Test {
 //		] as Continuation, false);
 	}
 	def loadMap(name, id) {
-		def tmpDir = new File(plexusDir, "loadMap-${System.currentTimeMillis()}")
+		def tmpDir = new File(plexusDir, "maps/loadMap-${System.currentTimeMillis()}")
 
 		println "Loading map: ${id}"
 		if (id instanceof String) {
@@ -307,7 +307,7 @@ public class Test {
 					return
 				}
 				if (!tmpDir.renameTo(mapDir)) {
-					err("Couldn't rename temporary load map dir to $mapDir")
+					err("Couldn't rename temporary load map dir to $mapDir", new Exception())
 				} else {
 					def mapPath = Tools.subpath(new File(sauerDir, "packages"), mapDir)
 

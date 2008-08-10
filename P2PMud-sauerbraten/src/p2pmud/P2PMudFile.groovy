@@ -12,7 +12,7 @@ public class P2PMudFile extends ContentHashPastContent {
 	public int size
 	public boolean mutable
 
-	public static chunkSize = 10000
+	public static chunkSize = 50000
 
 	private static final long serialVersionUID = 1L
 
