@@ -479,6 +479,16 @@ ICOMMAND(selcube, "ssssssss", (char *oX, char *oY, char *oZ, char *sX, char *sY,
 	sel.corner = 0;
 });
 
+ICOMMAND(tc_delcube, "", (), {
+	extern selinfo sel;
+	mpdelcube(sel, true);
+});
+
+ICOMMAND(tc_settex, "i", (int index), {
+	extern void edittex(int i);
+	edittex(index);
+});
+
 ICOMMAND(debugsel, "", (), {
 	extern selinfo sel;
 	char buf[512];

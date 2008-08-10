@@ -177,8 +177,7 @@ public class Test {
 	def generateDungeon() {
 		println ("Going to generate dungeon")
 		Thread.start {
-			sauer('newmap', 'newmap')
-			sauer('music', 'musicvol 0')
+			sauer('newmap', 'tc_allowedit 1; newmap; musicvol 0')
 			dumpCommands()
 			def dungeon = new Dungeon(6, 6)
 			
@@ -192,7 +191,7 @@ public class Test {
 						def x = i * 32
 						def y = j * 32
 						//println "x: $x y: $y"
-						sauer('delcube', "selcube $x $y 480 1 1 1 32 5; delcube")
+						sauer('delcube', "selcube $x $y 480 1 1 1 32 5; tc_delcube")
 						dumpCommands()
 						
 						if (blocks[i][j] == 'e') {
@@ -204,8 +203,9 @@ public class Test {
 				}
 			}
 			
+			sauer("tex", 'texturereset; texture 0 "egyptsoc/lig_b064-02d.jpg"; texture 0 "egyptsoc/stone01a.jpg"; texture 0 "tech1soc/sqrlig03bc.jpg"; ')
 			for (def side = 0; side < 6; ++side)
-				sauer("texture$side", "selcube 0 0 480 2 2 2 512 $side; edittex -999; edittex 261")
+				sauer("texture$side", "selcube 0 0 480 2 2 2 512 $side; tc_settex 1")
 			dumpCommands()
 			
 		};
