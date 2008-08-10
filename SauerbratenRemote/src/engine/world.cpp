@@ -990,7 +990,12 @@ void startmap(const char *name)
 
 bool emptymap(int scale, bool force, const char *mname)    // main empty world creation routine
 {
+#ifdef TC
+	extern int tc_allowedit;
+    if(!tc_allowedit && !force && !editmode) 
+#else
     if(!force && !editmode) 
+#endif
     {
         conoutf(CON_ERROR, "newmap only allowed in edit mode");
         return false;

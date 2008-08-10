@@ -143,9 +143,15 @@ void toggleedit(bool force)
     if(fullbright) initlights();
     if(!force) cc->edittoggled(editmode);
 }
+#ifdef TC
+VAR(tc_allowedit, 0, 0, 1);
+#endif
 
 bool noedit(bool view)
 {
+#ifdef TC
+	if (tc_allowedit) return false;
+#endif
     if(!editmode) { conoutf(CON_ERROR, "operation only allowed in edit mode"); return true; }
     if(view || haveselent()) return false;
     float r = 1.0f;
