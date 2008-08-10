@@ -455,21 +455,25 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	/**
 	 * sends the P2PMudFile to cont
 	 */
-	public void wimpyStoreFile(final File cacheDir, final Object filename, final Continuation<P2PMudFile, Exception> cont, boolean mutable) {
+	public void wimpyStoreFile(final File cacheDir, final Object filename, final Continuation<P2PMudFile, Exception> cont, boolean mutable, boolean cacheOverride) {
 		final ArrayList<PastContent> chunks = P2PMudFile.create(cacheDir, filename, mutable);
 
-		if (chunks.size() == 1) {
+		if (!cacheOverride && chunks.size() == 1) {
 			System.out.println("FILE ALREADY CACHED: " + (filename instanceof byte[] ? "<data>" : filename) + " because it is already cached");
 			cont.receiveResult((P2PMudFile) chunks.get(0));
 		} else {
-			System.out.println("STORING FILE: " + chunks.get(0));
+			final boolean overriding = cacheOverride && chunks.size() == 1;
+
+			System.out.println("STORING FILE: " + chunks.get(0) + (overriding ? " [overriding cache]" : ""));
 			storeChunks((P2PMudFile)chunks.get(0), new Continuation<P2PMudFile, Exception>() {
 				public void receiveResult(P2PMudFile result) {
 					File dest = result.filename(cacheDir);
 
 					System.out.println("SUCCEEDED STORING FILE: " + result);
 					dest.getParentFile().mkdirs();
-					Tools.copyFile(filename, dest);
+					if (!overriding) {
+						Tools.copyFile(filename, dest);
+					}
 					cont.receiveResult(result);
 				}
 				public void receiveException(Exception exception) {

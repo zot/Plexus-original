@@ -1,3 +1,4 @@
+import rice.Continuation.MultiContinuation
 import p2pmud.Tools
 import java.text.SimpleDateFormat
 import rice.p2p.commonapi.IdFactory
@@ -322,51 +323,41 @@ public class Test {
 //		] as Continuation, false);
 	}
 	def loadMap(name, id) {
+		def tmpDir = new File("loadMap-${System.currentTimeMillis()}")
+
 		println "Loading map: ${id}"
 		if (id instanceof String) {
 			id = Id.build(id)
 		}
-		peer.wimpyGetFile(id, cacheDir, [
-			receiveResult: {result ->
-				def filename = result[0]
-				def missing = result[1]
-				def file = result[2]
-
-				if (!missing || missing.isEmpty()) {
-					def mapDir = new File(plexusDir, "maps/$name")
-					def count = 0
-					def backup = mapDir
-					
-					while (backup.exists()) {
-						count++
-						backup = new File("${mapDir.getAbsolutePath()}-$count")
-					}
-					if (count && !mapDir.renameTo(backup)) {
-						sauer('msg', "showmessage [Could not backup old map dir: $backup]")
-						dumpCommands()
-						return
-					}
-					mapDir.getParentFile().mkdirs()
-					P2PMudFile.fetchDirFromProperties(cacheDir, id, Tools.properties(P2PMudFile.filename(cacheDir, id)), mapDir, [
-						receiveResult: {
-							def prefixLen = new File(sauerDir, "packages").getAbsolutePath().length() + 1
-							def mapPath = mapDir.getAbsolutePath().substring(prefixLen)
-
-							println "Retrieved map from PAST: $filename, executing: map [$mapPath/$name]"
-							sauer('load', "echo loading new map: [$mapPath/$name]; map [$mapPath/$name]")
-							dumpCommands()
-						},
-						receiveException: {err("Error retrieving file: $id", it)}
-					], false)
-				} else {
-					println "Couldn't load file: $filename"
+		P2PMudFile.fetchDir(id, cacheDir, tmpDir, [
+			receiveResult: {
+				def mapDir = new File(plexusDir, "maps/$name")
+				def count = 0
+				def backup = mapDir
+				
+				while (backup.exists()) {
+					count++
+					backup = new File("${mapDir.getAbsolutePath()}-$count")
 				}
+				if (count && !mapDir.renameTo(backup)) {
+					sauer('msg', "showmessage [Could not backup old map dir: $backup]")
+					dumpCommands()
+					Tools.deleteAll(tmpDir)
+					return
+				}
+				tmpDir.renameTo(mapDir)
+				def prefixLen = new File(sauerDir, "packages").getAbsolutePath().length() + 1
+				def mapPath = mapDir.getAbsolutePath().substring(prefixLen)
+
+				println "Retrieved map from PAST: $mapDir, executing: map [$mapPath/$name]"
+				sauer('load', "echo loading new map: [$mapPath/$name]; map [$mapPath/$name]")
+				dumpCommands()
 			},
-			receiveException: {err("Error retrieving file: $id", it)}
-		] as Continuation)
+			receiveException: {err("Couldn't load map: $id", it)}
+		] as Continuation, false)
 	}
 	def err(msg, err) {
-		System.err.println(msg)
+		println(msg)
 		err.printStackTrace();
 	}
 	def initBoot() {
@@ -376,6 +367,33 @@ public class Test {
 			setMapsDoc(Tools.properties(maps), false)
 		} else {
 			setMapsDoc([:] as Properties, true)
+		}
+		storeCache()
+	}
+	def storeCache() {
+		if (cacheDir.exists()) {
+			def files = []
+			def count = 0
+	
+			cacheDir.eachFile {
+				it.eachFile {
+					files.add(it)
+				}
+			}
+			def mcont = new MultiContinuation([
+				receiveResult: {
+					println "FINISHED PUSHING CACHE"
+					sauer('msg', 'showmessage Ready [Finished pushing cache in PAST]')
+					dumpCommands()
+				},
+				receiveException: {
+					println "FAILED TO PUSH CACHE"
+					err("Error pushing cache in PAST", it)
+				}
+			] as Continuation, files.size())
+			for (file in files) {
+				peer.wimpyStoreFile(cacheDir, file, mcont.getSubContinuation(count++), false, true)
+			}
 		}
 	}
 	def addMap(mapName, id) {
