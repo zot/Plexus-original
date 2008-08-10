@@ -48,6 +48,9 @@ public class PastryCmds extends Cmds {
 		main.peer.sendCmds(main.pastryCmd.from, cmd)
 	}
 	def receiveMaps() {
-		main.setMapsDoc(main.pastryCmd.payload)
+		main.setMapsDoc(main.pastryCmd.payload, true)
+	}
+	def addMap(map, id) {
+		main.addMap(map, id)
 	}
 }

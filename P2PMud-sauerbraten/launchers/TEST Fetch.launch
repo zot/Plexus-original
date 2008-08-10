@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launchConfiguration type="org.codehaus.groovy.eclipse.groovyLaunchConfiguration">
+<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
+<listEntry value="/P2PMud-sauerbraten/src/p2pmud/P2PMudPeer.java"/>
+</listAttribute>
+<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
+<listEntry value="1"/>
+</listAttribute>
+<booleanAttribute key="org.eclipse.debug.core.appendEnvironmentVariables" value="true"/>
+<stringAttribute key="org.eclipse.debug.core.source_locator_id" value="org.codehaus.groovy.eclipse.editor.groovySourceLocator"/>
+<stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="p2pmud.P2PMudPeer"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="9091 192.168.2.2 9090 -fetch /tmp/cache-fetch /tmp/dst 3FD77C76D6DE30F2FBB3B0636461BA64FB47A130"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="P2PMud-sauerbraten"/>
+<stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Dpast.storage=/tmp/storage-9091&#10;-Dsauerdir=${SAUERDIR}"/>
+</launchConfiguration>

@@ -57,10 +57,13 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	private static Runnable neighborChange;
 
 	private static final P2PMudPeer test = new P2PMudPeer();
+	private static final int NONE = -1;
 	private static final int SCRIBE = 0;
 	private static final int PAST = 1;
 	private static final int PAST_GET = 2;
 	private static final int CMD = 3;
+	private static final int STORE = 4;
+	private static final int FETCH = 5;
 	private static ArrayList<String> savedCmds = new ArrayList<String>();
 	private static String probeHost;
 	private static int probePort;
@@ -126,11 +129,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 
 					probeHost = args[i].substring(0, col);
 					probePort = Integer.parseInt(args[i].substring(col + 1));
-				} else if (args[i].equalsIgnoreCase("-scribe")
-						|| args[i].equalsIgnoreCase("-past")
-						|| args[i].equalsIgnoreCase("-pastget")
-						|| args[i].equalsIgnoreCase("-cmd")
-						|| args[i].charAt(0) != '-') {
+				} else {
 					savedCmds.add(args[i]);
 				}
 			}
@@ -141,8 +140,8 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 					public void run() {
 						try {
 							Thread.sleep(5000);
-							mode = SCRIBE;
-							for (int i = 3; i < savedCmds.size(); i++) {
+							mode = NONE;
+							for (int i = 0; i < savedCmds.size(); i++) {
 								if (savedCmds.get(i).equalsIgnoreCase("-scribe")) {
 									mode = SCRIBE;
 								} else if (savedCmds.get(i).equalsIgnoreCase("-past")) {
@@ -151,9 +150,10 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 									mode = PAST_GET;
 								} else if (savedCmds.get(i).equalsIgnoreCase("-cmd")) {
 									mode = CMD;
-								} else if (savedCmds.get(i).equalsIgnoreCase("-external")) {
-									i++;
-									continue;
+								} else if (savedCmds.get(i).equalsIgnoreCase("-store")) {
+									mode = STORE;
+								} else if (savedCmds.get(i).equalsIgnoreCase("-fetch")) {
+									mode = FETCH;
 								} else if (savedCmds.get(i).charAt(0) != '-') {
 									switch (mode) {
 									case SCRIBE: {
@@ -212,6 +212,43 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 										};
 										test.sendCmds(new String[]{savedCmds.get(i)});
 										break;
+									case STORE: {
+										String cacheDir = savedCmds.get(i);
+										String srcDir = savedCmds.get(++i);
+
+										System.out.println("STORING DIR: " + srcDir + ", cache: " + cacheDir);
+										P2PMudFile.storeDir(cacheDir, srcDir, new Continuation() {
+											public void receiveResult(Object result) {
+												System.out.println("Stored dir: " + result);
+											}
+											public void receiveException(Exception exception) {
+												exception.printStackTrace();
+											}
+										});
+										break;
+									}
+									case FETCH: {
+										final String cacheDir = savedCmds.get(i);
+										final String dstDir = savedCmds.get(++i);
+										String id = savedCmds.get(++i);
+
+										test.wimpyGetFile(rice.pastry.Id.build(id), new File(cacheDir), new Continuation<Object[], Exception>() {
+											public void receiveResult(Object result[]) {
+												P2PMudFile.fetchDirFromProperties(cacheDir, result[3], Tools.properties(result[0]), dstDir, new Continuation() {
+													public void receiveResult(Object result) {
+														System.out.println("STORED");
+													}
+													public void receiveException(Exception exception) {
+														exception.printStackTrace();
+													}
+												}, false);
+											};
+											public void receiveException(Exception exception) {
+												exception.printStackTrace();
+											};
+										});
+										break;
+									}
 									}
 								}
 							}
@@ -394,10 +431,14 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		}
 	}
 	public void anycastCmds(Topic myTopic, String cmds[]) {
-		myScribe.anycast(myTopic, new P2PMudScribeContent(new P2PMudCommand(node.getId(), cmds))); 
+		if (myTopic != null) {
+			myScribe.anycast(myTopic, new P2PMudScribeContent(new P2PMudCommand(node.getId(), cmds)));
+		}
 	}
 	public void broadcastCmds(Topic myTopic, String cmds[]) {
-		myScribe.publish(myTopic, new P2PMudScribeContent(new P2PMudCommand(node.getId(), cmds))); 
+		if (myTopic != null) {
+			myScribe.publish(myTopic, new P2PMudScribeContent(new P2PMudCommand(node.getId(), cmds)));
+		}
 	}
 	public void sendCmds(String cmds[]) {
 		getOther();
@@ -411,25 +452,35 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	public void sendCmds(Id id, P2PMudCommand cmd) {
 		endpoint.route(id, new P2PMudMessage(cmd), null);
 	}
-	public void wimpyStoreFile(final File cacheDir, final File filename, final Continuation<P2PMudFile, Exception> cont, boolean mutable) {
+	/**
+	 * sends the P2PMudFile to cont
+	 */
+	public void wimpyStoreFile(final File cacheDir, final Object filename, final Continuation<P2PMudFile, Exception> cont, boolean mutable) {
 		final ArrayList<PastContent> chunks = P2PMudFile.create(cacheDir, filename, mutable);
 
 		if (chunks.size() == 1) {
-			System.out.println("NOT STORING FILE: " + filename + " because it is already cached");
+			System.out.println("FILE ALREADY CACHED: " + (filename instanceof byte[] ? "<data>" : filename) + " because it is already cached");
 			cont.receiveResult((P2PMudFile) chunks.get(0));
 		} else {
 			System.out.println("STORING FILE: " + chunks.get(0));
-			storeChunks(new Continuation<P2PMudFile, Exception>() {
+			storeChunks((P2PMudFile)chunks.get(0), new Continuation<P2PMudFile, Exception>() {
 				public void receiveResult(P2PMudFile result) {
-					cont.receiveResult((P2PMudFile) chunks.get(0));
+					File dest = result.filename(cacheDir);
+
+					System.out.println("SUCCEEDED STORING FILE: " + result);
+					dest.getParentFile().mkdirs();
+					Tools.copyFile(filename, dest);
+					cont.receiveResult(result);
 				}
 				public void receiveException(Exception exception) {
+					System.out.println("FAILED TO STORE FILE: " + chunks.get(0));
+					exception.printStackTrace();
 					cont.receiveException(exception);
 				}
 			}, chunks, 5);
 		}
 	}
-	protected void storeChunks(final Continuation<P2PMudFile, Exception> cont, final ArrayList<PastContent> chunks, final int attempts) {
+	protected void storeChunks(final P2PMudFile mudFile, final Continuation<P2PMudFile, Exception> cont, final ArrayList<PastContent> chunks, final int attempts) {
 		final ArrayList<PastContent> failed = new ArrayList<PastContent>();
 		MultiContinuation multi = new MultiContinuation(new Continuation<Object[], Exception>() {
 			public void receiveResult(Object[] result) {
@@ -439,11 +490,11 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 					}
 				}
 				if (failed.isEmpty()) {
-					cont.receiveResult(null);
+					cont.receiveResult(mudFile);
 				} else if (attempts == 0) {
 					cont.receiveException(new RuntimeException("Failed to store chunks"));
 				} else {
-					storeChunks(cont, failed, attempts - 1);
+					storeChunks(mudFile, cont, failed, attempts - 1);
 				}
 			}
 			public void receiveException(Exception exception) {
@@ -456,11 +507,14 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 			past.insert(chunks.get(i), multi.getSubContinuation(i));
 		}
 	}
+	/**
+	 * Sends {filename, missingChunks, P2PMudFile, id} to handler
+	 */
 	public void wimpyGetFile(final Id id, final File cacheDir, final Continuation handler) {
 		System.out.println("LOOKING UP: " + id.toStringFull());
 		cacheDir.mkdirs();
 		if (P2PMudFile.filename(cacheDir, id).exists()) {
-			handler.receiveResult(new Object[]{P2PMudFile.filename(cacheDir, id), null, null});
+			handler.receiveResult(new Object[]{P2PMudFile.filename(cacheDir, id), null, null, id});
 		} else {
 			past.lookup(id, new Continuation<P2PMudFile, Exception>() {
 				public void receiveResult(final P2PMudFile file) {
@@ -502,8 +556,9 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 					}
 					if (missing.isEmpty()) {
 						File fn = file.filename(cacheDir);
+						fn.getParentFile().mkdirs();
 						FileOutputStream output = new FileOutputStream(fn);
-						Object value[] = {fn, missing.isEmpty() ? null : missing, file};
+						Object value[] = {fn, missing.isEmpty() ? null : missing, file, file.getId()};
 						StringBuffer buf = new StringBuffer();
 
 						for (int i = 0; i < data.length; i++) {
