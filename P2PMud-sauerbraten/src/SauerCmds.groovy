@@ -30,7 +30,7 @@ public class SauerCmds extends Cmds {
 			"tc_editent ${args.join(' ')}"
 		])
 	}
-	def tc_newmap() {}
+	def tc_newmap(String name) {}
 	def position(name, String... args) {
 		if (main.names[name] == main.name) {
 			if (main.swing) {

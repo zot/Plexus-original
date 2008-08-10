@@ -205,7 +205,7 @@ public class Test {
 			}
 			
 			sauer('tex', 'texturereset; setshader stdworld; texture 0 "egyptsoc/lig_b064-02d.jpg"; texture 0 "egyptsoc/stone01a.jpg"; texture 0 "tech1soc/sqrlig03bc.jpg"; ')
-			sauer("texture$side", "selcube 0 0 480 2 2 2 512 $side; tc_settex 1 1")
+			sauer("texture", "selcube 0 0 480 2 2 2 512 0; tc_settex 1 1")
 			sauer('finished', 'tc_allowedit 0')
 			dumpCommands()
 			

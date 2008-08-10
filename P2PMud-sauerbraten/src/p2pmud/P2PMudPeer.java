@@ -283,7 +283,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		env = new Environment();
 //		env.getParameters().setInt("loglevel", Logger.FINE);
 		// disable the UPnP setting (in case you are testing this on a NATted LAN)
-		env.getParameters().setInt("p2p_past_messageTimeout", Integer.parseInt(System.getProperty("past.timeout", "10000")));
+		env.getParameters().setInt("p2p_past_messageTimeout", Integer.parseInt(System.getProperty("past.timeout", "15000")));
 		env.getParameters().setString("nat_search_policy", "never");
 		env.getParameters().setString("probe_for_external_address", "true");
 		NodeIdFactory nidFactory = new RandomNodeIdFactory(env);
@@ -304,7 +304,6 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		endpoint = node.buildEndpoint(this, "myinstance");
 		endpoint.register();
 		myScribe = new ScribeImpl(node,"myScribeInstance");
-		startPast();
 		System.out.println("Waiting to join ring...");
 		// the node may require sending several messages to fully boot into the ring
 		synchronized (node) {
@@ -318,6 +317,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 			}
 		}
 		System.out.println("Finished creating new node " + node + ", count: " + node.getLeafSet().getUniqueCount());
+		startPast();
 	}
 	private void getOther() {
 		if (other == null) {
@@ -577,18 +577,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 						output.close();
 						handler.receiveResult(value);
 					} else {
-//						final boolean fAny = any;
-//
-//						new Thread() {
-//							public void run() {
-//								try {
-////									Thread.sleep(3000);
-									getChunks(cacheDir, handler, file, missing, data, !any ? attempt + 1 : 0);
-//								} catch (Exception ex) {
-//									handler.receiveException(ex);
-//								}
-//							}
-//						};
+						getChunks(cacheDir, handler, file, missing, data, !any ? attempt + 1 : 0);
 					}
 				} catch (Exception ex) {
 					handler.receiveException(ex);
