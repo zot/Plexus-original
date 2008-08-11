@@ -3,12 +3,15 @@ package p2pmud
 import org.bouncycastle.crypto.digests.SHA1Digest
 import rice.p2p.util.SecurityUtils
 import rice.pastry.Id
-
+import org.codehaus.groovy.runtime.StackTraceUtils
 import java.util.zip.ZipFile
 
 public class Tools {
 	def static digest = new SHA1Digest()
 
+	def static stackTrace(ex) {
+		StackTraceUtils.printSanitizedStackTrace(ex)
+	}
 	def static deleteAll(file) {
 		def f = file as File
 	

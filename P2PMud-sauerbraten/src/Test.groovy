@@ -232,7 +232,7 @@ public class Test {
 						try {
 							sauerCmds.invoke(it)
 						} catch (Exception ex) {
-							ex.printStackTrace()
+							Tools.stackTrace(ex)
 						}
 					}
 					try {it.shutdownInput()} catch (Exception ex) {}
@@ -362,7 +362,7 @@ public class Test {
 	}
 	def err(msg, err) {
 		println(msg)
-		err.printStackTrace();
+		Tools.stackTrace(err);
 	}
 	def initBoot() {
 		def maps = new File(plexusDir, "mapsdoc")
@@ -506,9 +506,7 @@ public class Test {
 					sauer('echo', "echo Stored dir: $result" as String)
 					dumpCommands()
 				},
-				receiveException: {exception ->
-					exception.printStackTrace()
-				}
+				receiveException: {exception ->	Tools.stackTrace(exception)}
 			] as Continuation);
 		} else {
 			def errTitle = "Error, There is more than one map in the folder ${Tools.subpath(sauerDir, parent)}"

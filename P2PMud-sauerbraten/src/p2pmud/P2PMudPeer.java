@@ -180,7 +180,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 //											}
 //											public void receiveException(Exception exception) {
 //												System.err.println("Error while attempting to store file: branch");
-//												exception.printStackTrace();
+//												Tools.stackTrace(exception);
 //											}
 //										});
 										break;
@@ -197,7 +197,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 												}
 											}
 											public void receiveException(Exception exception) {
-												exception.printStackTrace();
+												Tools.stackTrace(exception);
 											}
 										});
 										break;
@@ -222,7 +222,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 												System.out.println("Stored dir: " + result);
 											}
 											public void receiveException(Exception exception) {
-												exception.printStackTrace();
+												Tools.stackTrace(exception);
 											}
 										});
 										break;
@@ -239,12 +239,12 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 														System.out.println("STORED");
 													}
 													public void receiveException(Exception exception) {
-														exception.printStackTrace();
+														Tools.stackTrace(exception);
 													}
 												}, false);
 											};
 											public void receiveException(Exception exception) {
-												exception.printStackTrace();
+												Tools.stackTrace(exception);
 											};
 										});
 										break;
@@ -253,7 +253,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 								}
 							}
 						} catch (Exception e) {
-							e.printStackTrace();
+							Tools.stackTrace(e);
 						}
 					}
 				}.start();
@@ -476,7 +476,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 				}
 				public void receiveException(Exception exception) {
 					System.out.println("FAILED TO STORE FILE: " + chunks.get(0));
-					exception.printStackTrace();
+					Tools.stackTrace(exception);
 					cont.receiveException(exception);
 				}
 			}, chunks, 5);

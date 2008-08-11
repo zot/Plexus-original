@@ -42,7 +42,7 @@ public class P2PMudFile extends ContentHashPastContent {
 			result.add(0, p2pFile)
 			return result as ArrayList
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			Tools.err(ex)
 			return null;
 		}
 	}
@@ -64,7 +64,7 @@ public class P2PMudFile extends ContentHashPastContent {
 				for (result in res) {
 					if (res instanceof Exception) {
 						println "Exception..."
-						res.printStackTrace()
+						Tools.stackTrace(res)
 						return
 					}
 				}
