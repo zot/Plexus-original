@@ -52,9 +52,7 @@ public class PastryCmds extends Cmds {
 	}
 	def receivePlayers() {
 		main.setPlayersDoc(main.pastryCmd.payload)
-		// after we get the players list, send ourselves out
-		def node = main.peer.nodeId.toStringFull()
-		main.peer.broadcastCmds(main.plexusTopic, "updatePlayer $node $main.name $main.mapname")
+		main.updateMyPlayerInfo()
 	}
 	def addMap(map, id) {
 		main.addMap(map, id)

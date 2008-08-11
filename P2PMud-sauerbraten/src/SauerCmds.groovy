@@ -1,4 +1,7 @@
 public class SauerCmds extends Cmds {
+	def currentPosition
+	def positionLock = new Object()
+
 	public SauerCmds(main) {
 		super(main)
 	}
@@ -30,15 +33,30 @@ public class SauerCmds extends Cmds {
 			"tc_editent ${args.join(' ')}"
 		])
 	}
-	def tc_newmap(String name) {}
+	def tc_newmap(String name) {
+		println "newmap: $name"
+		main.mapname = name
+		main.updateMyPlayerInfo()
+	}
 	def position(name, String... args) {
 		if (main.names[name] == main.name) {
 			if (main.swing) {
-				main.swing.edt {
-					for (def i = 0; i < args.size(); i += 2) {
-						def field = main.fields[args[i]]
+				synchronized (positionLock) {
+					currentPosition = args
+				}
+				main.swing.doLater {
+					def pos
+
+					synchronized (positionLock) {
+						pos = currentPosition
+						currentPosition = null
+					}
+					if (pos) {
+						for (def i = 0; i < args.size(); i += 2) {
+							def field = main.fields[args[i]]
 						
-						if (field) field.text = args[i + 1]
+							if (field) field.text = args[i + 1]
+						}
 					}
 				}
 			}

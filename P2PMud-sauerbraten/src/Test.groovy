@@ -53,9 +53,9 @@ public class Test {
 	def mapsDoc
 	def mapTopic
 	def plexusTopic
-	def mapsLock = new Object()
+	def presenceLock = new Object()
 	def playersDoc
-	def playersLock = new Object()
+	def idToMap = [:]
 	
 	def static sauerExec
 	def static soleInstance
@@ -373,43 +373,12 @@ public class Test {
 		} else {
 			setMapsDoc([:] as Properties, true)
 		}
-		updatePlayer(peer.nodeId.toStringFull(), [name, mapname])
+		updatePlayer(peer.nodeId.toStringFull(), [name, null])
 		storeCache()
 	}
-	def setPlayersDoc(doc) {
-		synchronized (playersLock) {
-			playersDoc = doc
-		}
-		updateFriendList()
-	}
-	def updatePlayer(node, info) {
-		synchronized (playersLock) {
-			playersDoc = playersDoc ?: [:]
-			println info
-			playersDoc[node] = info
-		}
-		updateFriendList()
-	}
-	def updateFriendList() {
-		synchronized (playersLock) {
-			def friendGui = 'newgui Friends [ guititle "Friends List"\n'
-			def cnt = 0
-			
-			for (player in playersDoc) {
-				if (player.key != peer.nodeId.toStringFull()) {
-					def info = player.value
-					def who = info[0]
-					def map = info[1]
-					friendGui += "guibutton [$who ($map)] [echo $player.key ]\n"
-					++cnt
-				}
-			}
-			if (cnt == 0) friendGui += 'guitext "Sorry, no friends are online!"\n'
-			
-			friendGui += "guibar\n guibutton Close [cleargui] ]; peers $cnt"
-			sauer('friend', cvtNewlines(friendGui))
-		}
-		dumpCommands()
+	def initJoin() {
+		peer.anycastCmds(plexusTopic, "sendMaps")
+		peer.anycastCmds(plexusTopic, "sendPlayers")
 	}
 	def storeCache() {
 		if (cacheDir.exists()) {
@@ -437,32 +406,110 @@ public class Test {
 			}
 		}
 	}
+	def setPlayersDoc(doc) {
+		synchronized (presenceLock) {
+			playersDoc = doc
+		}
+		updateFriendList()
+	}
+	def updateMyPlayerInfo() {
+		println "UPDATING PLAYER INFO"
+//		after we get the players list, send ourselves out
+		def node = peer.nodeId.toStringFull()
+		peer.broadcastCmds(plexusTopic, "updatePlayer $node $name ${mapTopic?.getId().toStringFull()}")
+		updatePlayer(node, [name, mapTopic?.getId().toStringFull()])
+		println "BROADCAST: updatePlayer $node $name ${mapTopic?.getId().toStringFull()}"
+	}
+	def updatePlayer(node, info) {
+		synchronized (presenceLock) {
+			playersDoc = playersDoc ?: [:]
+			println info
+			playersDoc[node] = info
+		}
+		updateFriendList()
+	}
+	def updateFriendList() {
+		synchronized (presenceLock) {
+			def friendGui = 'newgui Friends [\n'
+			def cnt = 1
+			def mapCnt = 0
+			def id = peer.nodeId.toStringFull()
+
+			updateMapGui()
+			friendGui += 'guititle "Friends List"\n'
+			for (player in playersDoc) {
+				if (player.key != id) {
+					def info = player.value
+					def who = info[0]
+					def map = idToMap[info[1]]
+					friendGui += "guibutton [$who (${map ?: 'none'})] [echo $player.key ]\n"
+					++cnt
+				}
+			}
+			if (cnt == 1) friendGui += 'guitext "Sorry, no friends are online!"\n'
+				friendGui += "guibar\n guibutton Close [cleargui]\n"
+			if (mapTopic) {
+				def mid = mapTopic.getId().toStringFull()
+				def mname = idToMap[mid][0]
+
+				friendGui += "guitab $mname\n"
+				mapCnt = 1
+				for (player in playersDoc) {
+					if (player.key != id) {
+						def info = player.value
+						def who = info[0]
+						
+						if (info[1] == mid) {
+							def map = idToMap[info[1]]
+
+							friendGui += "guibutton [$who] [echo $player.key]\n"
+							++mapCnt
+						}
+					}
+				}
+				if (mapCnt == 1) friendGui += "guitext [Sorry, no friends are connected to $mname!]\n"
+				println "MAPCNT: $mapCnt"
+				friendGui += "guibar\n guibutton Close [cleargui]\n"
+			}
+			friendGui += "]; peers $cnt; tc_mapcount $mapCnt; "
+			sauer('friend', cvtNewlines(friendGui))
+			dumpCommands()
+		}
+	}
 	def addMap(mapName, id) {
-		synchronized (mapsLock) {
+		synchronized (presenceLock) {
 			mapsDoc[mapName] = id
 		}
 		setMapsDoc(mapsDoc, true)
 	}
 	def setMapsDoc(doc, save) {
-		synchronized (mapsLock) {
-			def mapsGui = "newgui Worlds ["
-
-			for (world in doc) {
-				mapsGui += "guibutton [$world.key] [remotesend connectWorld $world.key $world.value]\n"
-			}
-			
-			mapsGui += "]"
+		synchronized (presenceLock) {
 			mapsDoc = doc
-			sauer('maps', cvtNewlines(mapsGui))
-			dumpCommands()
+			updateMapGui()
 			if (save) {
 				Tools.store(doc, new File(plexusDir, 'mapsdoc'), "Maps document")
 			}
 		}
 	}
-	def initJoin() {
-		peer.anycastCmds(plexusTopic, "sendMaps")
-		peer.anycastCmds(plexusTopic, "sendPlayers")
+	def updateMapGui() {
+		idToMap = [:]
+		for (world in mapsDoc) {
+			idToMap[world.value] = [world.key, 0]
+		}
+		for (player in playersDoc) {
+			def map = player.value[1]
+
+			if (map) {
+				idToMap[map][1]++
+			}
+		}
+		def mapsGui = "newgui Worlds ["
+		for (world in mapsDoc) {
+			mapsGui += "guibutton [$world.key (${idToMap[world.value][1]})] [remotesend connectWorld $world.key $world.value]\n"
+		}
+		mapsGui += "]\n"
+		sauer('maps', cvtNewlines(mapsGui))
+		dumpCommands()
 	}
 	def connectWorld(name, id) {
 		println "CONNECTING TO WORLD: $id"
