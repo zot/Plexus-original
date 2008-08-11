@@ -53,13 +53,14 @@ public class PastryCmds extends Cmds {
 	def receivePlayers() {
 		main.setPlayersDoc(main.pastryCmd.payload)
 		// after we get the players list, send ourselves out
-		main.peer.broadcastCmds(main.plexusTopic, "addPlayer $main.peer.nodeId $main.name")
+		def node = main.peer.nodeId.toStringFull()
+		main.peer.broadcastCmds(main.plexusTopic, "updatePlayer $node $main.name $main.mapname")
 	}
 	def addMap(map, id) {
 		main.addMap(map, id)
 	}
-	def addPlayer(node, info) {
-		main.addPlayer(node, info)
+	def updatePlayer(node, String... info) {
+		main.updatePlayer(node, info)
 	}
 	def sendPlayers() {
 		def cmd = new P2PMudCommand(main.peer.nodeId, "receivePlayers")

@@ -372,7 +372,7 @@ public class Test {
 		} else {
 			setMapsDoc([:] as Properties, true)
 		}
-		addPlayer(peer.nodeId, name)
+		updatePlayer(peer.nodeId.toStringFull(), name)
 		storeCache()
 	}
 	def setPlayersDoc(doc) {
@@ -381,7 +381,7 @@ public class Test {
 		}
 		updateFriendList()
 	}
-	def addPlayer(node, info) {
+	def updatePlayer(node, info) {
 		synchronized (playersLock) {
 			playersDoc = playersDoc ?: [:]
 			playersDoc[node] = info
@@ -395,7 +395,10 @@ public class Test {
 			
 			for (player in playersDoc) {
 				if (player.key != peer.nodeId) {
-					friendGui += "guibutton [$player.value] [echo $player.key ]\n"
+					def info = player.value
+					def who = info[0]
+					def map = info[1]
+					friendGui += "guibutton [$who ($map)] [echo $player.key ]\n"
 					++cnt
 				}
 			}
