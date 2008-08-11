@@ -436,7 +436,6 @@ public class Test {
 			def id = peer.nodeId.toStringFull()
 
 			updateMapGui()
-			friendGui += 'guititle "Friends List"\n'
 			for (player in playersDoc) {
 				if (player.key != id) {
 					def info = player.value

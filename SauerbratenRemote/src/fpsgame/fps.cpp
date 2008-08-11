@@ -861,9 +861,12 @@ struct fpsclient : igameclient
 		//	draw_textf("Connected",  90, 822);
 
         glLoadIdentity();
-        glOrtho(0, w*900/h, 830, 0, -1, 1);
+        glOrtho(0, w*1800/h, 1800, 0, -1, 1);
 
-		draw_textf("Online: %d",  800, 770, peers);
+		draw_textf("Online: %d",  1900, 1720, peers);
+		extern char *tc_loadmsg;
+		extern int tc_mapcount;
+		draw_textf("Map: %s (%d)",  1300, 1720, tc_loadmsg, tc_mapcount);
 	}
 #else
     void gameplayhud(int w, int h)
