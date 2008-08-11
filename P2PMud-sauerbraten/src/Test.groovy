@@ -289,6 +289,7 @@ public class Test {
 			'echo INIT'
 		].join(';'))
 	 	dumpCommands()
+	 	updateFriendList()
 	}
 	def broadcast(cmds) {
 		if (peer) peer.broadcastCmds(mapTopic, cmds as String[])
@@ -372,7 +373,7 @@ public class Test {
 		} else {
 			setMapsDoc([:] as Properties, true)
 		}
-		updatePlayer(peer.nodeId.toStringFull(), name)
+		updatePlayer(peer.nodeId.toStringFull(), [name, map])
 		storeCache()
 	}
 	def setPlayersDoc(doc) {
@@ -384,6 +385,7 @@ public class Test {
 	def updatePlayer(node, info) {
 		synchronized (playersLock) {
 			playersDoc = playersDoc ?: [:]
+			println info
 			playersDoc[node] = info
 		}
 		updateFriendList()
