@@ -67,4 +67,10 @@ public class SauerCmds extends Cmds {
 		println "Sauer sent: pushMap $mapName"
 		main.pushMap(mapName)
 	}
+	def createWorld(mapName) {
+		println "Create World: $mapName"
+	}
+	def copyWorld(mapName) {
+		println "Copy World: $mapName"
+	}
 }
