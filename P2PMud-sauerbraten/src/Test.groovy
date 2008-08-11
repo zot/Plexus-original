@@ -405,6 +405,7 @@ public class Test {
 				}
 			}
 			if (cnt == 0) friendGui += 'guitext "Sorry, no friends are online!"\n'
+			++cnt
 			
 			friendGui += "guibar\n guibutton Close [cleargui] ]; peers $cnt"
 			sauer('friend', cvtNewlines(friendGui))
