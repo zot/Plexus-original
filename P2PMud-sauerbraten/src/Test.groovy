@@ -413,12 +413,14 @@ public class Test {
 		updateFriendList()
 	}
 	def updateMyPlayerInfo() {
+		def id = mapTopic?.getId()?.toStringFull()
+
 		println "UPDATING PLAYER INFO"
 //		after we get the players list, send ourselves out
 		def node = peer.nodeId.toStringFull()
-		peer.broadcastCmds(plexusTopic, "updatePlayer $node $name ${mapTopic?.getId().toStringFull()}")
-		updatePlayer(node, [name, mapTopic?.getId().toStringFull()])
-		println "BROADCAST: updatePlayer $node $name ${mapTopic?.getId().toStringFull()}"
+		peer.broadcastCmds(plexusTopic, "updatePlayer $node $name $id")
+		updatePlayer(node, [name, id])
+		println "BROADCAST: updatePlayer $node $name $id"
 	}
 	def updatePlayer(node, info) {
 		synchronized (presenceLock) {
@@ -429,19 +431,21 @@ public class Test {
 		updateFriendList()
 	}
 	def updateFriendList() {
+		if (!peer?.nodeId) return
 		synchronized (presenceLock) {
 			def friendGui = 'newgui Friends [\n'
 			def cnt = 1
 			def mapCnt = 0
 			def id = peer.nodeId.toStringFull()
+			def mname = "NO MAP"
 
 			updateMapGui()
 			for (player in playersDoc) {
 				if (player.key != id) {
 					def info = player.value
 					def who = info[0]
-					def map = idToMap[info[1]]
-					friendGui += "guibutton [$who (${map ?: 'none'})] [echo $player.key ]\n"
+					def map = info[1] == 'null' ? 'none' : idToMap[info[1]][0]
+					friendGui += "guibutton [$who ($map)] [echo $player.key ]\n"
 					++cnt
 				}
 			}
@@ -449,8 +453,8 @@ public class Test {
 				friendGui += "guibar\n guibutton Close [cleargui]\n"
 			if (mapTopic) {
 				def mid = mapTopic.getId().toStringFull()
-				def mname = idToMap[mid][0]
 
+				mname = idToMap[mid][0]
 				friendGui += "guitab $mname\n"
 				mapCnt = 1
 				for (player in playersDoc) {
@@ -470,7 +474,7 @@ public class Test {
 				println "MAPCNT: $mapCnt"
 				friendGui += "guibar\n guibutton Close [cleargui]\n"
 			}
-			friendGui += "]; peers $cnt; tc_mapcount $mapCnt; "
+			friendGui += "]; peers $cnt; tc_mapcount $mapCnt; tc_loadmsg $mname"
 			sauer('friend', cvtNewlines(friendGui))
 			dumpCommands()
 		}
@@ -496,9 +500,10 @@ public class Test {
 			idToMap[world.value] = [world.key, 0]
 		}
 		for (player in playersDoc) {
+println "player.value: $player.value"
 			def map = player.value[1]
 
-			if (map) {
+			if (map && map != 'null') {
 				idToMap[map][1]++
 			}
 		}
