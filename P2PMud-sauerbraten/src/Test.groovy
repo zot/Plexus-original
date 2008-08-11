@@ -372,6 +372,7 @@ public class Test {
 		} else {
 			setMapsDoc([:] as Properties, true)
 		}
+		addPlayer(peer.nodeId, name)
 		storeCache()
 	}
 	def setPlayersDoc(doc) {
@@ -380,9 +381,9 @@ public class Test {
 		}
 		updateFriendList()
 	}
-	def addPlayer(name, info) {
+	def addPlayer(node, info) {
 		synchronized (playersLock) {
-			playersDoc[name] = info
+			playersDoc[node] = info
 		}
 		updateFriendList()
 	}
@@ -391,16 +392,16 @@ public class Test {
 			def friendGui = 'newgui Friends [ guititle "Friends List"\n'
 
 			for (player in playersDoc) {
-				friendGui += "guibutton [$player.value] [echo $player.key ]\n"
+				if (player.key != peer.nodeId) friendGui += "guibutton [$player.value] [echo $player.key ]\n"
 			}
-			def cnt = 1
-			if (playersDoc == null || playersDoc.length == 0) friendGui += 'guitext "Sorry, no friends are online!"\n'
-			else cnt = 1 + playersDoc.length;
+			def cnt = 0
+			if (playersDoc == null || playersDoc.size() < 2) friendGui += 'guitext "Sorry, no friends are online!"\n'
+			else cnt = playersDoc.length;
 			
 			friendGui += "guibar\n guibutton Close [cleargui] ]; peers $cnt"
 			sauer('friend', cvtNewlines(friendGui))
-			dumpCommands()
 		}
+		dumpCommands()
 	}
 	def storeCache() {
 		if (cacheDir.exists()) {
