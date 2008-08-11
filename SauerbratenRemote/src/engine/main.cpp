@@ -143,6 +143,7 @@ static void getcomputescreenres(int &w, int &h)
 }
 #ifdef TC
 SVAR(tc_loadmsg, "");
+VAR(tc_mapcount, 0, 0, 999);
 #endif
 
 void computescreen(const char *text, Texture *t, const char *overlaytext)
