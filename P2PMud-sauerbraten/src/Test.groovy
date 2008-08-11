@@ -393,9 +393,11 @@ public class Test {
 			for (player in playersDoc) {
 				friendGui += "guibutton [$player.value] [echo $player.key ]\n"
 			}
+			def cnt = 1
 			if (playersDoc == null || playersDoc.length == 0) friendGui += 'guitext "Sorry, no friends are online!"\n'
-				
-			friendGui += "guibar\n guibutton Close [cleargui] ]"
+			else cnt = 1 + playersDoc.length;
+			
+			friendGui += "guibar\n guibutton Close [cleargui] ]; peers $cnt"
 			sauer('friend', cvtNewlines(friendGui))
 			dumpCommands()
 		}
