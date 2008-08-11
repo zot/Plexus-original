@@ -373,7 +373,7 @@ public class Test {
 		} else {
 			setMapsDoc([:] as Properties, true)
 		}
-		updatePlayer(peer.nodeId.toStringFull(), [name, map])
+		updatePlayer(peer.nodeId.toStringFull(), [name, mapname])
 		storeCache()
 	}
 	def setPlayersDoc(doc) {
@@ -396,7 +396,7 @@ public class Test {
 			def cnt = 0
 			
 			for (player in playersDoc) {
-				if (player.key != peer.nodeId) {
+				if (player.key != peer.nodeId.toStringFull()) {
 					def info = player.value
 					def who = info[0]
 					def map = info[1]
