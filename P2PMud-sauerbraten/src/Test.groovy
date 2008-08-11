@@ -383,6 +383,7 @@ public class Test {
 	}
 	def addPlayer(node, info) {
 		synchronized (playersLock) {
+			playersDoc = playersDoc ?: [:]
 			playersDoc[node] = info
 		}
 		updateFriendList()
@@ -390,13 +391,15 @@ public class Test {
 	def updateFriendList() {
 		synchronized (playersLock) {
 			def friendGui = 'newgui Friends [ guititle "Friends List"\n'
-
-			for (player in playersDoc) {
-				if (player.key != peer.nodeId) friendGui += "guibutton [$player.value] [echo $player.key ]\n"
-			}
 			def cnt = 0
-			if (playersDoc == null || playersDoc.size() < 2) friendGui += 'guitext "Sorry, no friends are online!"\n'
-			else cnt = playersDoc.length;
+			
+			for (player in playersDoc) {
+				if (player.key != peer.nodeId) {
+					friendGui += "guibutton [$player.value] [echo $player.key ]\n"
+					++cnt
+				}
+			}
+			if (cnt == 0) friendGui += 'guitext "Sorry, no friends are online!"\n'
 			
 			friendGui += "guibar\n guibutton Close [cleargui] ]; peers $cnt"
 			sauer('friend', cvtNewlines(friendGui))
