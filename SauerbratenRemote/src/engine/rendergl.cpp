@@ -1412,7 +1412,11 @@ void loadcrosshair(const char *name, int i)
     if(crosshairs[i] == notexture) 
     {
         name = cl->defaultcrosshair(i);
+#ifdef TC
+        if(!name) name = "packages/plexus/dist/crosshair.png";
+#else
         if(!name) name = "data/crosshair.png";
+#endif
         crosshairs[i] = textureload(name, 3, true);
     }
 }
@@ -1449,7 +1453,11 @@ void drawcrosshair(int w, int h)
     if(windowhit)
     {
         static Texture *cursor = NULL;
+#ifdef TC
+        if(!cursor) cursor = textureload("packages/plexus/dist/guicursor.png", 3, true);
+#else
         if(!cursor) cursor = textureload("data/guicursor.png", 3, true);
+#endif
         crosshair = cursor;
         chsize = cursorsize*w/300.0f;
         g3d_cursorpos(cx, cy);
