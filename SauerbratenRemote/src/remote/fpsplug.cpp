@@ -387,7 +387,7 @@ ICOMMAND(createplayer, "ss", (char *ent, char *name), {
 		fpscl->spawnplayer(p);
 		p->state = CS_ALIVE;
 		p->tc_id = atoi(ent + 1);
-		conoutf("Welcome player %s to this world", p->name);
+		//conoutf("Welcome player %s to this world", p->name);
     }
 });
 

@@ -451,9 +451,13 @@ public class Test {
 	}
 	def removePlayerFromSauerMap(node) {
 		if (peerToSauerIdMap[node]) {
-			println "Going to remove player from sauer: $peerToSauerIdMap[node]"
-			sauer('delplayer', "deletePlayer $peerToSauerIdMap[node]")
+			def sauerId = peerToSauerIdMap[node]
+			def who = names[sauerId]
+			println "Going to remove player from sauer: $sauerId"
+			sauer('delplayer', "echo [Player $who has left this world.]; deleteplayer $sauerId")
 			peerToSauerIdMap.remove(node)
+			names.remove(sauerId)
+			ids.remove(who)
 		}
 	}
 	def updateFriendList() {

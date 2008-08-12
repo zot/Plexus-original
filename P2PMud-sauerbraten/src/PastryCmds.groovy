@@ -19,7 +19,7 @@ public class PastryCmds extends Cmds {
 			main.names[id] = name
 			main.peerToSauerIdMap[main.pastryCmd.from.toStringFull()] = id
 			println main.peerToSauerIdMap
-			main.sauer('prep', "createplayer $id $name")
+			main.sauer('prep', "echo [Welcome player $name to this world.]; createplayer $id $name")
 		}
 		main.sauer("${id}.update", "tc_setinfo $id " + args.join(' '))
 		main.dumpCommands()
