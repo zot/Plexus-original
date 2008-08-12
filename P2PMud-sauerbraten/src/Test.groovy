@@ -434,21 +434,27 @@ public class Test {
 			playersDoc = playersDoc ?: [:]
 			//println info
 			playersDoc[node] = info
+			def map = (!info[1] || info[1] == 'null') ? 'none' : idToMap[info[1]][0]
+			// if they aren't on our map now, see if we need to delete them from sauer
+			if (map != mapname) removePlayerFromSauerMap(node)
 		}
 		updateFriendList()
 	}
 	def removePlayer(node) {
 		synchronized (presenceLock) {
 			playersDoc = playersDoc ?: [:]
-			println "Going to remove player: $node"
+			//println "Going to remove player: $node"
 			playersDoc.remove(node)
-			if (peerToSauerIdMap[node]) {
-				println "Going to remove player from sauer: $peerToSauerIdMap[node]"
-				sauer('delplayer', "deletePlayer $peerToSauerIdMap[node]")
-				peerToSauerIdMap.remove(node)
-			}
+			removePlayerFromSauerMap(node)
 		}
 		updateFriendList()
+	}
+	def removePlayerFromSauerMap(node) {
+		if (peerToSauerIdMap[node]) {
+			println "Going to remove player from sauer: $peerToSauerIdMap[node]"
+			sauer('delplayer', "deletePlayer $peerToSauerIdMap[node]")
+			peerToSauerIdMap.remove(node)
+		}
 	}
 	def updateFriendList() {
 		if (!peer?.nodeId) return
@@ -457,7 +463,7 @@ public class Test {
 			def cnt = 1
 			def mapCnt = 0
 			def id = peer.nodeId.toStringFull()
-			def mname = "NO MAP"
+			def mname = "NO_MAP"
 
 			updateMapGui()
 			for (player in playersDoc) {
