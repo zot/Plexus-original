@@ -270,6 +270,9 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	public Id buildId(String path) {
 		return idFactory.buildId(path);
 	}
+	public Id randomId() {
+		return idFactory.buildRandomId(env.getRandomSource());
+	}
 	public void disconnect() {}
 	/**
 	 * This constructor sets up a PastryNode.  It will bootstrap to an 

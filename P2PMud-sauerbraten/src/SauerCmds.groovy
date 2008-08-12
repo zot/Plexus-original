@@ -69,26 +69,21 @@ public class SauerCmds extends Cmds {
 			main.mapname = new File(name).getName()
 		}
 	}
-	def requestmap() {
-		main.anycast(['requestmap'])
+	def connectWorld(id) {
+		main.connectWorld(id)
 	}
-	def sendfile(map, id) {
-		main.sendFile(map, id)
+	def initiatePush(mapName, update) {
+		main.initiatePush(mapName, "true".equalsIgnoreCase(update))
 	}
-	def connectWorld(name, id) {
-		main.connectWorld(name, id)
-	}
-	def initiatePush(mapName) {
-		main.initiatePush(mapName)
-	}
-	def pushMap(mapName) {
+	def pushMap(mapName, update) {
 		println "Sauer sent: pushMap $mapName"
-		main.pushMap(mapName)
+		main.pushMap(mapName, "true".equalsIgnoreCase(update))
 	}
 	def createWorld(mapName) {
 		println "Create World: $mapName"
 	}
 	def copyWorld(mapName) {
 		println "Copy World: $mapName"
+		main.copyWorld(mapName)
 	}
 }

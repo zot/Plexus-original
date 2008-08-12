@@ -50,7 +50,6 @@ public class Test {
 	def mapPrefix = 'packages/dist/storage'
 	def peer
 	def mapname
-	def mapsDoc
 	def mapTopic
 	def plexusTopic
 	def presenceLock = new Object()
@@ -160,14 +159,11 @@ public class Test {
 			args[2..-1] as String[])
 		peer = P2PMudPeer.test
 		plexusTopic = peer.subscribe(peer.buildId(PLEXUS_KEY), null)
-//		connectWorld(peer.buildId(SPHINX_KEY).toStringFull())
 		if (peer.node.getLeafSet().getUniqueCount() == 1) {
 			initBoot()
 		} else {
 			initJoin()
 		}
-//		mapTopic = peer.subscribe(peer.buildId("updates for bubba"))
-//		mapsDocId = peer.buildId(mapsDocKey)
 //		println "Node ID: ${peer.node.getId().toStringFull()}"
 		if (!Plexus.props.nodeId) {
 			Plexus.props.nodeId = peer.node.getId().toStringFull()
@@ -308,29 +304,8 @@ public class Test {
 		println "${str.replaceAll(/\n/, ';')}"
 		return str.replaceAll(/\n/, ';')
 	}
-	def requestMap() {
-		def uname = uniqify(mapname)
-
-		println "Map requested.  Sending: $mapname ($uname)"
-		sauer('save', "savemap p2pmud/$uname;remotesend sendfile $uname ${pastryCmd.from.toStringFull()}")
-		dumpCommands()
-	}
 	def uniqify(name) {
 		"$name-${TIME_STAMP.format(new Date())}"
-	}
-	def sendFile(map, id) {
-//		println "Saved map, storing in PAST, branch: packages/p2pmud/${mapname}.ogz, path: packages/p2pmud/${map}.ogz"
-//		peer.wimpyStoreFile(new File(sauerDir, "packages/plexus/cache"), "packages/plexus/${mapname}.ogz", [
-//			receiveResult: {file ->
-//				if (file) {
-//					println "Sending load cmd for file: $file: loadmap ${file.getId().toStringFull()}"
-//					peer.sendCmds(Id.build(id), ["loadmap ${file.getId().toStringFull()}"] as String[])
-//				} else {
-//					println "Could not store file for $mapname"
-//				}
-//			},
-//			receiveException: {exception -> err("Error storing file: $mapname", exception)}
-//		] as Continuation, false);
 	}
 	def loadMap(name, id) {
 		def tmpDir = new File(plexusDir, "maps/loadMap-${System.currentTimeMillis()}")
@@ -376,11 +351,21 @@ public class Test {
 	}
 	def initBoot() {
 		def maps = new File(plexusDir, "mapsdoc")
-		
+
 		if (maps.exists()) {
-			setMapsDoc(Tools.properties(maps), false)
+			def props = Tools.properties(maps)
+			def newIds = [:]
+
+			for (map in props) {
+				def entry = map.value.split(' ')
+
+				newIds[map.key] = [entry[0], entry.length == 2 ? entry[1] : entry[1..-1].join(' '), 0]
+				println "$map.key: $map.value"
+				println "$map.key: ${newIds[map.key]}"
+			}
+			setMapsDoc(newIds, false)
 		} else {
-			setMapsDoc([:] as Properties, true)
+			setMapsDoc([:], true)
 		}
 		updatePlayer(peer.nodeId.toStringFull(), [name, null])
 		storeCache()
@@ -432,13 +417,14 @@ public class Test {
 		println "BROADCAST: updatePlayer $node $name $id"
 	}
 	def updatePlayer(node, info) {
-		synchronized (presenceLock) {
-			playersDoc = playersDoc ?: [:]
-			//println info
-			playersDoc[node] = info
-			def map = (!info[1] || info[1] == 'null') ? 'none' : idToMap[info[1]][0]
-			// if they aren't on our map now, see if we need to delete them from sauer
-			if (map != mapname) removePlayerFromSauerMap(node)
+		if (mapTopic) {
+			synchronized (presenceLock) {
+				playersDoc = playersDoc ?: [:]
+				//println info
+				playersDoc[node] = info
+				// if they aren't on our map now, see if we need to delete them from sauer
+				if (info[1] != mapTopic.getId().toStringFull()) removePlayerFromSauerMap(node)
+			}
 		}
 		updateFriendList()
 	}
@@ -477,7 +463,7 @@ public class Test {
 					def info = player.value
 					println info
 					def who = info[0]
-					def map = (!info[1] || info[1] == 'null') ? 'none' : idToMap[info[1]][0]
+					def map = (!info[1] || info[1] == 'null') ? 'none' : idToMap[info[1]][1]
 					friendGui += "guibutton [$who ($map)] [echo $player.key ]\n"
 					++cnt
 				}
@@ -487,7 +473,7 @@ public class Test {
 			if (mapTopic) {
 				def mid = mapTopic.getId().toStringFull()
 
-				mname = idToMap[mid][0]
+				mname = idToMap[mid][1]
 				friendGui += "guitab $mname\n"
 				mapCnt = 1
 				for (player in playersDoc) {
@@ -496,8 +482,6 @@ public class Test {
 						def who = info[0]
 						
 						if (info[1] == mid) {
-							def map = idToMap[info[1]]
-
 							friendGui += "guibutton [$who] [echo $player.key]\n"
 							++mapCnt
 						}
@@ -512,69 +496,85 @@ public class Test {
 			dumpCommands()
 		}
 	}
-	def addMap(mapName, id) {
+	def addMap(topic, tree, name) {
 		synchronized (presenceLock) {
-			mapsDoc[mapName] = id
+			idToMap[topic] = [tree, name, 0]
 		}
-		setMapsDoc(mapsDoc, true)
+		updateMapGui()
+		saveMapsDoc()
 	}
-	def setMapsDoc(doc, save) {
+	def setMapsDoc(newIds, save) {
 		synchronized (presenceLock) {
-			mapsDoc = doc
+			idToMap = newIds
 			updateMapGui()
 			if (save) {
-				Tools.store(doc, new File(plexusDir, 'mapsdoc'), "Maps document")
+				saveMapsDoc()
 			}
 		}
 	}
+	def saveMapsDoc() {
+		def maps = [:] as Properties
+
+		for (map in idToMap) {
+			maps[map.key] = map.value[0..1].join(' ')
+		}
+		Tools.store(maps, new File(plexusDir, 'mapsdoc'), "Maps document")
+	}
 	def updateMapGui() {
-		idToMap = [:]
-		for (world in mapsDoc) {
-			idToMap[world.value] = [world.key, 0]
+		for (world in idToMap) {
+			world.value[2] = 0
 		}
 		for (player in playersDoc) {
 println "player.value: $player.value"
 			def map = player.value[1]
 
 			if (map && map != 'null') {
-				idToMap[map][1]++
+				idToMap[map][2]++
 			}
 		}
 		def mapsGui = "newgui Worlds ["
-		for (world in mapsDoc) {
-			mapsGui += "guibutton [$world.key (${idToMap[world.value][1]})] [remotesend connectWorld $world.key $world.value]\n"
+		def ents = []
+		for (world in idToMap) {
+			ents.add([world.value[1], world.key, world.value[2]])
+		}
+		ents.sort {a, b -> a[0].compareTo(b[0])}
+		for (world in ents) {
+			mapsGui += "guibutton [${world[0]} (${world[2]})] [remotesend connectWorld ${world[1]}]\n"
 		}
 		mapsGui += "]\n"
 		sauer('maps', cvtNewlines(mapsGui))
 		dumpCommands()
 	}
-	def connectWorld(name, id) {
-		println "CONNECTING TO WORLD: $id"
-		if (mapTopic) {
-			peer.unsubscribe(mapTopic)
+	def connectWorld(id) {
+		def entry = idToMap[id]
+
+		if (entry) {
+			println "CONNECTING TO WORLD: entry[1] ($id)"
+			if (mapTopic) {
+				peer.unsubscribe(mapTopic)
+			}
+			mapTopic = peer.subscribe(Id.build(id), [
+				receiveResult: {topic ->
+					mapTopic = topic
+					println "SUBSCRIBED TO $topic"
+					loadMap(entry[1], entry[0])
+				},
+				receiveException: {exception -> err("Couldn't subscribe to topic: ", id)}
+			] as Continuation)
 		}
-		mapTopic = peer.subscribe(Id.build(id), [
-			receiveResult: {topic ->
-				mapTopic = topic
-				println "SUBSCRIBED TO $topic"
-				//peer.anycastCmds(mapTopic, "requestmap")
-			},
-			receiveException: {exception -> err("Couldn't subscribe to topic: ", id)}
-		] as Continuation)
-		loadMap(name, id)
 	}
-	def initiatePush(mapName) {
+	def initiatePush(mapName, update) {
 		def mapFile = new File(sauerDir, "packages/$mapName")
 		mapFile.getParentFile().mkdirs()
-		sauer('push', "savemap $mapName; remotesend pushMap $mapName")
+		sauer('push', "savemap $mapName; remotesend pushMap $mapName $update")
 		dumpCommands()
 	}
-	def pushMap(mapName) {
+	def pushMap(mapName, replace) {
 		println "PUSH: $mapName"
 		def mapFile = new File(sauerDir, "packages/$mapName")
 		def parent = mapFile.getParentFile()
 		def mapCount = 0
-
+	
 		mapFile.getParentFile().eachFileMatch(~/.*\.ogz/) {
 			mapCount++
 		}
@@ -582,7 +582,7 @@ println "player.value: $player.value"
 			def backupBase = new File(plexusDir, "maps/${mapFile.getName()}").getAbsolutePath()
 			def backup = new File(backupBase)
 			def backupCount = 0
-
+	
 			while (backup.exists()) {
 				backup = new File(backupBase + "-${++backupCount}")
 			}
@@ -591,10 +591,11 @@ println "player.value: $player.value"
 			P2PMudFile.storeDir(cacheDir, backup, [
 				receiveResult: {result ->
 					def name = mapFile.getName()
-					def id = result.getId().toStringFull()
+					def tree = result.getId().toStringFull()
+					def topic = replace && mapTopic ? mapTopic.getId().toStringFull() : tree
 
-					addMap(name, id)
-					peer.broadcastCmds(plexusTopic, ["addMap $name $id"] as String[])
+					addMap(topic, tree, name)
+					peer.broadcastCmds(plexusTopic, ["addMap $topic $tree $name"] as String[])
 					sauer('echo', "echo Stored dir: $result" as String)
 					dumpCommands()
 				},
@@ -607,6 +608,17 @@ println "player.value: $player.value"
 			println "$errTitle: $errMsg"
 			sauer('msg', "showmessage [$errTitle] [$errMsg]")
 			dumpCommands()
+		}
+	}
+	def copyWorld(newName) {
+		if (mapTopic) {
+			def topic = peer.randomId()
+			def oldEntry = idToMap[mapTopic.getId().toStringFull()]
+
+			addMap(topic, oldEntry[0], oldEntry[1])
+			peer.broadcastCmds(plexusTopic, ["addMap $topic $tree $name"] as String[])
+		} else {
+			sauer('msg', "showmessage [Error] [No current map]")
 		}
 	}
 }
