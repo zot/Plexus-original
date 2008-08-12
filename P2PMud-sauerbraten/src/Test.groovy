@@ -616,8 +616,9 @@ println "player.value: $player.value"
 			def topic = peer.randomId().toStringFull()
 			def oldEntry = idToMap[mapTopic.getId().toStringFull()]
 
-			addMap(topic, oldEntry[0], oldEntry[1])
-			peer.broadcastCmds(plexusTopic, ["addMap $topic ${oldEntry[0]}, ${oldEntry[1]}"] as String[])
+			//rename map.ogz, etc. here
+			addMap(topic, oldEntry[0], newName)
+			peer.broadcastCmds(plexusTopic, ["addMap $topic ${oldEntry[0]} $newName"] as String[])
 		} else {
 			sauer('msg', "showmessage [Error] [No current map]")
 		}
