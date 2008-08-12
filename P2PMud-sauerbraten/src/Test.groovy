@@ -558,7 +558,6 @@ println "player.value: $player.value"
 			mapTopic = peer.subscribe(Id.build(id), [
 				receiveResult: {topic ->
 					mapTopic = topic
-					println "SUBSCRIBED TO $topic"
 					loadMap(entry[1], entry[0])
 				},
 				receiveException: {exception -> err("Couldn't subscribe to topic: ", id)}
