@@ -145,7 +145,9 @@ public class Test {
 		}
 		P2PMudPeer.main({id, topic, cmd ->
 				if (topic == null && cmd == null) {
-					peer.broadcast(plexusTopic, "removePlayer $id")
+					id = id.toStringFull()
+					removePlayer(id)
+					peer.broadcastCmds(plexusTopic, "removePlayer $id")
 				} else {
 					pastryCmd = cmd
 					cmd.msgs.each {pastryCmds.invoke(it)}
@@ -438,9 +440,10 @@ public class Test {
 	def removePlayer(node) {
 		synchronized (presenceLock) {
 			playersDoc = playersDoc ?: [:]
-			println node
+			println "Going to remove player: $node"
 			playersDoc.remove(node)
 			if (peerToSauerIdMap[node]) {
+				println "Going to remove player from sauer: $peerToSauerIdMap[node]"
 				sauer('delplayer', "deletePlayer $peerToSauerIdMap[node]")
 				peerToSauerIdMap.remove(node)
 			}
@@ -460,8 +463,9 @@ public class Test {
 			for (player in playersDoc) {
 				if (player.key != id) {
 					def info = player.value
+					println info
 					def who = info[0]
-					def map = info[1] == 'null' ? 'none' : idToMap[info[1]][0]
+					def map = (!info[1] || info[1] == 'null') ? 'none' : idToMap[info[1]][0]
 					friendGui += "guibutton [$who ($map)] [echo $player.key ]\n"
 					++cnt
 				}
