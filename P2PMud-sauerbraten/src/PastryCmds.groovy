@@ -33,9 +33,6 @@ public class PastryCmds extends Cmds {
 		main.sauer('tc_upmap', "tc_upmap ${args.join(' ')}")
 		main.dumpCommands()
 	}
-	def requestmap() {
-		main.requestMap()
-	}
 	def loadmap(name) {
 		main.loadMap(name)
 	}
@@ -46,7 +43,7 @@ public class PastryCmds extends Cmds {
 	def sendMaps() {
 		def cmd = new P2PMudCommand(main.peer.nodeId, "receiveMaps")
 
-		cmd.payload = main.mapsDoc
+		cmd.payload = main.idToMap
 		main.peer.sendCmds(main.pastryCmd.from, cmd)
 	}
 	def receiveMaps() {
@@ -56,8 +53,8 @@ public class PastryCmds extends Cmds {
 		main.setPlayersDoc(main.pastryCmd.payload)
 		main.updateMyPlayerInfo()
 	}
-	def addMap(map, id) {
-		main.addMap(map, id)
+	def addMap(topic, tree, String... name) {
+		main.addMap(topic, tree, name.join(' '))
 	}
 	def updatePlayer(node, String... info) {
 		main.updatePlayer(node, info)
