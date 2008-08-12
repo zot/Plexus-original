@@ -343,14 +343,16 @@ public class Test {
 			receiveResult: {
 				def mapDir = new File(plexusDir, "maps/$name")
 				def count = 0
-				def backup = mapDir
+				def backupDir = new File(plexusDir, "backups")
+				if (!backupDir.exists()) backupDir.mkdirs()
 				
+				def backup = new File(backupDir, "$name")
 				while (backup.exists()) {
 					count++
-					backup = new File("${mapDir.getAbsolutePath()}-$count")
+					backup = new File(backupDir, "$name-$count")
 				}
 				if (count && !mapDir.renameTo(backup)) {
-					sauer('msg', "showmessage [Could not backup old map dir: $backup]")
+					sauer('msg', "showmessage [Could not backup old map dir: backup]")
 					dumpCommands()
 					Tools.deleteAll(tmpDir)
 					return
@@ -467,7 +469,7 @@ public class Test {
 			def cnt = 1
 			def mapCnt = 0
 			def id = peer.nodeId.toStringFull()
-			def mname = "NO_MAP"
+			def mname = "Limbo"
 
 			updateMapGui()
 			for (player in playersDoc) {

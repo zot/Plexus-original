@@ -3,6 +3,8 @@ import net.miginfocom.swing.MigLayout
 import groovy.swing.SwingBuilder
 import p2pmud.Tools
 import javax.swing.JFileChooser
+import static net.sbbi.upnp.Discovery.*;
+import net.sbbi.upnp.impls.InternetGatewayDevice;
 
 public class Prep {
 	def static success = false
@@ -182,24 +184,45 @@ public class Prep {
 		lastPeerName = props.name
 		println props
 	}
+	def static discover() {
+		println "Discover button pressed"
+		int discoveryTimeout = 5000; // 5 secs to receive a response from devices
+		try {
+		  def IGDs = InternetGatewayDevice.getDevices( discoveryTimeout );
+		  if ( IGDs != null ) {
+		    // let's the the first device found
+		    def testIGD = IGDs[0];
+		    System.out.println( "Found device " + testIGD.getIGDRootDevice().getModelName() );
+		    fields['external_ip'].text = testIGD.getExternalIPAddress()
+		    setprop('external_ip')
+		    
+		    return
+		  }
+		} catch(Exception) {
+		  // some IO Exception occured during communication with device
+		}
+	}
 	def static showPropEditor() {
 		def p = props
 		def f
 		new SwingBuilder().build {
 			def field = {lbl, key ->
 				label(text: lbl)
-				fields[key] = textField(actionPerformed: {setprop(key)}, focusLost: {setprop(key)}, text: p[key], constraints: 'wrap, growx')
+				fields[key] = textField(actionPerformed: {setprop(key)}, focusLost: {setprop(key)}, text: p[key], constraints: 'span 2, wrap, growx')
 			}
-			f = frame(title: 'Plexus', windowClosing: {System.exit(0)}, layout: new MigLayout('fillx'), pack: true, show: true) {
-				field('Sauer port: ', 'sauer_port')
+			f = frame(title: 'Plexus Configuration', windowClosing: {System.exit(0)}, layout: new MigLayout('fillx'), pack: true, show: true) {
 				field('Peer name: ', 'name')
+				//field('External IP: ', 'external_ip')
+				label(text: 'External IP: ')
+				fields['external_ip'] = textField(actionPerformed: {setprop('external_ip')}, focusLost: {setprop('external_ip')}, text: p['external_ip'], constraints: 'growx')
+				button(text: "Discover", actionPerformed: { discover() }, constraints: 'wrap')
+				field('External port: ', 'external_port')
+				field('Use UPnP: ', 'upnp')
 				field('Pastry port: ', 'pastry_port')
 				field('Pastry boot host: ', 'pastry_boot_host')
 				field('Pastry boot port: ', 'pastry_boot_port')
-				field('External IP: ', 'external_ip')
-				field('External port: ', 'external_port')
 				field('Sauer cmd: ', 'sauer_cmd')
-				field('Use UPnP: ', 'upnp')
+				field('Sauer port: ', 'sauer_port')
 				field('Auto Run Sauer: ', 'auto_sauer')
 				label(text: "Node id: ")
 				label(text: props.nodeId ?: "none", constraints: 'wrap, growx')
