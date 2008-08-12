@@ -366,6 +366,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	}
 	public void update(rice.p2p.commonapi.NodeHandle handle, boolean joined) {
 		System.out.println(handle + (joined ? " joined" : " left"));
+		if (!joined) cmdHandler.handleCommand(handle.getId(), null, null);
 		if (neighborChange != null) {
 			neighborChange.run();
 		}

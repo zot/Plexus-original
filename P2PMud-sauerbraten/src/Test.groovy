@@ -143,8 +143,12 @@ public class Test {
 			start(args[0])
 		}
 		P2PMudPeer.main({id, topic, cmd ->
-				pastryCmd = cmd
-				cmd.msgs.each {pastryCmds.invoke(it)}
+				if (topic == null && cmd == null) {
+					peer.broadcast(plexusTopic, "removePlayer $id")
+				} else {
+					pastryCmd = cmd
+					cmd.msgs.each {pastryCmds.invoke(it)}
+				}
 			} as P2PMudCommandHandler,
 			{
 				//sauer('peers', "peers ${peer.getNeighborCount()}")
@@ -194,7 +198,7 @@ public class Test {
 						def x = i * 32
 						def y = j * 32
 						//println "x: $x y: $y"
-						sauer('delcube', "selcube $x $y 480 1 1 1 32 5; delcube")
+						sauer('delcube', "selcube $x $y 460 1 1 2 32 5; delcube")
 						dumpCommands()
 						
 						if (blocks[i][j] == 'e') {
@@ -425,8 +429,16 @@ public class Test {
 	def updatePlayer(node, info) {
 		synchronized (presenceLock) {
 			playersDoc = playersDoc ?: [:]
-			println info
+			//println info
 			playersDoc[node] = info
+		}
+		updateFriendList()
+	}
+	def removePlayer(node) {
+		synchronized (presenceLock) {
+			playersDoc = playersDoc ?: [:]
+			println node
+			playersDoc.remove(node)
 		}
 		updateFriendList()
 	}

@@ -60,6 +60,9 @@ public class PastryCmds extends Cmds {
 	def updatePlayer(node, String... info) {
 		main.updatePlayer(node, info)
 	}
+	def removePlayer(node) {
+		main.removePlayer(node)
+	}
 	def sendPlayers() {
 		def cmd = new P2PMudCommand(main.peer.nodeId, "receivePlayers")
 
