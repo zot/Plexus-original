@@ -317,20 +317,22 @@ public class Test {
 		P2PMudFile.fetchDir(id, cacheDir, tmpDir, [
 			receiveResult: {
 				def mapDir = new File(plexusDir, "maps/$name")
-				def count = 0
-				def backupDir = new File(plexusDir, "backups")
-				if (!backupDir.exists()) backupDir.mkdirs()
-				
-				def backup = new File(backupDir, "$name")
-				while (backup.exists()) {
-					count++
-					backup = new File(backupDir, "$name-$count")
-				}
-				if (count && !mapDir.renameTo(backup)) {
-					sauer('msg', "showmessage [Could not backup old map dir: backup]")
-					dumpCommands()
-					Tools.deleteAll(tmpDir)
-					return
+				if (mapDir.exists()) {
+					def count = 0
+					def backupDir = new File(plexusDir, "backups")
+					if (!backupDir.exists()) backupDir.mkdirs()
+					
+					def backup = new File(backupDir, "$name")
+					while (backup.exists()) {
+						count++
+						backup = new File(backupDir, "$name-$count")
+					}
+					if (!mapDir.renameTo(backup)) {
+						sauer('msg', "showmessage [Could not backup old map dir: backup]")
+						dumpCommands()
+						Tools.deleteAll(tmpDir)
+						return
+					}
 				}
 				if (!tmpDir.renameTo(mapDir)) {
 					err("Couldn't rename temporary load map dir to $mapDir", new Exception())
