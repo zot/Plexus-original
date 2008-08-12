@@ -3,7 +3,7 @@ import net.miginfocom.swing.MigLayout
 import groovy.swing.SwingBuilder
 import p2pmud.Tools
 import javax.swing.JFileChooser
-import static net.sbbi.upnp.Discovery.*;
+import net.sbbi.upnp.Discovery.*;
 import net.sbbi.upnp.impls.InternetGatewayDevice;
 
 public class Prep {
@@ -184,7 +184,7 @@ public class Prep {
 		lastPeerName = props.name
 		println props
 	}
-	def static discover() {
+	def static discoverExternalIP() {
 		println "Discover button pressed"
 		int discoveryTimeout = 5000; // 5 secs to receive a response from devices
 		try {
@@ -215,7 +215,7 @@ public class Prep {
 				//field('External IP: ', 'external_ip')
 				label(text: 'External IP: ')
 				fields['external_ip'] = textField(actionPerformed: {setprop('external_ip')}, focusLost: {setprop('external_ip')}, text: p['external_ip'], constraints: 'growx')
-				button(text: "Discover", actionPerformed: { discover() }, constraints: 'wrap')
+				button(text: "Discover", actionPerformed: { discoverExternalIP() }, constraints: 'wrap')
 				field('External port: ', 'external_port')
 				field('Use UPnP: ', 'upnp')
 				field('Pastry port: ', 'pastry_port')
