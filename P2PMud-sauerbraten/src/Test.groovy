@@ -56,6 +56,7 @@ public class Test {
 	def presenceLock = new Object()
 	def playersDoc
 	def idToMap = [:]
+	def peerToSauerIdMap = [:]
 	
 	def static sauerExec
 	def static soleInstance
@@ -439,6 +440,10 @@ public class Test {
 			playersDoc = playersDoc ?: [:]
 			println node
 			playersDoc.remove(node)
+			if (peerToSauerIdMap[node]) {
+				sauer('delplayer', "deletePlayer $peerToSauerIdMap[node]")
+				peerToSauerIdMap.remove(node)
+			}
 		}
 		updateFriendList()
 	}

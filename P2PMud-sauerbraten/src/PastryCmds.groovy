@@ -17,6 +17,7 @@ public class PastryCmds extends Cmds {
 			main.ids[name] = id
 			++main.id_index
 			main.names[id] = name
+			main.peerToSauerIdMap[main.pastryCmd.from] = id
 			main.sauer('prep', "createplayer $id $name")
 		}
 		main.sauer("${id}.update", "tc_setinfo $id " + args.join(' '))
