@@ -614,11 +614,11 @@ println "player.value: $player.value"
 	}
 	def copyWorld(newName) {
 		if (mapTopic) {
-			def topic = peer.randomId()
+			def topic = peer.randomId().toStringFull()
 			def oldEntry = idToMap[mapTopic.getId().toStringFull()]
 
 			addMap(topic, oldEntry[0], oldEntry[1])
-			peer.broadcastCmds(plexusTopic, ["addMap $topic $tree $name"] as String[])
+			peer.broadcastCmds(plexusTopic, ["addMap $topic ${oldEntry[0]}, ${oldEntry[1]}"] as String[])
 		} else {
 			sauer('msg', "showmessage [Error] [No current map]")
 		}
