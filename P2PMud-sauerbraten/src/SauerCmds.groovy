@@ -63,17 +63,11 @@ public class SauerCmds extends Cmds {
 			main.broadcast(["update ${main.name} ${args.join(' ')}"])
 		}
 	}
-	def mapname(name) {
-		println "Setting mapname: $name"
-		if (name) {
-			main.mapname = new File(name).getName()
-		}
-	}
 	def connectWorld(id) {
 		main.connectWorld(id)
 	}
-	def initiatePush(mapName, update) {
-		main.initiatePush(mapName, "true".equalsIgnoreCase(update))
+	def pushMap(name) {
+		main.pushMap(name)
 	}
 	def pushMap(mapName, update) {
 		println "Sauer sent: pushMap $mapName"

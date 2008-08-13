@@ -51,6 +51,7 @@ public class Test {
 	def peer
 	def mapname
 	def mapTopic
+	def mapId
 	def plexusTopic
 	def presenceLock = new Object()
 	def playersDoc
@@ -149,7 +150,13 @@ public class Test {
 					peer.broadcastCmds(plexusTopic, "removePlayer $id")
 				} else {
 					pastryCmd = cmd
-					cmd.msgs.each {pastryCmds.invoke(it)}
+					cmd.msgs.each {
+						try {
+							pastryCmds.invoke(it)
+						} catch (Exception ex) {
+							Tools.stackTrace(ex)
+						}
+					}
 				}
 			} as P2PMudCommandHandler,
 			{
@@ -288,7 +295,6 @@ public class Test {
 	def init() {
 	 	sauer('init', [
 			"alias p2pname [$name]",
-			"remotesend mapname (mapname)",
 			"cleargui 1",
 			"showgui Plexus",
 			'echo INIT'
@@ -341,8 +347,9 @@ public class Test {
 				} else {
 					def mapPath = Tools.subpath(new File(sauerDir, "packages"), mapDir)
 
-					println "Retrieved map from PAST: $mapDir, executing: map [$mapPath/$name]"
-					sauer('load', "echo loading new map: [$mapPath/$name]; map [$mapPath/$name]")
+					mapId = id.toStringFull()
+					println "Retrieved map from PAST: $mapDir, executing: map [$mapPath/map]"
+					sauer('load', "echo loading new map: [$mapPath/map]; map [$mapPath/map]")
 					dumpCommands()
 				}
 			},
@@ -506,6 +513,9 @@ public class Test {
 		}
 		updateMapGui()
 		saveMapsDoc()
+		if (topic == mapTopic?.getId()?.toStringFull()) {
+			loadMap(name, tree)
+		}
 	}
 	def setMapsDoc(newIds, save) {
 		synchronized (presenceLock) {
@@ -566,51 +576,62 @@ println "player.value: $player.value"
 			] as Continuation)
 		}
 	}
-	def initiatePush(mapName, update) {
-		def mapFile = new File(sauerDir, "packages/$mapName")
-		mapFile.getParentFile().mkdirs()
-		sauer('push', "savemap $mapName; remotesend pushMap $mapName $update")
-		dumpCommands()
-	}
-	def pushMap(mapName, replace) {
-		println "PUSH: $mapName"
-		def mapFile = new File(sauerDir, "packages/$mapName")
-		def parent = mapFile.getParentFile()
-		def mapCount = 0
-	
-		mapFile.getParentFile().eachFileMatch(~/.*\.ogz/) {
-			mapCount++
-		}
-		if (mapCount == 1) {
-			def backupBase = new File(plexusDir, "maps/${mapFile.getName()}").getAbsolutePath()
-			def backup = new File(backupBase)
-			def backupCount = 0
-	
-			while (backup.exists()) {
-				backup = new File(backupBase + "-${++backupCount}")
+	def pushMap(name) {
+		def newMap = name?.length()
+
+		if (newMap || mapTopic) {
+			if (!newMap) {
+				name = idToMap[mapTopic.getId().toStringFull()][1]
 			}
-			backup.getParentFile().mkdirs()
-			Tools.copyAll(mapFile.getParentFile(), backup)
-			P2PMudFile.storeDir(cacheDir, backup, [
-				receiveResult: {result ->
-					def name = mapFile.getName()
-					def tree = result.getId().toStringFull()
-					def topic = replace && mapTopic ? mapTopic.getId().toStringFull() : tree
+			println "1"
+			def cont = [
+				receiveResult: {
+					def topic = newMap ? peer.randomId().toStringFull() : mapTopic.getId().toStringFull()
+					def id = it.getId().toStringFull()
 
-					addMap(topic, tree, name)
-					peer.broadcastCmds(plexusTopic, ["addMap $topic $tree $name"] as String[])
-					sauer('echo', "echo Stored dir: $result" as String)
-					dumpCommands()
+					if (!newMap) {
+						mapId = id
+					}
+					addMap(topic, id, name)
+					peer.broadcastCmds(plexusTopic, ["addMap $topic $id $name"] as String[])
 				},
-				receiveException: {exception ->	Tools.stackTrace(exception)}
-			] as Continuation);
-		} else {
-			def errTitle = "Error, There is more than one map in the folder ${Tools.subpath(sauerDir, parent)}"
-			def errMsg = "Please put this map and its requirements in its own map folder"
+				receiveException: {err("Error pushing map", it)}
+			] as Continuation
 
-			println "$errTitle: $errMsg"
-			sauer('msg', "showmessage [$errTitle] [$errMsg]")
-			dumpCommands()
+			if (mapname ==~ 'plexus/.*/map') {
+				println "plexus"
+				def mapdir = new File(sauerDir, "packages/$mapname").getParentFile()
+
+				if (!newMap) {
+					name = mapDir.getName()
+				}
+				println "store"
+				P2PMudFile.storeDir(cacheDir, mapdir, cont)
+			} else {
+				println "sauer"
+				def prefix = (new File(mapname).getParent() ? new File(sauerDir, "packages/$mapname") : new File(sauerDir, "packages/base/$mapname")).getAbsolutePath()
+				def dirmap = ['map.ogz': new File(prefix + ".ogz")]
+				def thumbJpg = new File(prefix + ".jpg")
+				def thumbPng = new File(prefix + ".png")
+				def cfg = new File(prefix + ".cfg")
+
+				if (!newMap) {
+					name = new File(mapname).getName()
+				}
+				if (thumbJpg.exists()) {
+					dirmap['map.jpg'] = thumbJpg
+				}
+				if (thumbPng.exists()) {
+					dirmap['map.png'] = thumbPng
+				}
+				if (cfg.exists()) {
+					dirmap['map.cfg'] = cfg
+				}
+				println "store"
+				P2PMudFile.storeDir(cacheDir, dirmap, cont)
+			}
+		} else {
+			sauer('msg', "showmessage [Error] [No current map]")
 		}
 	}
 	def copyWorld(newName) {

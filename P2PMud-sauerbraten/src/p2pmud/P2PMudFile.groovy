@@ -46,6 +46,10 @@ public class P2PMudFile extends ContentHashPastContent {
 			return null;
 		}
 	}
+	
+	/**
+	 * sends the P2PMudFile to cont
+	 */
 	def static storeDir(cacheDir, dir, cont) {
 		def props = new Properties()
 		def files = []
@@ -53,18 +57,24 @@ public class P2PMudFile extends ContentHashPastContent {
 		def mcont
 
 		cacheDir = cacheDir as File
-		dir = dir as File
-		dir.eachFileRecurse {
-			println "adding file: $it"
-			files.add(it)
+		if (dir instanceof Map) {
+			for (file in dir) {
+println "STORE: $file.key -> $file.value"
+				files.add([file.value, file.key])
+			}
+		} else {
+			dir = dir as File
+			dir.eachFileRecurse {
+				println "adding file: $it"
+				files.add([it, Tools.subpath(dir, it)])
+			}
 		}
 		println "${files.size()} files"
 		mcont = new MultiContinuation([
 			receiveResult: {res ->
 				for (result in res) {
 					if (res instanceof Exception) {
-						println "Exception..."
-						Tools.stackTrace(res)
+						cont.receiveException(res)
 						return
 					}
 				}
@@ -73,28 +83,22 @@ public class P2PMudFile extends ContentHashPastContent {
 				println "--- STORING DIR: $props"
 				props.store(stream, "directory")
 				P2PMudPeer.test.wimpyStoreFile(cacheDir, stream.toByteArray(), [
-					receiveResult: {res2 ->
-						cont.receiveResult(res2)
-					},
-					receiveException: {res2 ->
-						cont.receiveException(res2)
-					}
+					receiveResult: {res2 -> cont.receiveResult(res2)},
+					receiveException: {res2 -> cont.receiveException(res2)}
 				] as Continuation, false, false)
 			},
-			receiveException: {res ->
-				cont.receiveException(res)
-			}
+			receiveException: {res -> cont.receiveException(res)}
 		] as Continuation, files.size())
 		for (file in files) {
 			def c = count++
 
 			println "FILE $c: $file"
 			println "PROPS: $props"
-			P2PMudPeer.test.wimpyStoreFile(cacheDir, file, [
+			P2PMudPeer.test.wimpyStoreFile(cacheDir, file[0], [
 				receiveResult: {res ->
 					println "c: $c"
-					println "relative file: ${Tools.subpath(dir, files[c])} = ${res.id.toStringFull()}"
-					props[Tools.subpath(dir, files[c])] = res.id.toStringFull()
+					println "relative file: ${file[1]} = ${res.id.toStringFull()}"
+					props[files[c][1]] = res.id.toStringFull()
 					println "added prop to props: $props"
 					mcont.getSubContinuation(c).receiveResult(res)
 				},
