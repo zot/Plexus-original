@@ -213,6 +213,10 @@ VAR(entediting, 0, 0, 1);
 
 bool noentedit()
 {
+#ifdef TC
+	extern int tc_allowedit;
+	if (tc_allowedit) return false;
+#endif
     if(!editmode) { conoutf(CON_ERROR, "operation only allowed in edit mode"); return true; }
     return !entediting;
 }

@@ -376,26 +376,26 @@ import groovy.swing.SwingBuilderimport groovy.swing.SwingBuilderimport net.mig
 	def carveRoom(blocks, i, j, room) {
 		for (def x = hallsize; x < cellsz - hallsize; ++x) {
 			for (def y = hallsize; y < cellsz - hallsize; ++y) {
-				blocks[i * cellsz + x][j * cellsz + y] = '.'
+				blocks[i * cellsz + x][j * cellsz + y] = ' '
 			}
 		}
 		
 		def half = Math.floor(cellsz / 2) as Integer
 		if (!(room & W)) {
 			for (def y = 0; y < hallsize; ++y)
-				blocks[i * cellsz + half][j * cellsz + y] = ' '
+				blocks[i * cellsz + half][j * cellsz + y] = '.'
 		}
 		if (!(room & E)) {
 			for (def y = 0; y < hallsize; ++y)
-				blocks[i * cellsz + half][j * cellsz + roomsize + hallsize + y] = ' '
+				blocks[i * cellsz + half][j * cellsz + roomsize + hallsize + y] = 'e'
 		}
 		if (!(room & N)) {
 			for (def x = 0; x < hallsize; ++x)
-				blocks[i * cellsz + x][j * cellsz + half] = ' '
+				blocks[i * cellsz + x][j * cellsz + half] = '.'
 		}
 		if (!(room & S)) {
 			for (def x = 0; x < hallsize; ++x)
-				blocks[i * cellsz + roomsize + hallsize + x][j * cellsz + half] = ' '
+				blocks[i * cellsz + roomsize + hallsize + x][j * cellsz + half] = 's'
 		}
 	}
 	

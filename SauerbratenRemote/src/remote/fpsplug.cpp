@@ -484,10 +484,10 @@ ICOMMAND(selcube, "ssssssss", (char *oX, char *oY, char *oZ, char *sX, char *sY,
 	mpdelcube(sel, true);
 }); */
 
-ICOMMAND(tc_settex, "ii", (int t, int allfaces), {
+ICOMMAND(tc_settex, "ss", (char *t, char *allfaces), {
 	extern void mpedittex(int tex, int allfaces, selinfo &sel, bool local);
 	extern selinfo sel;
-	mpedittex(t, allfaces, sel, true);
+	mpedittex(parse(t), parse(allfaces), sel, true);
 });
 
 ICOMMAND(debugsel, "", (), {
