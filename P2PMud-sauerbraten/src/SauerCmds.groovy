@@ -69,8 +69,8 @@ public class SauerCmds extends Cmds {
 	def connectWorld(id) {
 		main.connectWorld(id)
 	}
-	def pushMap(name) {
-		main.pushMap(name)
+	def pushMap(String... nameArgs) {
+		main.pushMap(*nameArgs)
 	}
 	def pushMap(mapName, update) {
 		println "Sauer sent: pushMap $mapName"

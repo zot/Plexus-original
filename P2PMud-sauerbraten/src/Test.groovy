@@ -286,7 +286,7 @@ public class Test {
 			synchronized (pendingCommands) {
 				if (!pendingCommands.isEmpty()) {
 					def out = pendingCommands.collect{it.value}.join(";") + '\n'
-					println out
+//					println out
 					output << out
 					pendingCommands = [:]
 				}
@@ -592,7 +592,9 @@ println "player.value: $player.value"
 			] as Continuation)
 		}
 	}
-	def pushMap(name) {
+	def pushMap(String... nameArgs) {
+println "pushMap: [$nameArgs]"
+		def name = nameArgs.join(' ')
 		def newMap = name?.length()
 
 		if (newMap || mapTopic) {
@@ -618,9 +620,6 @@ println "player.value: $player.value"
 				println "plexus"
 				def mapdir = new File(sauerDir, "packages/$mapname").getParentFile()
 
-				if (!newMap) {
-					name = mapDir.getName()
-				}
 				println "store"
 				P2PMudFile.storeDir(cacheDir, mapdir, cont)
 			} else {
@@ -631,9 +630,6 @@ println "player.value: $player.value"
 				def thumbPng = new File(prefix + ".png")
 				def cfg = new File(prefix + ".cfg")
 
-				if (!newMap) {
-					name = new File(mapname).getName()
-				}
 				if (thumbJpg.exists()) {
 					dirmap['map.jpg'] = thumbJpg
 				}
