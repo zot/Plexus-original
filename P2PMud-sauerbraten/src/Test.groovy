@@ -630,16 +630,4 @@ println "pushMap: [$nameArgs]"
 			sauer('msg', "showmessage [Error] [No current map]")
 		}
 	}
-	def copyWorld(newName) {
-		if (mapTopic) {
-			def topic = peer.randomId().toStringFull()
-			def oldEntry = idToMap[mapTopic.getId().toStringFull()]
-
-			//rename map.ogz, etc. here
-			addMap(topic, oldEntry[0], newName)
-			peer.broadcastCmds(plexusTopic, ["addMap $topic ${oldEntry[0]} $newName"] as String[])
-		} else {
-			sauer('msg', "showmessage [Error] [No current map]")
-		}
-	}
 }
