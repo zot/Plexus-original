@@ -56,6 +56,7 @@ public class Test {
 	def playersDoc
 	def idToMap = [:]
 	def peerToSauerIdMap = [:]
+	def triggerLambdas = [:]
 	
 	def static sauerExec
 	def static soleInstance
@@ -214,7 +215,22 @@ public class Test {
 			sauer('finished', 'tc_allowedit 0')
 			dumpCommands()
 			
+			bindLevelTrigger("12345", {trigger-> println "Triggered: $trigger" })
+			
 		};
+	}
+	//Test.bindLevelTrigger(35, 'remotesend levelTrigger 35 $more $data') {println "duh"} remotesend levelTrigger 35
+	def bindLevelTrigger(trigger, lambda) {
+		if (!lambda) println "Error! Trigger lambda is null!"
+		trigger = Integer.parseInt(trigger)
+		triggerLambdas[trigger] = lambda
+		sauer('trigger', "level_trigger_$trigger = [ remotesend levelTrigger $trigger ]")
+		dumpCommands()
+	}
+	def levelTrigger(trigger) {
+		trigger = Integer.parseInt(trigger)
+		println "sauer trigger: $trigger"
+		if (triggerLambdas[trigger]) triggerLambdas[trigger](trigger)
 	}
 	def usage(msg) {
 		println msg

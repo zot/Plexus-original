@@ -38,6 +38,9 @@ public class SauerCmds extends Cmds {
 		main.mapname = name
 		main.updateMyPlayerInfo()
 	}
+	def levelTrigger(trigger) {
+		main.levelTrigger(trigger)
+	}
 	def position(name, String... args) {
 		if (main.names[name] == main.name) {
 			if (main.swing) {
