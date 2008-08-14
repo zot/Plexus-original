@@ -349,7 +349,7 @@ public class Test {
 
 					mapId = id.toStringFull()
 					println "Retrieved map from PAST: $mapDir, executing: map [$mapPath/map]"
-					sauer('load', "echo loading new map: [$mapPath/map]; map [$mapPath/map]")
+					sauer('load', "echo loading new map: [$mapPath/map]; tc_loadmsg [$name]; map [$mapPath/map]")
 					dumpCommands()
 				}
 			},
