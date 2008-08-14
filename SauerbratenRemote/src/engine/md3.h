@@ -193,6 +193,14 @@ struct md3 : vertmodel
         parts.add(&mdl);
         mdl.model = this;
         mdl.index = 0;
+#ifdef TC
+		pname = "packages/plexus/costumes";
+        s_sprintfd(name1)("%s/%s/tris.md3", pname, loadname);
+        mdl.meshes = sharemeshes(path(name1));
+        if(!mdl.meshes)
+        {
+			pname = parentdir(loadname);
+#endif
         s_sprintfd(name1)("packages/models/%s/tris.md3", loadname);
         mdl.meshes = sharemeshes(path(name1));
         if(!mdl.meshes)
@@ -201,6 +209,9 @@ struct md3 : vertmodel
             mdl.meshes = sharemeshes(path(name2));
             if(!mdl.meshes) return false;
         }
+#ifdef TC
+		}
+#endif
         Texture *tex, *masks;
         loadskin(loadname, pname, tex, masks);
         mdl.initskins(tex, masks);
@@ -211,9 +222,18 @@ struct md3 : vertmodel
     bool load()
     {
         if(loaded) return true;
+#ifdef TC
+		const char *pname = "packages/plexus/costumes";
+        s_sprintf(md3dir)("%s/%s", pname, loadname);
+        s_sprintfd(cfgname)("%s/%s/md3.cfg", pname, loadname);
+		if (!fileexists(md3dir, "r")) {
+			s_sprintf(md3dir)("packages/models/%s", loadname);
+			s_sprintf(cfgname)("packages/models/%s/md3.cfg", loadname);
+		}
+#else
         s_sprintf(md3dir)("packages/models/%s", loadname);
         s_sprintfd(cfgname)("packages/models/%s/md3.cfg", loadname);
-
+#endif
         loadingmd3 = this;
         persistidents = false;
         if(execfile(cfgname) && parts.length()) // configured md3, will call the md3* commands below

@@ -336,7 +336,7 @@ ICOMMAND(mfreeze, "s", (char *ent), {
        }
 });
 //this can have 1, 2, 3, or 4 args
-ICOMMAND(createitem, "siiii", (char *ent, int *triggerType, char *x, char *y, int *z), {
+ICOMMAND(createitem, "sissi", (char *ent, int *triggerType, char *x, char *y, int *z), {
 	if (ent && ent[0] == 'e') {
 		extentity *t = getent(ent);
 		vec pos;

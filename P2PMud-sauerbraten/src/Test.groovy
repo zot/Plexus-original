@@ -57,6 +57,7 @@ public class Test {
 	def playersDoc
 	def idToMap = [:]
 	def peerToSauerIdMap = [:]
+	def triggerLambdas = [:]
 	
 	def static sauerExec
 	def static soleInstance
@@ -190,7 +191,7 @@ public class Test {
 	def generateDungeon() {
 		println ("Going to generate dungeon")
 		Thread.start {
-			sauer('newmap', 'if [= editing 1] [ edittoggle ]; tc_allowedit 1; newmap; musicvol 0; entdrop 3')
+			sauer('newmap', 'if (= 1 $editing) [ edittoggle ]; tc_allowedit 1; newmap; musicvol 0; entdrop 3')
 			dumpCommands()
 			def dungeon = new Dungeon(6, 6)
 			
@@ -204,24 +205,67 @@ public class Test {
 					if (b != 'X') {
 						def x = i * 32
 						def y = j * 32
+						def wx = x - 32, wy = y - 32
 						//println "x: $x y: $y"
 						def h = b == ' ' ? 2 : 1
 						sauer('delcube', "selcube $x $y 430 1 1 $h 32 5; delcube")
-						if (b == 'e') sauer('door', "selcube $x $y 416 1 1 1 32 4; ent.yaw p0 0; newent mapmodel 27 6")
-						else if (b == 's') sauer('door', "selcube $x $y 416 1 1 1 32 4; ent.yaw p0 90; newent mapmodel 27 6")
+						if (b == 'e') {
+							sauer('door', "selcube $x $y 430 1 1 1 32 4; ent.yaw p0 0; newent mapmodel 27 6")
+						}
+						else if (b == 's') {
+							sauer('door', "selcube $x $y 430 1 1 1 32 4; ent.yaw p0 90; newent mapmodel 27 6")
+						}
 						dumpCommands()
 						
 					}
 				}
 			}
 			
-			sauer('tex', 'texturereset; setshader stdworld; texture 0 "egyptsoc/lig_b064-02d.jpg"; texture 0 "egyptsoc/stone01a.jpg"; texture 0 "tech1soc/sqrlig03bc.jpg"; ')
-			sauer("texture", "selcube 0 0 480 2 2 2 512 0; tc_settex 1 1")
+			sauer('tex', 'texturereset; setshader stdworld; exec packages/egyptsoc/package.cfg ')
+			sauer("texture", "selcube 0 0 480 2 2 2 512 4; tc_settex 35 1")
+			sauer("texture2", "tc_settex 37 0; selcube 0 0 480 2 2 2 512 5; tc_settex 51 0")
+			sauer("texture3", "selcube 0 0 470 512 512 1 16 5; tc_settex 7 1")
+			
+			for (def i = 0; i < dungeon.blockRows; ++i) {
+				for (def j = 0; j < dungeon.blockCols; ++j) {
+					def b = blocks[i][j] 
+					if (b != 'X') {
+						def x = i * 32
+						def y = j * 32
+						def wx = x - 32, wy = y - 32
+						if (b == 'e') {
+							sauer('wall1', "selcube $wx $wy 430 3 3 1 32 0; tc_settex 56 0")
+							sauer('wall2', "selcube $wx $wy 430 3 3 1 32 1; tc_settex 56 0")
+						}
+						else if (b == 's') {
+							sauer('wall1', "selcube $wx $wy 430 3 3 1 32 2; tc_settex 56 0")
+							sauer('wall2', "selcube $wx $wy 430 3 3 1 32 3; tc_settex 56 0")
+						}
+						dumpCommands()
+					}
+				}
+			}
+			
 			sauer("spawn", "selcube 32 32 416 1 1 1 32 5; ent.yaw p0 135; newent playerstart; tc_respawn p0")
 			sauer('finished', 'tc_allowedit 0')
 			dumpCommands()
 			
+			bindLevelTrigger("12345", {trigger-> println "Triggered: $trigger" })
+			
 		};
+	}
+	//Test.bindLevelTrigger(35, 'remotesend levelTrigger 35 $more $data') {println "duh"} remotesend levelTrigger 35
+	def bindLevelTrigger(trigger, lambda) {
+		if (!lambda) println "Error! Trigger lambda is null!"
+		trigger = Integer.parseInt(trigger)
+		triggerLambdas[trigger] = lambda
+		sauer('trigger', "level_trigger_$trigger = [ remotesend levelTrigger $trigger ]")
+		dumpCommands()
+	}
+	def levelTrigger(trigger) {
+		trigger = Integer.parseInt(trigger)
+		println "sauer trigger: $trigger"
+		if (triggerLambdas[trigger]) triggerLambdas[trigger](trigger)
 	}
 	def usage(msg) {
 		println msg
@@ -307,6 +351,12 @@ public class Test {
 	}
 	def anycast(cmds) {
 		if (peer) peer.anycastCmds(mapTopic, cmds as String[])
+	}
+	def send(id, cmds) {
+		if (id instanceof String) {
+		id = Id.build(id)
+		}
+		if (peer) peer.broadcastCmds(id, cmds as String[])
 	}
 	def cvtNewlines(str) {
 		println "${str.replaceAll(/\n/, ';')}"
@@ -475,7 +525,7 @@ public class Test {
 					println info
 					def who = info[0]
 					def map = (!info[1] || info[1] == 'null') ? 'none' : idToMap[info[1]][1]
-					friendGui += "guibutton [$who ($map)] [echo $player.key ]\n"
+					friendGui += "guibutton [$who ($map)] [alias tc_whisper $player.key; "  + 'saycommand [/whisper ""] ]\n'
 					++cnt
 				}
 			}

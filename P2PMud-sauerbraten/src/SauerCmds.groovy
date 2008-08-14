@@ -38,6 +38,9 @@ public class SauerCmds extends Cmds {
 		main.mapname = name
 		main.updateMyPlayerInfo()
 	}
+	def levelTrigger(trigger) {
+		main.levelTrigger(trigger)
+	}
 	def position(name, String... args) {
 		if (main.names[name] == main.name) {
 			if (main.swing) {
@@ -79,5 +82,8 @@ public class SauerCmds extends Cmds {
 	def copyWorld(mapName) {
 		println "Copy World: $mapName"
 		main.copyWorld(mapName)
+	}
+	def whisperPlayer(from, to, msg) {
+		main.send(to, "whisperPlayer $from $msg")
 	}
 }

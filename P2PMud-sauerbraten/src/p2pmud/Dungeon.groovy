@@ -380,14 +380,16 @@ import groovy.swing.SwingBuilderimport groovy.swing.SwingBuilderimport net.mig
 			}
 		}
 		
-		def half = Math.floor(cellsz / 2) as Integer
+		def secret = randint(1, 25) == 1
+		def half = Math.floor(cellsz / 2) as Integer, halfhall = Math.floor(hallsize/2) as Integer 
 		if (!(room & W)) {
 			for (def y = 0; y < hallsize; ++y)
 				blocks[i * cellsz + half][j * cellsz + y] = '.'
 		}
 		if (!(room & E)) {
 			for (def y = 0; y < hallsize; ++y)
-				blocks[i * cellsz + half][j * cellsz + roomsize + hallsize + y] = 'e'
+				blocks[i * cellsz + half][j * cellsz + roomsize + hallsize + y] = '.'
+			blocks[i * cellsz + half][j * cellsz + roomsize + hallsize + halfhall ] = 'e'
 		}
 		if (!(room & N)) {
 			for (def x = 0; x < hallsize; ++x)
@@ -395,7 +397,8 @@ import groovy.swing.SwingBuilderimport groovy.swing.SwingBuilderimport net.mig
 		}
 		if (!(room & S)) {
 			for (def x = 0; x < hallsize; ++x)
-				blocks[i * cellsz + roomsize + hallsize + x][j * cellsz + half] = 's'
+				blocks[i * cellsz + roomsize + hallsize + x][j * cellsz + half] = '.'
+			blocks[i * cellsz + roomsize + hallsize + halfhall ][j * cellsz + half] = 's'
 		}
 	}
 	
