@@ -73,8 +73,19 @@ struct md2 : vertmodel
         char       name[16];
     };
     
-    md2(const char *name) : vertmodel(name) {}
+#ifdef TC
+	// custom skin not hacked in yet, cuz it will disturb the model caching at this point
+	char custom_skin[32];
 
+	md2(const char *name, const char *skin) : vertmodel(name) {
+		strncpy(custom_skin, skin, sizeof(custom_skin));
+		custom_skin[sizeof(custom_skin) - 1] = '\0';
+	}
+
+	md2(const char *name) : vertmodel(name) { strcpy(custom_skin, "skin"); }
+#else
+    md2(const char *name) : vertmodel(name) {}
+#endif
     int type() const { return MDL_MD2; }
 
     int linktype(animmodel *m) const { return LINK_COOP; }
@@ -256,6 +267,14 @@ struct md2 : vertmodel
         mdl.model = this;
         mdl.index = 0;
         const char *pname = parentdir(loadname);
+#ifdef TC
+		pname = "packages/plexus/costumes";
+        s_sprintfd(name1)("%s/%s/tris.md2", pname, loadname);
+        mdl.meshes = sharemeshes(path(name1));
+        if(!mdl.meshes)
+        {
+			pname = parentdir(loadname);
+#endif
         s_sprintfd(name1)("packages/models/%s/tris.md2", loadname);
         mdl.meshes = sharemeshes(path(name1));
         if(!mdl.meshes)
@@ -264,18 +283,29 @@ struct md2 : vertmodel
             mdl.meshes = sharemeshes(path(name2));
             if(!mdl.meshes) return false;
         }
+#ifdef TC
+		}
+#endif
         Texture *tex, *masks;
         loadskin(loadname, pname, tex, masks);
         mdl.initskins(tex, masks);
         if(tex==notexture) conoutf("could not load model skin for %s", name1);
         loadingmd2 = this;
         persistidents = false;
+#ifdef TC
+        s_sprintfd(name3)("%s/%s/md2.cfg", pname, loadname);
+        if(!execfile(name3))
+        {
+#endif
         s_sprintfd(name3)("packages/models/%s/md2.cfg", loadname);
         if(!execfile(name3))
         {
             s_sprintf(name3)("packages/models/%s/md2.cfg", pname);
             execfile(name3);
         }
+#ifdef TC
+		}
+#endif
         persistidents = true;
         loadingmd2 = 0;
         loopv(parts) parts[i]->meshes = parts[i]->meshes->scaleverts(scale/4.0f, i ? vec(0, 0, 0) : vec(translate.x, -translate.y, translate.z));

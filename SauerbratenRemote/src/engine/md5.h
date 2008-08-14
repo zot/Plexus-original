@@ -458,12 +458,26 @@ struct md5 : skelmodel
         const char *fname = loadname + strlen(loadname);
         do --fname; while(fname >= loadname && *fname!='/' && *fname!='\\');
         fname++;
+#ifdef TC
+        s_sprintfd(meshname)("packages/plexus/costumes/%s/%s.md5mesh", loadname, fname);
+		if (!fileexists(meshname, "r")) {
+	       s_sprintf(meshname)("packages/models/%s/%s.md5mesh", loadname, fname);
+		}
+#else
         s_sprintfd(meshname)("packages/models/%s/%s.md5mesh", loadname, fname);
+#endif
         mdl.meshes = sharemeshes(path(meshname));
         if(!mdl.meshes) return false;
         mdl.initanimparts();
         mdl.initskins();
+#ifdef TC
+        s_sprintfd(animname)("packages/plexus/costumes/%s/%s.md5anim", loadname, fname);
+		if (!fileexists(animname, "r")) {
+			s_sprintf(animname)("packages/plexus/costumes/%s/%s.md5anim", loadname, fname);
+		}
+#else
         s_sprintfd(animname)("packages/models/%s/%s.md5anim", loadname, fname);
+#endif
         ((md5meshgroup *)mdl.meshes)->loadmd5anim(path(animname));
         return true;
     }
@@ -471,9 +485,17 @@ struct md5 : skelmodel
     bool load()
     {
         if(loaded) return true;
+#ifdef TC
+        s_sprintf(md5dir)("packages/plexus/costumes/%s", loadname);
+        s_sprintfd(cfgname)("packages/plexus/costumes/%s/md5.cfg", loadname);
+		if (!fileexists(md5dir, "r")) {
+	        s_sprintf(md5dir)("packages/models/%s", loadname);
+		    s_sprintf(cfgname)("packages/models/%s/md5.cfg", loadname);
+		}
+#else
         s_sprintf(md5dir)("packages/models/%s", loadname);
         s_sprintfd(cfgname)("packages/models/%s/md5.cfg", loadname);
-
+#endif
         loadingmd5 = this;
         persistidents = false;
         if(execfile(cfgname) && parts.length()) // configured md5, will call the md5* commands below
