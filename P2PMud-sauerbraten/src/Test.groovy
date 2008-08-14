@@ -354,8 +354,9 @@ public class Test {
 	}
 	def send(id, cmds) {
 		if (id instanceof String) {
-		id = Id.build(id)
+			id = Id.build(id)
 		}
+		println "sending: $id, $cmds"
 		if (peer) peer.broadcastCmds(id, cmds as String[])
 	}
 	def cvtNewlines(str) {

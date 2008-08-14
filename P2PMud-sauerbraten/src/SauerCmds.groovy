@@ -83,7 +83,8 @@ public class SauerCmds extends Cmds {
 		println "Copy World: $mapName"
 		main.copyWorld(mapName)
 	}
-	def whisperPlayer(from, to, msg) {
-		main.send(to, "whisperPlayer $from $msg")
+	def whisperPlayer(from, to, String... msg) {
+		println "WHISPER FROM SAUER: $from $to $msg"
+		main.send(to, "whisperPlayer $from ${msg.join(' ')}")
 	}
 }

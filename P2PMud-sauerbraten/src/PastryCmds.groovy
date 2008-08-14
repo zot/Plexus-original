@@ -68,8 +68,8 @@ public class PastryCmds extends Cmds {
 		cmd.payload = main.playersDoc
 		main.peer.sendCmds(main.pastryCmd.from, cmd)
 	}
-	def whisperPlayer(from, msg) {
-		main.sauer('whisp', "echo Player $from whispers: $msg")
+	def whisperPlayer(from, String... msg) {
+		main.sauer('whisp', "echo Player $from whispers: ${msg.join(' ')}")
 		main.dumpCommands();
 	}
 }
