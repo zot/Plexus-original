@@ -352,6 +352,12 @@ public class Test {
 	def anycast(cmds) {
 		if (peer) peer.anycastCmds(mapTopic, cmds as String[])
 	}
+	def send(id, cmds) {
+		if (id instanceof String) {
+		id = Id.build(id)
+		}
+		if (peer) peer.broadcastCmds(id, cmds as String[])
+	}
 	def cvtNewlines(str) {
 		println "${str.replaceAll(/\n/, ';')}"
 		return str.replaceAll(/\n/, ';')
@@ -519,7 +525,7 @@ public class Test {
 					println info
 					def who = info[0]
 					def map = (!info[1] || info[1] == 'null') ? 'none' : idToMap[info[1]][1]
-					friendGui += "guibutton [$who ($map)] [echo $player.key ]\n"
+					friendGui += "guibutton [$who ($map)] [alias tc_whisper $player.key; "  + 'saycommand [/whisper ""] ]\n'
 					++cnt
 				}
 			}
