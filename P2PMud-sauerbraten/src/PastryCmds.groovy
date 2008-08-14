@@ -3,9 +3,6 @@ public class PastryCmds extends Cmds {
 	public PastryCmds(main) {
 		super(main)
 	}
-	def invoke(cmdString) {
-		super.invoke(cmdString)
-	}
 	def login(name, String... args) {
 		main.sauer('echo', "echo ${name} has joined!")
 		update(name, *args)

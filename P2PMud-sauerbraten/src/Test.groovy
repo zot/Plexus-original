@@ -356,8 +356,7 @@ public class Test {
 		if (id instanceof String) {
 			id = Id.build(id)
 		}
-		println "sending: $id, $cmds"
-		if (peer) peer.broadcastCmds(id, cmds as String[])
+		if (peer) peer.sendCmds(id, cmds as String[])
 	}
 	def cvtNewlines(str) {
 		println "${str.replaceAll(/\n/, ';')}"
