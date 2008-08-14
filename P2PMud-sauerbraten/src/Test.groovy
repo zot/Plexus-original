@@ -145,19 +145,19 @@ public class Test {
 			start(args[0])
 		}
 		P2PMudPeer.main({id, topic, cmd ->
-				if (topic == null && cmd == null) {
-					id = id.toStringFull()
-					removePlayer(id)
-					peer.broadcastCmds(plexusTopic, "removePlayer $id")
-				} else {
-					pastryCmd = cmd
-					cmd.msgs.each {
-						try {
+				try {
+					if (topic == null && cmd == null) {
+						id = id.toStringFull()
+						removePlayer(id)
+						peer.broadcastCmds(plexusTopic, "removePlayer $id")
+					} else {
+						pastryCmd = cmd
+						cmd.msgs.each {
 							pastryCmds.invoke(it)
-						} catch (Exception ex) {
-							Tools.stackTrace(ex)
 						}
 					}
+				} catch (Exception ex) {
+					Tools.stackTrace(ex)
 				}
 			} as P2PMudCommandHandler,
 			{
@@ -478,13 +478,13 @@ public class Test {
 		println "BROADCAST: updatePlayer $node $name $id"
 	}
 	def updatePlayer(node, info) {
-		if (mapTopic) {
-			synchronized (presenceLock) {
-				playersDoc = playersDoc ?: [:]
-				//println info
-				playersDoc[node] = info
-				// if they aren't on our map now, see if we need to delete them from sauer
-				if (info[1] != mapTopic.getId().toStringFull()) removePlayerFromSauerMap(node)
+		synchronized (presenceLock) {
+			playersDoc = playersDoc ?: [:]
+			//println info
+			playersDoc[node] = info
+			// if they aren't on our map now, see if we need to delete them from sauer
+			if (mapTopic && info[1] != mapTopic.getId().toStringFull()) {
+				removePlayerFromSauerMap(node)
 			}
 		}
 		updateFriendList()
@@ -519,6 +519,7 @@ public class Test {
 			def mname = "Limbo"
 
 			updateMapGui()
+			println "playersDoc: $playersDoc"
 			for (player in playersDoc) {
 				if (player.key != id) {
 					def info = player.value
