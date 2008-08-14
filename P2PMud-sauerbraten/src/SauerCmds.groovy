@@ -86,4 +86,19 @@ public class SauerCmds extends Cmds {
 	def whisperPlayer(from, to, String... msg) {
 		main.send(to, ["whisperPlayer $from ${msg.join(' ')}"])
 	}
+	def activePortals(String... portalIds) {
+		main.activePortals(portalIds)
+	}
+	def bindPortals(String... bindings) {
+		for (def i = 0; i < bindings.length; i += 2) {
+			main.bindPortal(bindings[i], bindings[i + 1])
+		}
+	}
+	def firePortal(id) {
+		println "firePortal $id"
+		main.firePortal(id)
+	}
+	def createPortal(name, id) {
+		main.createPortal(name, id)
+	}
 }

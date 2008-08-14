@@ -30,6 +30,7 @@ public class Prep {
 	def static props = [:] as Properties
 	def static fields = [:]
 	def static sauerDir
+	def static final MARKER = "\n//THIS LINE ADDED BY TEAM CTHULHU'S PLEXUS: PLEASE DO NOT EDIT THIS LINE OR THE NEXT ONE\n"
 
 	def static initProps() {
 		for (e in defaultProps) {
@@ -126,8 +127,8 @@ public class Prep {
 	def static patchAutoexec() {
 		def autoexecFile = new File(sauerDir, 'autoexec.cfg')
 
-		if (!autoexecFile.exists() || (autoexecFile.getText() =~ /ADDED BY TEAM CTHULHU/).size() == 0) {
-			autoexecFile.append("\n//THIS LINE ADDED BY TEAM CTHULHU'S PLEXUS: PLEASE DO NOT EDIT THIS LINE OR THE NEXT ONE\nexec packages/plexus/dist/plexus.cfg\n")
+		if (!autoexecFile.exists() || (autoexecFile.getText() =~ MARKER).size() == 0) {
+			autoexecFile.append("${MARKER}exec packages/plexus/dist/plexus.cfg\n")
 		}
 	}
 	def static buildMainArgs() {

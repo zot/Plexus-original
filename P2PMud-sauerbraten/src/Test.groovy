@@ -58,6 +58,7 @@ public class Test {
 	def idToMap = [:]
 	def peerToSauerIdMap = [:]
 	def triggerLambdas = [:]
+	def portals = [:]
 	
 	def static sauerExec
 	def static soleInstance
@@ -606,6 +607,10 @@ println "player.value: $player.value"
 		for (world in ents) {
 			mapsGui += "guibutton [${world[0]} (${world[2]})] [remotesend connectWorld ${world[1]}]\n"
 		}
+		mapsGui += "]\nnewgui Portals ["
+		for (world in ents) {
+			mapsGui += "guibutton [${world[0]} (${world[2]})] [remotesend createPortal ${world[0]} ${world[1]}]\n"
+		}
 		mapsGui += "]\n"
 		sauer('maps', cvtNewlines(mapsGui))
 		dumpCommands()
@@ -680,5 +685,64 @@ println "pushMap: [$nameArgs]"
 		} else {
 			sauer('msg', "showmessage [Error] [No current map]")
 		}
+	}
+	def activePortals(ids) {
+		ids = ids as Set
+		portals.keySet().retainAll(ids)
+		for (id in ids) {
+			if (!portals.containsKey(id)) {
+				portals[id] = ""
+			}
+		}
+	}
+	def bindPortal(id, topic) {
+		portals[id] = topic
+		if (idToMap[topic]) {
+println "bindPortal: portal_$id = ${idToMap[topic][1]}"
+			sauer('portal', "portal_$id = ${idToMap[topic][1]}")
+			dumpCommands()
+		}
+	}
+	def firePortal(id) {
+println "portals: $portals, id: $id, portals[id]: ${portals[id]}"
+		if (portals[id]) {
+			connectWorld(portals[id])
+		}
+	}
+	def createPortal(name, id) {
+		def triggers = [] as Set
+
+		for (def i = 0; i < portals.size(); i++) {
+			triggers.add(31000 + i)
+		}
+		triggers.removeAll(portals.keySet())
+		def trigger = triggers.isEmpty() ? 31000 + portals.size() : triggers.iterator().next()
+		portals[trigger as String] = id
+println "createPortal portal_$trigger = $name; portal $trigger"
+		sauer('portal', "portal_$trigger = $name; portal $trigger")
+		dumpCommands()
+		saveGroovyData()
+	}
+	def saveGroovyData() {
+		def cfg = new File(mapname ==~ '.*/.*' ? new File(sauerDir, "packages") : new File(sauerDir, "packages/base"), mapname + ".cfg")
+		def txt = ""
+
+		if (cfg.exists()) {
+			txt = cfg.getText()
+			def pos = txt =~ '(' + Prep.MARKER + '\n)[^\n]*(\n|$)'
+
+			if (pos.find()) {
+				txt = txt.substring(0, pos.start(1)) + txt.substring(pos.end(2))
+			}
+		}
+		if (portals) {
+			txt += Prep.MARKER
+			txt += "remotesend bindPortals ["
+			for (portal in portals) {
+				txt += "$portal.key $portal.value"
+			}
+			txt += "];findPortals"
+		}
+		cfg.write(txt)
 	}
 }
