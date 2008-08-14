@@ -689,6 +689,39 @@ void mousemove(int dx, int dy)
     }
 }
 
+#ifdef TC
+// called when use is using LMB to spin camera around the toon
+int swingyaw = 0, swingpitch = 0;
+
+void swingcamera(int dx, int dy)
+{
+	if (thirdperson) {
+		swingyaw += dx / 5.0;
+		swingpitch -= dy / 5.0;
+		return;
+	} else {
+		swingyaw = swingpitch = 0;
+	}
+	tc_adjustcamera(camera1, dx, dy);
+    fixcamerarange(camera1);
+	return;
+}
+
+void clearswing(physent *p)
+{
+	if (swingyaw != 0) {
+		p->yaw = camera1->yaw;
+		swingyaw = 0;
+	}
+	if (swingpitch != 0) {
+		p->pitch = camera1->pitch;
+		swingpitch = 0;
+	}
+	fixcamerarange(p);
+}
+
+#endif
+
 void recomputecamera()
 {
     cl->setupcamera();
@@ -714,7 +747,11 @@ void recomputecamera()
         camera1->type = ENT_CAMERA;
         camera1->move = -1;
         camera1->eyeheight = 2;
-        
+#ifdef TC
+		camera1->yaw += swingyaw;
+		camera1->pitch += swingpitch;
+		fixcamerarange(camera1);
+#endif
         loopi(10)
         {
             if(!moveplayer(camera1, 10, true, thirdpersondistance)) break;

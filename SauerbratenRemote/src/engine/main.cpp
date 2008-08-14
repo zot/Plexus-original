@@ -665,8 +665,22 @@ void checkinput()
                 		// make the mouse track only when a button is held down
                 		extern void tc_movecursor(int x, int y, bool hide);
                 		if (tc_amgrabbingmouse) {
-                			// only call mousemove() to spin the camera when we are grabbing
-                			mousemove(event.motion.xrel * 5.0, event.motion.yrel * 5.0);
+							ms = SDL_GetMouseState(NULL, NULL);
+							if (0 != (ms & SDL_BUTTON_LMASK) && 0 == (ms & SDL_BUTTON_RMASK)) {
+								// force toon upright if swinging the camera
+								if (p->pitch) {
+									extern int swingpitch;
+									swingpitch = p->pitch;
+									p->pitch = 0.0;
+								}
+								extern void swingcamera(int dx, int dy);
+								swingcamera(event.motion.xrel * 5.0, event.motion.yrel * 5.0);
+							} else if (ms) {
+								extern void clearswing(physent *p);
+								clearswing(p);
+                				// only call mousemove() to spin the camera when we are grabbing
+                				mousemove(event.motion.xrel * 5.0, event.motion.yrel * 5.0);
+							}
 							// keep the crosshairs locked in dead center while grabbing
 							g3d_resetcursor();
                 		} else {
@@ -736,6 +750,8 @@ void checkinput()
 						autorun = !!p->move;
 						//fprintf(stderr, "middle button pressed, move is now %d\n", p->move);
 						lastmiddle = true;
+						extern void clearswing(physent *p);
+						clearswing(p);
 					}
 				} else if (event.type == SDL_MOUSEBUTTONUP && savemiddle) {
 					//fprintf(stderr, "middle button released\n");
@@ -746,6 +762,8 @@ void checkinput()
 					if (SDL_BUTTON_BOTHMASK == ms) {
 						p->move = 1;
 						autorun = false;
+						extern void clearswing(physent *p);
+						clearswing(p);
 						//fprintf(stderr, "Both buttons down, moving but no longer in autorun\n");
 					}
 					else if (!autorun) {
