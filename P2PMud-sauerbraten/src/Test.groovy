@@ -257,24 +257,6 @@ public class Test {
 			
 		};
 	}
-	//varval = [do [result $@arg1]]
-	//x3 = hello; v = 3; echo (varval (concatword x $v))
-	def dumpCostumeSelections(triples) {
-		sauer("cost1", 'alias showcostume [ guibar; guiimage (do [result $@(concatword "costume_thumb_" $guirollovername)]) $guirolloveraction 4 1 "data/cube.png"]')
-		def i = 0
-		for (trip in triples) {
-			sauer("cost88$i", "alias costume_thumb_${trip[0]} [${trip[1]}]")
-		}
-		sauer('cost2', 'newgui Costumes [ \n guititle "Select a costume" \n    guilist [ \n   guilist [ \n')
-		
-		i = 0
-		for (trip in triples) {
-			sauer("cost99$i", "guibutton [${trip[0]}] [${trip[2]}]")
-			++i
-		}
-		sauer('cost3', '] \n   showcostume  \n     ] \n ] ')
-		dumpCommands()
-	}
 	//Test.bindLevelTrigger(35, 'remotesend levelTrigger 35 $more $data') {println "duh"} remotesend levelTrigger 35
 	def bindLevelTrigger(trigger, lambda) {
 		if (!lambda) println "Error! Trigger lambda is null!"
@@ -698,10 +680,68 @@ println "done broadcasting"
 		}
 	}
 	def updateCostumeGui() {
-		println "COSTUMES"
-		for (costume in costumesDoc) {
-			println "$costume.key: $costume.value"
+		def tot = 0
+		def trips = []
+
+		for (c in costumesDoc) {
+			if (c.value[1]) {
+				tot++
+			}
 		}
+		if (tot > 0) {
+			def contCount = 0
+			def costumesDir = new File(plexusDir, 'costumes')
+			def mcont = new MultiContinuation([
+				receiveResult: {
+println "CREATING TRIPS"
+					for (c in costumesDoc) {
+						trips.add([c.value[0], c.value[1] ? "plexus/costumes/${c.value[0]}/thumb.jpg" : '', c.key])
+					}
+					dumpCostumeSelections(trips)
+				},
+				receiveException: {err("Error fetching thumbs for costumes", it)}
+			] as Continuation, tot)
+
+			for (costume in costumesDoc) {
+				if (costume.value[1]) {
+					peer.wimpyGetFile(Id.build(costume.value[1]), new File(costumesDir, costume.value[0]), mcont.getSubContinuation(contCount))
+				}
+			}
+		} else {
+println "CREATING EMPTY TRIPS"
+			for (c in costumesDoc) {
+				trips.add([c.value[0], '', c.key])
+			}
+			dumpCostumeSelections(trips)
+		}
+	}
+	//varval = [do [result $@arg1]]
+	//x3 = hello; v = 3; echo (varval (concatword x $v))
+	def dumpCostumeSelections(triples) {
+println "COSTUME SELS: $triples"
+		sauer("cost1", 'costume_thumb_Exit = []; costume_thumb_Editing = []; alias showcostume [ guibar; guiimage (do [result $@(concatword "costume_thumb_" $guirollovername)]) $guirolloveraction 4 1 "data/cube.png"]')
+		def i = 0
+		for (trip in triples) {
+			sauer("cost88${i++}", "alias costume_thumb_${trip[0]} [${trip[1]}]")
+		}
+		sauer('cost2', 'newgui Costumes [ \n guititle "Select a costume" \n    guilist [ \n   guilist [ \n')
+		
+		i = 0
+		for (trip in triples) {
+			sauer("cost99${i++}", "guibutton [${trip[0]}] [remotesend useCostume ${trip[0]} ${trip[2]}]")
+		}
+		sauer('cost3', '] \n   showcostume  \n     ] \n ] ')
+		dumpCommands()
+	}
+	def useCostume(name, dirId) {
+		def costumeDir = new File(plexusDir, "costumes/$name")
+
+		P2PMudFile.fetchDir(dirId, cacheDir, costumeDir, [
+			receiveResult: {
+				println "USE COSTUME $costumeDir"
+			},
+			receiveException: {err("Couldn't use costume: $name", it)}
+		] as Continuation, false)
 	}
 	def saveCostumesDoc() {
 		def costumes = [:] as Properties

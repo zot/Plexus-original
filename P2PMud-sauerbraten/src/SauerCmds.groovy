@@ -105,4 +105,7 @@ public class SauerCmds extends Cmds {
 		println "PUSHING COSTUME FROM SAUER: $name"
 		main.pushCostume(name)
 	}
+	def useCostume(name, id) {
+		main.useCostume(name, id)
+	}
 }
