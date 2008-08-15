@@ -257,6 +257,24 @@ public class Test {
 			
 		};
 	}
+	//varval = [do [result $@arg1]]
+	//x3 = hello; v = 3; echo (varval (concatword x $v))
+	def dumpCostumeSelections(triples) {
+		sauer("cost1", 'alias showcostume [ guibar; guiimage (do [result $@(concatword "costume_thumb_" $guirollovername)]) $guirolloveraction 4 1 "data/cube.png"]')
+		def i = 0
+		for (trip in triples) {
+			sauer("cost88$i", "alias costume_thumb_${trip[0]} [${trip[1]}]")
+		}
+		sauer('cost2', 'newgui Costumes [ \n guititle "Select a costume" \n    guilist [ \n   guilist [ \n')
+		
+		i = 0
+		for (trip in triples) {
+			sauer("cost99$i", "guibutton [${trip[0]}] [${trip[2]}]")
+			++i
+		}
+		sauer('cost3', '] \n   showcostume  \n     ] \n ] ')
+		dumpCommands()
+	}
 	//Test.bindLevelTrigger(35, 'remotesend levelTrigger 35 $more $data') {println "duh"} remotesend levelTrigger 35
 	def bindLevelTrigger(trigger, lambda) {
 		if (!lambda) println "Error! Trigger lambda is null!"
