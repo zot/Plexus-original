@@ -55,6 +55,8 @@ public class Test {
 	def plexusTopic
 	def presenceLock = new Object()
 	def playersDoc
+	def costumesDoc = [:]
+	def pendingCostumes = [:]
 	def idToMap = [:]
 	def peerToSauerIdMap = [:]
 	def triggerLambdas = [:]
@@ -409,10 +411,12 @@ public class Test {
 	}
 	def err(msg, err) {
 		println(msg)
-		Tools.stackTrace(err);
+		err.printStackTrace()
+		Tools.stackTrace(err)
 	}
 	def initBoot() {
 		def maps = new File(plexusDir, "mapsdoc")
+		def costumes = new File(plexusDir, "costumesdoc")
 
 		if (maps.exists()) {
 			def props = Tools.properties(maps)
@@ -429,11 +433,24 @@ public class Test {
 		} else {
 			setMapsDoc([:], true)
 		}
+		if (costumes.exists()) {
+			def props = Tools.properties(costumes)
+
+			for (costume in props) {
+				def entry = map.value.split(' ')
+
+				costumesDoc[map.key] = [entry[0], entry[1]]
+			}
+			setCostumesDoc(costumesDoc, false)
+		} else {
+			setCostumesDoc([:], true)
+		}
 		updatePlayer(peer.nodeId.toStringFull(), [name, null])
 		storeCache()
 	}
 	def initJoin() {
 		peer.anycastCmds(plexusTopic, "sendMaps")
+		peer.anycastCmds(plexusTopic, "sendCostumes")
 		peer.anycastCmds(plexusTopic, "sendPlayers")
 	}
 	def storeCache() {
@@ -615,6 +632,67 @@ println "player.value: $player.value"
 		sauer('maps', cvtNewlines(mapsGui))
 		dumpCommands()
 	}
+	def pushCostume(name) {
+println "PUSHING COSTUME: $name"
+		def path = new File(plexusDir, "costumes/$name")
+
+		if (!path.exists()) {
+			sauer('err', "showmessage [File thumbnail not found] [Could not costume thumbnail: $path]")
+		} else {
+println "STORING COSTUME"
+			P2PMudFile.storeDir(cacheDir, path, [
+				receiveResult: {
+					def fileId = it[0].getId().toStringFull()
+					def thumb = it[1]['thumb.jpg'] ?: ''
+
+					try {
+println "STORED COSTUME, adding"
+						addCostume(fileId, name, thumb)
+println "STORED COSTUME, broadcasting"
+						peer.broadcastCmds(plexusTopic, ["addCostume $fileId, $name, $thumb"] as String[])
+println "done broadcasting"
+					} catch (Exception ex) {
+						err("Error pushing costume", ex)
+					}
+				},
+				receiveException: {err("Couldn't store costume in cloud: $path", it)}
+			] as Continuation)
+		}
+	}
+	def addCostume(dir, name, thumb) {
+		synchronized (presenceLock) {
+			costumesDoc[dir] = [name, thumb]
+		}
+		updateCostumeGui()
+		saveCostumesDoc()
+		if (pendingCostumes[dir]) {
+			pendingCostumes[dir].each {it()}
+			pendingCostumes.remove(dir)
+		}
+	}
+	def setCostumesDoc(costumes, save) {
+		synchronized (presenceLock) {
+			costumesDoc = costumes
+			updateCostumeGui()
+			if (save) {
+				saveCostumesDoc()
+			}
+		}
+	}
+	def updateCostumeGui() {
+		println "COSTUMES"
+		for (costume in costumesDoc) {
+			println "$costume.key: $costume.value"
+		}
+	}
+	def saveCostumesDoc() {
+		def costumes = [:] as Properties
+
+		for (costume in costumesDoc) {
+			costumes[costume.key] = costume.value.join(' ')
+		}
+		Tools.store(costumes, new File(plexusDir, 'costumesdoc'), "Costumes document")
+	}
 	def connectWorld(id) {
 		def entry = idToMap[id]
 
@@ -645,7 +723,7 @@ println "pushMap: [$nameArgs]"
 			def cont = [
 				receiveResult: {
 					def topic = newMap ? peer.randomId().toStringFull() : mapTopic.getId().toStringFull()
-					def id = it.getId().toStringFull()
+					def id = it[0].getId().toStringFull()
 
 					if (!newMap) {
 						mapId = id

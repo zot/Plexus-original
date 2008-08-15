@@ -101,4 +101,8 @@ public class SauerCmds extends Cmds {
 	def createPortal(name, id) {
 		main.createPortal(name, id)
 	}
+	def pushCostume(name) {
+		println "PUSHING COSTUME FROM SAUER: $name"
+		main.pushCostume(name)
+	}
 }
