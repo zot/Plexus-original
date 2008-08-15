@@ -281,6 +281,20 @@ model *loadmodel(const char *name, int i, bool msg)
     return m;
 }
 
+#ifdef TC
+void reloadmodel(char *name)
+{
+	model *m = mdllookup.nullItem(name);
+	if (m) {
+	    m->cleanup();
+		delete m;
+		loadmodel(name, -1, false);
+	}
+}
+
+COMMAND(reloadmodel, "s");
+#endif
+
 void clear_mdls()
 {
     enumerate(mdllookup, model *, m, delete m);

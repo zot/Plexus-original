@@ -475,7 +475,15 @@ template <class K, class T> struct hashtable
         if(doinsert) return insert(key, h);
         return NULL;
     }
-
+#ifdef TC
+	T nullItem(const K &key) {
+		chain *c = find(key, false);
+		if (!c) return NULL;
+		T ret = c->data;
+		c->data = NULL;
+		return ret;
+	}
+#endif
     T *access(const K &key, const T *data = NULL)
     {
         chain *c = find(key, data != NULL);
