@@ -51,6 +51,15 @@ public class Test {
 	def peer
 	def mapname
 	def mapTopic
+	/** cloudProperties is the shared properties object for Plexus
+	 * its keys are path-strings, representing information organized in
+	 * a tree
+	 */
+	def cloudProperties = [:] as Properties
+	/**
+	 * Pattern for properties which should be saved
+	 */
+	def persistentPropertyPattern = ~/(map|costume).*/
 	def mapId
 	def plexusTopic
 	def presenceLock = new Object()
@@ -61,6 +70,21 @@ public class Test {
 	def peerToSauerIdMap = [:]
 	def triggerLambdas = [:]
 	def portals = [:]
+	def setCloudPropertyHooks = [
+		(~/player.*/): {key, values ->
+			if (mapTopic && values[1] != mapTopic.getId().toStringFull()) {
+				removePlayerFromSauerMap(key.substring('player/'.length()))
+			}
+		}
+	]
+	def removeCloudPropertyHooks = [
+		(~/player.*/): {key, values ->
+			removePlayerFromSauerMap(key.substring('player/'.length()))
+		}
+	]
+	def receiveCloudPropertiesHooks = [
+		{updateMyPlayerInfo()}
+	]
 	
 	def static sauerExec
 	def static soleInstance
@@ -152,11 +176,13 @@ public class Test {
 					if (topic == null && cmd == null) {
 						id = id.toStringFull()
 						removePlayer(id)
-						peer.broadcastCmds(plexusTopic, "removePlayer $id")
+						peer.broadcastCmds(plexusTopic, ["removePlayer $id"] as String[])
 					} else {
 						pastryCmd = cmd
 						cmd.msgs.each {
-							pastryCmds.invoke(it)
+							synchronized (presenceLock) {
+								pastryCmds.invoke(it)
+							}
 						}
 					}
 				} catch (Exception ex) {
@@ -287,7 +313,9 @@ public class Test {
 					init()
 					it.getInputStream().eachLine {
 						try {
-							sauerCmds.invoke(it)
+							synchronized (presenceLock) {
+								sauerCmds.invoke(it)
+							}
 						} catch (Exception ex) {
 							Tools.stackTrace(ex)
 						}
@@ -415,9 +443,11 @@ public class Test {
 		Tools.stackTrace(err)
 	}
 	def initBoot() {
+		def docFile = new File(plexusDir, "cloud.properties")
 		def maps = new File(plexusDir, "mapsdoc")
 		def costumes = new File(plexusDir, "costumesdoc")
 
+		setCloudProperties(docFile.exists() ? Tools.properties(docFile) : [:] as Properties)
 		if (maps.exists()) {
 			def props = Tools.properties(maps)
 			def newIds = [:]
@@ -445,7 +475,7 @@ public class Test {
 		} else {
 			setCostumesDoc([:], true)
 		}
-		updatePlayer(peer.nodeId.toStringFull(), [name, null])
+		updateMyPlayerInfo()
 		storeCache()
 	}
 	def initJoin() {
@@ -479,42 +509,18 @@ public class Test {
 			}
 		}
 	}
-	def setPlayersDoc(doc) {
-		synchronized (presenceLock) {
-			playersDoc = doc
-		}
-		updateFriendList()
-	}
 	def updateMyPlayerInfo() {
 		def id = mapTopic?.getId()?.toStringFull()
 
 		println "UPDATING PLAYER INFO"
 //		after we get the players list, send ourselves out
 		def node = peer.nodeId.toStringFull()
-		peer.broadcastCmds(plexusTopic, "updatePlayer $node $name $id")
-		updatePlayer(node, [name, id])
+		transmitCloudProperty("player/$node", "$name $id")
 		println "BROADCAST: updatePlayer $node $name $id"
 	}
-	def updatePlayer(node, info) {
-		synchronized (presenceLock) {
-			playersDoc = playersDoc ?: [:]
-			//println info
-			playersDoc[node] = info
-			// if they aren't on our map now, see if we need to delete them from sauer
-			if (mapTopic && info[1] != mapTopic.getId().toStringFull()) {
-				removePlayerFromSauerMap(node)
-			}
-		}
-		updateFriendList()
-	}
 	def removePlayer(node) {
-		synchronized (presenceLock) {
-			playersDoc = playersDoc ?: [:]
-			//println "Going to remove player: $node"
-			playersDoc.remove(node)
-			removePlayerFromSauerMap(node)
-		}
-		updateFriendList()
+		removeCloudProperty("player/$node")
+		removePlayerFromSauerMap(node)
 	}
 	def removePlayerFromSauerMap(node) {
 		if (peerToSauerIdMap[node]) {
@@ -576,7 +582,76 @@ public class Test {
 			dumpCommands()
 		}
 	}
+	def transmitCloudProperty(key, value) {
+		setCloudProperty(key, value)
+		peer.broadcastCmds(plexusTopic, ["setCloudProperty $key $value"] as String[])
+	}
+	def setCloudProperty(key, value) {
+		def values = value.split(' ')
+
+		synchronized (presenceLock) {
+			cloudProperties[key] = value
+			setCloudPropertyHooks.each {key ==~ it.key &&  it.value(key, values)}
+			cloudPropertiesChanged(key)
+		}
+	}
+	def removeCloudProperty(key) {
+		def values
+		synchronized (presenceLock) {
+			values = cloudProperties[key]?.split(' ')
+			cloudProperties.remove(key)
+			removeCloudPropertyHooks.each {key ==~ it.key &&  it.value(key, values)}
+			cloudPropertiesChanged(key)
+		}
+	}
+	def cloudPropertiesChanged(key) {
+		if (!key || key ==~ persistentPropertyPattern) {
+			saveCloudProperties()
+		}
+		updateFriendList()
+		synchronized (presenceLock) {
+			println "NEW PROPERTIES"
+			for (prop in cloudProperties) {
+				println "$prop.key: $prop.value"
+			}
+		}
+	}
+	def receiveCloudProperties(props) {
+		setCloudProperties(props, save)
+		receiveCloudPropertiesHooks.each {it()}
+	}
+	def setCloudProperties(props, save) {
+		synchronized (presenceLock) {
+			cloudProperties = props
+			cloudPropertiesChanged()
+		}
+	}
+	def loadCloudProperties() {
+		def propsFile = new File(plexusDir, "cloud.properties")
+
+		setCloudProperties(propsFile.exists() ? Tools.properties(propsFile) : [:] as Properties, false)
+	}
+	/**
+	 * must be synchronized on presenceLock
+	 */
+	def saveCloudProperties() {
+		def saving = []
+		def output = new File(plexusDir, 'cloud.properties').newOutputStream()
+
+		for (prop in cloudProperties) {
+			if (prop.key ==~ persistentPropertyPattern) {
+				saving.add("$prop.key=$prop.value")
+			}
+		}
+		saving.sort()
+		output << "#Plexus cloud properties\n#${new Date()}\n"
+		saving.each {
+			output << "$it\n"
+		}
+		output.close()
+	}
 	def addMap(topic, tree, name) {
+		setCloudProperty("map/$topic", "$tree $name")
 		synchronized (presenceLock) {
 			idToMap[topic] = [tree, name, 0]
 		}
@@ -660,6 +735,7 @@ println "done broadcasting"
 		}
 	}
 	def addCostume(dir, name, thumb) {
+		setCloudProperty("costume/$name", "$dir $thumb")
 		synchronized (presenceLock) {
 			costumesDoc[dir] = [name, thumb]
 		}

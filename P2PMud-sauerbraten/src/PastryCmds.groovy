@@ -37,6 +37,15 @@ public class PastryCmds extends Cmds {
 		main.sauer('tc_editent', "tc_editent ${args.join(' ')}")
 		main.dumpCommands()
 	}
+	def sendCloudProperties() {
+		def cmd = new P2PMudCommand(main.peer.nodeId, "receiveCloudProperties")
+
+		cmd.payload = main.cloudProperties
+		main.peer.sendCmds(main.pastryCmd.from, cmd)
+	}
+	def receiveCloudProperties() {
+		main.receiveCloudProperties(main.pastryCmd.payload)
+	}
 	def sendMaps() {
 		def cmd = new P2PMudCommand(main.peer.nodeId, "receiveMaps")
 
@@ -46,24 +55,11 @@ public class PastryCmds extends Cmds {
 	def receiveMaps() {
 		main.setMapsDoc(main.pastryCmd.payload, true)
 	}
-	def receivePlayers() {
-		main.setPlayersDoc(main.pastryCmd.payload)
-		main.updateMyPlayerInfo()
-	}
 	def addMap(topic, tree, String... name) {
 		main.addMap(topic, tree, name.join(' '))
 	}
-	def updatePlayer(node, String... info) {
-		main.updatePlayer(node, info)
-	}
 	def removePlayer(node) {
 		main.removePlayer(node)
-	}
-	def sendPlayers() {
-		def cmd = new P2PMudCommand(main.peer.nodeId, "receivePlayers")
-
-		cmd.payload = main.playersDoc
-		main.peer.sendCmds(main.pastryCmd.from, cmd)
 	}
 	def whisperPlayer(from, String... msg) {
 		main.sauer('whisp', "echo Player $from whispers: ${msg.join(' ')}")
