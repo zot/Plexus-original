@@ -46,6 +46,12 @@ public class PastryCmds extends Cmds {
 	def receiveCloudProperties() {
 		main.receiveCloudProperties(main.pastryCmd.payload)
 	}
+	def removeCloudProperty(key) {
+		main.removeCloudProperty(key)
+	}
+	def setCloudProperty(key, String... values) {
+		main.setCloudProperty(key, values.join(' '))
+	}
 	def sendMaps() {
 		def cmd = new P2PMudCommand(main.peer.nodeId, "receiveMaps")
 

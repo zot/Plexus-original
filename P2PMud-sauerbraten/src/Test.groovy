@@ -59,7 +59,7 @@ public class Test {
 	/**
 	 * Pattern for properties which should be saved
 	 */
-	def persistentPropertyPattern = ~/(map|costume).*/
+	def persistentPropertyPattern = ~'(map|costume)/..*'
 	def mapId
 	def plexusTopic
 	def presenceLock = new Object()
@@ -71,14 +71,14 @@ public class Test {
 	def triggerLambdas = [:]
 	def portals = [:]
 	def setCloudPropertyHooks = [
-		(~/player.*/): {key, values ->
+		(~'player/..*'): {key, values ->
 			if (mapTopic && values[1] != mapTopic.getId().toStringFull()) {
 				removePlayerFromSauerMap(key.substring('player/'.length()))
 			}
 		}
 	]
 	def removeCloudPropertyHooks = [
-		(~/player.*/): {key, values ->
+		(~'player/..*'): {key, values ->
 			removePlayerFromSauerMap(key.substring('player/'.length()))
 		}
 	]
@@ -481,7 +481,7 @@ public class Test {
 	def initJoin() {
 		peer.anycastCmds(plexusTopic, "sendMaps")
 		peer.anycastCmds(plexusTopic, "sendCostumes")
-		peer.anycastCmds(plexusTopic, "sendPlayers")
+		peer.anycastCmds(plexusTopic, "sendCloudProperties")
 	}
 	def storeCache() {
 		if (cacheDir.exists()) {
@@ -515,11 +515,10 @@ public class Test {
 		println "UPDATING PLAYER INFO"
 //		after we get the players list, send ourselves out
 		def node = peer.nodeId.toStringFull()
-		transmitCloudProperty("player/$node", "$name $id")
-		println "BROADCAST: updatePlayer $node $name $id"
+		transmitSetCloudProperty("player/$node", "$name $id")
 	}
 	def removePlayer(node) {
-		removeCloudProperty("player/$node")
+		transmitRemoveCloudProperty("player/$node")
 		removePlayerFromSauerMap(node)
 	}
 	def removePlayerFromSauerMap(node) {
@@ -544,13 +543,15 @@ public class Test {
 
 			updateMapGui()
 			println "playersDoc: $playersDoc"
-			for (player in playersDoc) {
-				if (player.key != id) {
-					def info = player.value
+			eachCloudProperty('player/(..*)') { key, value, match ->
+				def pid = match.group(1)
+
+				if (pid != id) {
+					def info = value.split(' ')
 					println info
 					def who = info[0]
 					def map = (!info[1] || info[1] == 'null') ? 'none' : idToMap[info[1]][1]
-					friendGui += "guibutton [$who ($map)] [alias tc_whisper $player.key; "  + 'saycommand [/whisper ""] ]\n'
+					friendGui += "guibutton [$who ($map)] [alias tc_whisper $pid; "  + 'saycommand [/whisper ""] ]\n'
 					++cnt
 				}
 			}
@@ -562,13 +563,15 @@ public class Test {
 				mname = idToMap[mid][1]
 				friendGui += "guitab $mname\n"
 				mapCnt = 1
-				for (player in playersDoc) {
-					if (player.key != id) {
-						def info = player.value
+				eachCloudProperty('player/(..*)') { key, value, match ->
+					def pid = match.group(1)
+	
+					if (pid != id) {
+						def info = value.split(' ')
 						def who = info[0]
 						
 						if (info[1] == mid) {
-							friendGui += "guibutton [$who] [echo $player.key]\n"
+							friendGui += "guibutton [$who] [echo $pid]\n"
 							++mapCnt
 						}
 					}
@@ -582,18 +585,33 @@ public class Test {
 			dumpCommands()
 		}
 	}
-	def transmitCloudProperty(key, value) {
+	def eachCloudProperty(pattern, closure) {
+		cloudProperties.each {
+			def match = it.key =~ pattern
+
+			if (match.matches()) {
+				closure(it.key, it.value, match)
+			}
+		}
+	}
+	def transmitSetCloudProperty(key, value) {
 		setCloudProperty(key, value)
 		peer.broadcastCmds(plexusTopic, ["setCloudProperty $key $value"] as String[])
+		println "BROADCAST PROPERTY: $key=$value"
 	}
 	def setCloudProperty(key, value) {
 		def values = value.split(' ')
 
 		synchronized (presenceLock) {
-			cloudProperties[key] = value
+			cloudProperties[key as String] = value as String
 			setCloudPropertyHooks.each {key ==~ it.key &&  it.value(key, values)}
 			cloudPropertiesChanged(key)
 		}
+	}
+	def transmitRemoveCloudProperty(key) {
+		removeCloudProperty(key)
+		peer.broadcastCmds(plexusTopic, ["removeCloudProperty $key $value"] as String[])
+		println "BROADCAST REMOVE PROPERTY: $key"
 	}
 	def removeCloudProperty(key) {
 		def values
@@ -617,7 +635,7 @@ public class Test {
 		}
 	}
 	def receiveCloudProperties(props) {
-		setCloudProperties(props, save)
+		setCloudProperties(props, true)
 		receiveCloudPropertiesHooks.each {it()}
 	}
 	def setCloudProperties(props, save) {
