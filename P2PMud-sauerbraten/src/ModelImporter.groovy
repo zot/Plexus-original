@@ -12,24 +12,24 @@ import java.awt.Panel;
 import javax.swing.ImageIcon
 import javax.swing.SwingConstants
 
-class ModelImporter {
-	static void main(args) {
+class ModelImporter {	def static props = [:] as Properties	def static defaultProps = [   		importDir: '',   		exportDir: '',   		mogrifyDir: '',   	] as Properties	
+	static void main(args) {		readProps()
 		showGui()
 	}
-	
+	def static readProps() {		def dir = new File('fred').getAbsoluteFile().getParent()		def propsFile = new File(dir, 'modelimporter.properties')		if (propsFile.exists()) {			def input = new FileInputStream(propsFile)				props = [:] as Properties			props.load(input)			input.close()		}		// if there are any missing props after a read, fill them in with defaults		for (e in defaultProps) {			if (!props[e.key]) props[e.key] = e.value		}	}	def static saveProps(imp, exp) {		props['importDir'] = imp		props['exportDir'] = exp		def dir = new File('fred').getAbsoluteFile().getParent()		def propsFile = new File(dir, 'modelimporter.properties')		def output = propsFile.newOutputStream()		props.store(output, "Plexus ModelImporter Properties")		output.close()	}	
 	static 	def showGui() {
 		def f, importField, exportField
 		new SwingBuilder().build {
-				f = frame(title: 'Plexus .md2/.md3 Importer', windowClosing: {System.exit(0)}, layout: new MigLayout('fillx'), pack: true, show: true) {
+				f = dialog(title: 'Plexus .md2/.md3 Importer', windowClosing: {System.exit(0)}, layout: new MigLayout('fillx'), pack: true, show: true) {
 				
 				label(text:"Please provide an import and export path", constraints:('span 2, wrap'))
 				button(text: "Import...", actionPerformed: { fileImport(importField) })
-				importField = textField(text: '/tmp/bobamd2', constraints: 'growx, wrap')
+				importField = textField(text: props.importDir, constraints: 'growx, wrap')
 				button(text: "Export...", actionPerformed: { fileExport(exportField) })
-				exportField = textField(text: '/tmp/bobasauer', constraints: 'growx, wrap')
+				exportField = textField(text: props.exportDir, constraints: 'growx, wrap')
 				button(text: "Convert", actionPerformed: { convertModel(importField.text, exportField.text) }, constraints: ('wrap'))
 				button(text: "Exit", actionPerformed: {f.dispose(); System.exit(0) })
-			}
+			}			f.setLocation(500, 500)
 			f.size = [500, (int)f.size.height] as Dimension
 		}
 	}
@@ -62,7 +62,7 @@ class ModelImporter {
 		System.setProperty('exportDir', dir as String)
 		expField.text = dir
 	}
-	static def convertModel(impPath, expPath) {
+	static def convertModel(impPath, expPath) {		saveProps(impPath, expPath)
 		def convertor = new ModelConvertor(impPath, expPath)
 		
 		convertor.convert()
@@ -78,13 +78,12 @@ class ModelConvertor
 	def pattern = ~".*(\\.png|\\.jpg)";
 	def File srcDir, dstDir
 	def title = "Plexus MD2 Convertor"
-	
+	def license	
 	def ModelConvertor(impPath, expPath) {
 		srcDir = new File(impPath);
 		dstDir = new File(expPath);
 	}
-
-	def convert() {
+	def convert() {
 		if (!srcDir.isDirectory()) {
 			MessageBox.Show(title, "Error: Import folder not found")
 			return
@@ -94,30 +93,19 @@ class ModelConvertor
 			MessageBox.Show(title, "Error: Export folder could not be created")
 			return
 		}
-		
+		def md2 = new File(srcDir, "tris.md2")		def md3 = new File(srcDir, "animation.cfg")				// if we can't find either type of model, try unzipping files		if (!md2.isFile() && !md3.isFile()) {			def packs = getPackages()			if (packs) {				println "Going to unpack zips/packages"				for (p in packs) Unzip.Unzipper(p, srcDir, false)			}		}				if (!md2.isFile() && !md3.isFile()) {			MessageBox.Show(title, "Error: Import folder doesn't contain an .md2 or .md3 model")  			return		}				// abort if the user won't accept the license		if (!handleLicense()) return			
 		mogrify("pcx")
 		mogrify("tga")
 		mogrify("tif")
 		mogrify("gif")
 		
-		def md2 = new File(srcDir, "tris.md2")
 		if (md2.isFile()) return convertMd2(md2)
-		def md3 = new File(srcDir, "animation.cfg")
 		if (md3.isFile()) return convertMd3(md3)
-		
-		def packs = getPackages()
-		if (packs) {
-			println "Going to unpack packages"
-			for (p in packs) Unzip.Unzipper(p, srcDir, false)
-			md3 = new File(srcDir, "animation.cfg")
-			if (md3.isFile()) return convertMd3(md3)
-		}
-		MessageBox.Show(title, "Error: Import folder doesn't contain an .md2 or .md3 model")  
 	}
-	
+	def handleLicense() {		// make the user review and accept the license agreement		def f		new SwingBuilder().build {				f = dialog(title: title, windowClosing: {System.exit(0)}, layout: new MigLayout('fillx'), pack: true, modal: true) {								label(text:'Please identify which file below is the license file and that the files you are uploading are freely distributable', constraints:('span 2, wrap'))				label(text:'Users found uploading copyrighted material will be banned!', constraints:('span 2, wrap'))				list(size: [400, 400])				textPane(text: 'asdfasdfadsfaf asdfajdf;a fajfakfakfja;sf', constraints: ('wrap'), size: [400, 400])				button(text: "I have read and verified the license is acceptible", actionPerformed: {  license = 'readme.txt'; f.show(false); })				button(text: "Cancel", actionPerformed: { license = ''; f.show(false);})			}			f.setLocation(550, 550)			f.size = [500, (int)f.size.height] as Dimension			f.pack()			f.visible = true		}		return license	}
 	def mogrify(ext) {
 		def dir = srcDir.getAbsolutePath()
-		def cmd = "mogrify -format png -type TrueColor -depth 16 $dir/*.$ext"
+		def cmd = "${ModelImporter.props.mogrifyDir}/mogrify -format png -type TrueColor -depth 16 $dir/*.$ext"
 		//println "Mogrify Cmd: $cmd"
 		def proc = Runtime.getRuntime().exec(cmd)
 		proc.waitFor()
@@ -128,7 +116,7 @@ class ModelConvertor
 		def upper = new File(srcDir, "upper_default.skin").readLines()
 		def head = new File(srcDir, "head_default.skin").readLines()
 
-		def md3 = [], needCopy = [ 'animation.cfg' ]
+		def md3 = [], needCopy = [ 'animation.cfg', license ]
 		md3 << "// MD3 model converted by Plexus Convertor V1.0"
 		copyMD3Section(md3, 'lower', lower, needCopy)
 		
@@ -204,34 +192,33 @@ class ModelConvertor
 		needCopy << "${section}.md3"
 		md3 << ''
 		md3 << ("md3load ${section}.md3")
-		def pattern = /([^,]+),([^,]*)/
+		def pattern = /([^,]+),([^,]+)/
 		for (line in lines) {
-			def m = line =~ pattern
-			def first = m[0][1]
-			def second = m[0][2]
-			//println "$first -> $second"
-			if (second) {
-				def image = new File(second).getName().toLowerCase()
-				//println "first $image"
-				if (image.contains('.png')  || image.contains('.jpg')) {
-					// leave image alone
-				} else {
-					image = image.replaceFirst(/\.[a-z]+$/, '.png')
-				}
-				//println image
-				if (new File(srcDir, image).isFile()) {
-					md3 << ("md3skin $first $image")
-					needCopy << (image)
-				} else {
-					MessageBox.Show("Plexus MD3 Importer", "Warning: Image file $image not found, model will not render properly!" )
-				}
-			}
+			def m = line =~ pattern			if (m) {				def first = m[0][1]
+				def second = m[0][2]
+				//println "$first -> $second"
+				if (second) {
+					def image = new File(second).getName().toLowerCase()
+					//println "first $image"
+					if (image.contains('.png')  || image.contains('.jpg')) {
+						// leave image alone
+					} else {
+						image = image.replaceFirst(/\.[a-z]+$/, '.png')
+					}
+					//println image
+					if (new File(srcDir, image).isFile()) {
+						md3 << ("md3skin $first $image")
+						needCopy << (image)
+					} else {
+						MessageBox.Show("Plexus MD3 Importer", "Warning: Image file $image not found, model will not render properly!" )
+					}
+				}			}
 		}
 		md3 << ''
 	}
 	def convertMd2(File md2) {
 		def f, skinField		new SwingBuilder().build {
-			f = frame(title: title, windowClosing: {return}, layout: new MigLayout('fill'), pack: true, show: true) {
+			f = dialog(title: title, windowClosing: {return}, layout: new MigLayout('fill'), pack: true, modal: true) {
 				label(text:"Please select which image to use for the skin", constraints:('wrap, growy 0, span'))				panel(layout: new MigLayout('wrap 3, fill'), constraints: 'growy, growx 0, span, wrap') {
 					for (im in getImages()) {
 						def fn = im.file.getName(), full = im.file.getAbsolutePath()
@@ -247,11 +234,11 @@ class ModelConvertor
 				label(text: 'Skin to use:', constraints: 'growy 0')
 				skinField = textField( constraints: ("wrap, growy 0, growx"))
 				button(text: "Convert", actionPerformed: { if (doMD2Convert(skinField.text)) { f.dispose(); return}  }, constraints: ('wrap, growy 0, span'))
-				button(text: "Cancel", actionPerformed: {f.dispose(); return }, constraints: 'growy 0, span')
+				button(text: "Cancel", actionPerformed: {f.show(false); return }, constraints: 'growy 0, span')
 			}
 			skinField.setSize(100, 20)
-			f.setLocation(500, 500)
-			f.size = [1025, (int)f.size.height] as Dimension
+			f.setLocation(550, 550)
+			f.size = [1025, (int)f.size.height] as Dimension			f.show(true)
 		}
 		
 		//MessageBox.Show(title, "Success!")
@@ -261,7 +248,7 @@ class ModelConvertor
 			MessageBox.Show(title, "Error: No skin chosen")
 			return false
 		}
-		
+				copyFile(license)
 		copyFile("tris.md2")
 		copyFile("weapon.md2")
 		copyFile(skin)
@@ -332,8 +319,7 @@ class ModelConvertor
         imageMaps.each({def f = it["file"]; it["image"] = ImageIO.read(it["file"]); });
         return imageMaps;
     }
-    
-    def getPackages() {
+        def getPackages() {    	return getFiles(~".pk3|.zip")    }    def getReadme() {    	return getFiles(~"readme|help|.txt|.html")    }    def getFiles(pattern) {
     	def packs = []
         for(i in srcDir.listFiles()) {
             if(!i.isDirectory()) {
@@ -341,7 +327,7 @@ class ModelConvertor
                 if(subpath.startsWith(srcDir.path)) {
                     subpath = subpath.substring(srcDir.path.length());
                 }
-               def  matcher = subpath =~ ~".pk3";
+               def  matcher = subpath =~ pattern;
                 if(matcher.find()) {
                     packs.add(i);
                 }
