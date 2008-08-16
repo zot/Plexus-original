@@ -1,4 +1,4 @@
-import net.miginfocom.swing.MigLayout
+import java.awt.FlowLayoutimport net.miginfocom.swing.MigLayout
 import groovy.swing.SwingBuilder
 import java.awt.Dimension
 import javax.swing.JFileChooser
@@ -24,9 +24,9 @@ class ModelImporter {
 				
 				label(text:"Please provide an import and export path", constraints:('span 2, wrap'))
 				button(text: "Import...", actionPerformed: { fileImport(importField) })
-				importField = textField(text: 'c:/costumes/t800', constraints: 'growx, wrap')
+				importField = textField(text: '/tmp/bobamd2', constraints: 'growx, wrap')
 				button(text: "Export...", actionPerformed: { fileExport(exportField) })
-				exportField = textField(text: 'C:/Program Files/SauerCTF/packages/plexus/costumes/t800', constraints: 'growx, wrap')
+				exportField = textField(text: '/tmp/bobasauer', constraints: 'growx, wrap')
 				button(text: "Convert", actionPerformed: { convertModel(importField.text, exportField.text) }, constraints: ('wrap'))
 				button(text: "Exit", actionPerformed: {f.dispose(); System.exit(0) })
 			}
@@ -117,7 +117,7 @@ class ModelConvertor
 	
 	def mogrify(ext) {
 		def dir = srcDir.getAbsolutePath()
-		def cmd = "C:/Program Files/ImageMagick-6.4.2-Q16/mogrify -format png $dir/*.$ext"
+		def cmd = "mogrify -format png $dir/*.$ext"
 		//println "Mogrify Cmd: $cmd"
 		def proc = Runtime.getRuntime().exec(cmd)
 		proc.waitFor()
@@ -230,26 +230,25 @@ class ModelConvertor
 		md3 << ''
 	}
 	def convertMd2(File md2) {
-		def f, skinField
-		new SwingBuilder().build {
-				f = frame(title: title, windowClosing: {return}, layout: new MigLayout(''), pack: true, show: true) {
-				
-				label(text:"Please select which image to use for the skin", constraints:('wrap'))
-				for (im in getImages()) {
-					def fn = im.file.getName(), full = im.file.getAbsolutePath()
-					if (im.image && im.image.width > 64 && im.image.height > 64) {
-						def label = "$fn ($im.image.width x $im.image.height)" 
-						def b = button(text: label, actionPerformed: { skinField.text = "$fn" }, icon: new ImageIcon(full))
-						b.setVerticalTextPosition(SwingConstants.TOP);
-					    b.setHorizontalTextPosition(SwingConstants.CENTER);
-
+		def f, skinField		new SwingBuilder().build {
+			f = frame(title: title, windowClosing: {return}, layout: new MigLayout('debug, fill'), pack: true, show: true) {
+				label(text:"Please select which image to use for the skin", constraints:('wrap, growy 0, span'))//				scrollpane(constraints: 'growy, growx 0, span, wrap') {
+				panel(layout: new FlowLayout(), constraints: 'growy, growx 0, span, wrap', autoscrolls: true) {
+					for (im in getImages()) {
+						def fn = im.file.getName(), full = im.file.getAbsolutePath()
+						if (im.image && im.image.width > 64 && im.image.height > 64) {
+							def label = "$fn ($im.image.width x $im.image.height)" 
+							def b = button(text: label, actionPerformed: { skinField.text = "$fn" }, icon: new ImageIcon(full))
+							b.setVerticalTextPosition(SwingConstants.TOP);
+					    	b.setHorizontalTextPosition(SwingConstants.CENTER);
+						}
 					}
-				}
-				label( constraints: ("wrap"))
-				label(text: 'Skin to use:')
-				skinField = textField( constraints: ("wrap"))
-				button(text: "Convert", actionPerformed: { if (doMD2Convert(skinField.text)) { f.dispose(); return}  }, constraints: ('wrap'))
-				button(text: "Cancel", actionPerformed: {f.dispose(); return })
+				}//				}
+//				label( constraints: ("wrap, grow 0, span"))
+				label(text: 'Skin to use:', constraints: 'growy 0')
+				skinField = textField( constraints: ("wrap, growy 0, growx"))
+				button(text: "Convert", actionPerformed: { if (doMD2Convert(skinField.text)) { f.dispose(); return}  }, constraints: ('wrap, growy 0, span'))
+				button(text: "Cancel", actionPerformed: {f.dispose(); return }, constraints: 'growy 0, span')
 			}
 			skinField.setSize(100, 20)
 			f.setLocation(500, 500)
