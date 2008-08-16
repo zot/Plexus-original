@@ -117,7 +117,7 @@ class ModelConvertor
 	
 	def mogrify(ext) {
 		def dir = srcDir.getAbsolutePath()
-		def cmd = "mogrify -format png $dir/*.$ext"
+		def cmd = "mogrify -format png -type TrueColor -depth 16 $dir/*.$ext"
 		//println "Mogrify Cmd: $cmd"
 		def proc = Runtime.getRuntime().exec(cmd)
 		proc.waitFor()
@@ -231,7 +231,7 @@ class ModelConvertor
 	}
 	def convertMd2(File md2) {
 		def f, skinField		new SwingBuilder().build {
-			f = frame(title: title, windowClosing: {return}, layout: new MigLayout('debug, fill'), pack: true, show: true) {
+			f = frame(title: title, windowClosing: {return}, layout: new MigLayout('fill'), pack: true, show: true) {
 				label(text:"Please select which image to use for the skin", constraints:('wrap, growy 0, span'))				panel(layout: new MigLayout('wrap 3, fill'), constraints: 'growy, growx 0, span, wrap') {
 					for (im in getImages()) {
 						def fn = im.file.getName(), full = im.file.getAbsolutePath()
