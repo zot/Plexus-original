@@ -69,4 +69,7 @@ public class PastryCmds extends Cmds {
 		main.sauer('whisp', "echo Player $from whispers: ${msg.join(' ')}")
 		main.dumpCommands();
 	}
+	def addCostume(dir, name, thumb) {
+		main.addCostume(dir, name, thumb)
+	}
 }

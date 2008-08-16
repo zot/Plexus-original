@@ -498,7 +498,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 				if (failed.isEmpty()) {
 					cont.receiveResult(mudFile);
 				} else if (attempts == 0) {
-					cont.receiveException(new RuntimeException("Failed to store chunks"));
+					cont.receiveException(new RuntimeException("Failed to store chunks: " + failed));
 				} else {
 					storeChunks(mudFile, cont, failed, attempts - 1);
 				}

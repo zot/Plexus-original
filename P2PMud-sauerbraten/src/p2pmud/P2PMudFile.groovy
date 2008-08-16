@@ -48,7 +48,7 @@ public class P2PMudFile extends ContentHashPastContent {
 	}
 	
 	/**
-	 * sends the P2PMudFile to cont
+	 * sends [P2PMudFile, dirProps] to cont
 	 */
 	def static storeDir(cacheDir, dir, cont) {
 		def props = new Properties()
@@ -83,7 +83,7 @@ println "STORE: $file.key -> $file.value"
 				println "--- STORING DIR: $props"
 				props.store(stream, "directory")
 				P2PMudPeer.test.wimpyStoreFile(cacheDir, stream.toByteArray(), [
-					receiveResult: {res2 -> cont.receiveResult(res2)},
+					receiveResult: {res2 -> cont.receiveResult([res2, props])},
 					receiveException: {res2 -> cont.receiveException(res2)}
 				] as Continuation, false, false)
 			},

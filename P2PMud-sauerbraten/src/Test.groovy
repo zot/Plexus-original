@@ -55,6 +55,8 @@ public class Test {
 	def plexusTopic
 	def presenceLock = new Object()
 	def playersDoc
+	def costumesDoc = [:]
+	def pendingCostumes = [:]
 	def idToMap = [:]
 	def peerToSauerIdMap = [:]
 	def triggerLambdas = [:]
@@ -255,24 +257,6 @@ public class Test {
 			
 		};
 	}
-	//varval = [do [result $@arg1]]
-	//x3 = hello; v = 3; echo (varval (concatword x $v))
-	def dumpCostumeSelections(triples) {
-		sauer("cost1", 'alias showcostume [ guibar; guiimage (do [result $@(concatword "costume_thumb_" $guirollovername)]) $guirolloveraction 4 1 "data/cube.png"]')
-		def i = 0
-		for (trip in triples) {
-			sauer("cost88$i", "alias costume_thumb_${trip[0]} [${trip[1]}]")
-		}
-		sauer('cost2', 'newgui Costumes [ \n guititle "Select a costume" \n    guilist [ \n   guilist [ \n')
-		
-		i = 0
-		for (trip in triples) {
-			sauer("cost99$i", "guibutton [${trip[0]}] [${trip[2]}]")
-			++i
-		}
-		sauer('cost3', '] \n   showcostume  \n     ] \n ] ')
-		dumpCommands()
-	}
 	//Test.bindLevelTrigger(35, 'remotesend levelTrigger 35 $more $data') {println "duh"} remotesend levelTrigger 35
 	def bindLevelTrigger(trigger, lambda) {
 		if (!lambda) println "Error! Trigger lambda is null!"
@@ -427,10 +411,12 @@ public class Test {
 	}
 	def err(msg, err) {
 		println(msg)
-		Tools.stackTrace(err);
+		err.printStackTrace()
+		Tools.stackTrace(err)
 	}
 	def initBoot() {
 		def maps = new File(plexusDir, "mapsdoc")
+		def costumes = new File(plexusDir, "costumesdoc")
 
 		if (maps.exists()) {
 			def props = Tools.properties(maps)
@@ -447,11 +433,24 @@ public class Test {
 		} else {
 			setMapsDoc([:], true)
 		}
+		if (costumes.exists()) {
+			def props = Tools.properties(costumes)
+
+			for (costume in props) {
+				def entry = map.value.split(' ')
+
+				costumesDoc[map.key] = [entry[0], entry[1]]
+			}
+			setCostumesDoc(costumesDoc, false)
+		} else {
+			setCostumesDoc([:], true)
+		}
 		updatePlayer(peer.nodeId.toStringFull(), [name, null])
 		storeCache()
 	}
 	def initJoin() {
 		peer.anycastCmds(plexusTopic, "sendMaps")
+		peer.anycastCmds(plexusTopic, "sendCostumes")
 		peer.anycastCmds(plexusTopic, "sendPlayers")
 	}
 	def storeCache() {
@@ -633,6 +632,125 @@ println "player.value: $player.value"
 		sauer('maps', cvtNewlines(mapsGui))
 		dumpCommands()
 	}
+	def pushCostume(name) {
+println "PUSHING COSTUME: $name"
+		def path = new File(plexusDir, "costumes/$name")
+
+		if (!path.exists()) {
+			sauer('err', "showmessage [File thumbnail not found] [Could not costume thumbnail: $path]")
+		} else {
+println "STORING COSTUME"
+			P2PMudFile.storeDir(cacheDir, path, [
+				receiveResult: {
+					def fileId = it[0].getId().toStringFull()
+					def thumb = it[1]['thumb.jpg'] ?: ''
+
+					try {
+println "STORED COSTUME, adding"
+						addCostume(fileId, name, thumb)
+println "STORED COSTUME, broadcasting"
+						peer.broadcastCmds(plexusTopic, ["addCostume $fileId, $name, $thumb"] as String[])
+println "done broadcasting"
+					} catch (Exception ex) {
+						err("Error pushing costume", ex)
+					}
+				},
+				receiveException: {err("Couldn't store costume in cloud: $path", it)}
+			] as Continuation)
+		}
+	}
+	def addCostume(dir, name, thumb) {
+		synchronized (presenceLock) {
+			costumesDoc[dir] = [name, thumb]
+		}
+		updateCostumeGui()
+		saveCostumesDoc()
+		if (pendingCostumes[dir]) {
+			pendingCostumes[dir].each {it()}
+			pendingCostumes.remove(dir)
+		}
+	}
+	def setCostumesDoc(costumes, save) {
+		synchronized (presenceLock) {
+			costumesDoc = costumes
+			updateCostumeGui()
+			if (save) {
+				saveCostumesDoc()
+			}
+		}
+	}
+	def updateCostumeGui() {
+		def tot = 0
+		def trips = []
+
+		for (c in costumesDoc) {
+			if (c.value[1]) {
+				tot++
+			}
+		}
+		if (tot > 0) {
+			def contCount = 0
+			def costumesDir = new File(plexusDir, 'costumes')
+			def mcont = new MultiContinuation([
+				receiveResult: {
+println "CREATING TRIPS"
+					for (c in costumesDoc) {
+						trips.add([c.value[0], c.value[1] ? "plexus/costumes/${c.value[0]}/thumb.jpg" : '', c.key])
+					}
+					dumpCostumeSelections(trips)
+				},
+				receiveException: {err("Error fetching thumbs for costumes", it)}
+			] as Continuation, tot)
+
+			for (costume in costumesDoc) {
+				if (costume.value[1]) {
+					peer.wimpyGetFile(Id.build(costume.value[1]), new File(costumesDir, costume.value[0]), mcont.getSubContinuation(contCount))
+				}
+			}
+		} else {
+println "CREATING EMPTY TRIPS"
+			for (c in costumesDoc) {
+				trips.add([c.value[0], '', c.key])
+			}
+			dumpCostumeSelections(trips)
+		}
+	}
+	//varval = [do [result $@arg1]]
+	//x3 = hello; v = 3; echo (varval (concatword x $v))
+	def dumpCostumeSelections(triples) {
+println "COSTUME SELS: $triples"
+		sauer("cost1", 'costume_thumb_Exit = []; costume_thumb_Editing = []; alias showcostume [ guibar; guiimage (do [result $@(concatword "costume_thumb_" $guirollovername)]) $guirolloveraction 4 1 "data/cube.png"]')
+		def i = 0
+		for (trip in triples) {
+			sauer("cost88${i++}", "alias costume_thumb_${trip[0]} [${trip[1]}]")
+		}
+		sauer('cost2', 'newgui Costumes [ \n guititle "Select a costume" \n    guilist [ \n   guilist [ \n')
+		
+		i = 0
+		for (trip in triples) {
+			sauer("cost99${i++}", "guibutton [${trip[0]}] [remotesend useCostume ${trip[0]} ${trip[2]}]")
+		}
+		sauer('cost3', '] \n   showcostume  \n     ] \n ] ')
+		dumpCommands()
+	}
+	def useCostume(name, dirId) {
+		def costumeDir = new File(plexusDir, "costumes/$name")
+
+		P2PMudFile.fetchDir(dirId, cacheDir, costumeDir, [
+			receiveResult: {
+				println "USE COSTUME $costumeDir"
+			},
+			receiveException: {err("Couldn't use costume: $name", it)}
+		] as Continuation, false)
+	}
+	def saveCostumesDoc() {
+		def costumes = [:] as Properties
+
+		for (costume in costumesDoc) {
+			costumes[costume.key] = costume.value.join(' ')
+		}
+		Tools.store(costumes, new File(plexusDir, 'costumesdoc'), "Costumes document")
+	}
 	def connectWorld(id) {
 		def entry = idToMap[id]
 
@@ -663,7 +781,7 @@ println "pushMap: [$nameArgs]"
 			def cont = [
 				receiveResult: {
 					def topic = newMap ? peer.randomId().toStringFull() : mapTopic.getId().toStringFull()
-					def id = it.getId().toStringFull()
+					def id = it[0].getId().toStringFull()
 
 					if (!newMap) {
 						mapId = id
