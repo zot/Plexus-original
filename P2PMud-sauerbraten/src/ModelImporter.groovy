@@ -232,8 +232,7 @@ class ModelConvertor
 	def convertMd2(File md2) {
 		def f, skinField		new SwingBuilder().build {
 			f = frame(title: title, windowClosing: {return}, layout: new MigLayout('debug, fill'), pack: true, show: true) {
-				label(text:"Please select which image to use for the skin", constraints:('wrap, growy 0, span'))//				scrollpane(constraints: 'growy, growx 0, span, wrap') {
-				panel(layout: new FlowLayout(), constraints: 'growy, growx 0, span, wrap', autoscrolls: true) {
+				label(text:"Please select which image to use for the skin", constraints:('wrap, growy 0, span'))				panel(layout: new MigLayout('wrap 3, fill'), constraints: 'growy, growx 0, span, wrap') {
 					for (im in getImages()) {
 						def fn = im.file.getName(), full = im.file.getAbsolutePath()
 						if (im.image && im.image.width > 64 && im.image.height > 64) {
@@ -243,7 +242,7 @@ class ModelConvertor
 					    	b.setHorizontalTextPosition(SwingConstants.CENTER);
 						}
 					}
-				}//				}
+				}
 //				label( constraints: ("wrap, grow 0, span"))
 				label(text: 'Skin to use:', constraints: 'growy 0')
 				skinField = textField( constraints: ("wrap, growy 0, growx"))
