@@ -13,4 +13,8 @@ public class P2PMudMessage implements Message {
 	public int getPriority() {
 		return Message.LOW_PRIORITY;
 	}
+	@Override
+	public String toString() {
+		return "MSG: " + cmd;
+	}
 }

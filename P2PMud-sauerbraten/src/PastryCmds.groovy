@@ -52,14 +52,13 @@ public class PastryCmds extends Cmds {
 	def setCloudProperty(key, String... values) {
 		main.setCloudProperty(key, values.join(' '))
 	}
-	def removePlayer(node) {
-		main.removePlayer(node)
-	}
 	def whisperPlayer(from, String... msg) {
 		main.sauer('whisp', "echo Player $from whispers: ${msg.join(' ')}")
 		main.dumpCommands();
 	}
 	def addCostume(dir, name, thumb) {
 		main.addCostume(dir, name, thumb)
+	}
+	def sendCostumes() {
 	}
 }

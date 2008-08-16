@@ -1,4 +1,4 @@
-import java.awt.Dimension
+import com.jgoodies.looks.plastic.Plastic3DLookAndFeelimport javax.swing.UIManagerimport java.awt.Dimension
 import net.miginfocom.swing.MigLayout
 import groovy.swing.SwingBuilder
 import p2pmud.Tools
@@ -206,6 +206,11 @@ public class Prep {
 	def static showPropEditor() {
 		def p = props
 		def f
+
+		//PlasticLookAndFeel.setPlasticTheme(new DesertBlue());
+		try {
+		   UIManager.setLookAndFeel(new Plastic3DLookAndFeel());
+		} catch (Exception e) {}
 		new SwingBuilder().build {
 			def field = {lbl, key ->
 				label(text: lbl)

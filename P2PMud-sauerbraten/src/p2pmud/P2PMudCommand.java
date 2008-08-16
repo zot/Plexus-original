@@ -31,6 +31,6 @@ public class P2PMudCommand implements Serializable {
 			}
 			buf.append(m);
 		}
-		return super.toString();
+		return buf.toString();
 	}
 }

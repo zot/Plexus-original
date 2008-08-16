@@ -1,4 +1,4 @@
-import rice.Continuation.MultiContinuation
+import com.jgoodies.looks.plastic.Plastic3DLookAndFeelimport javax.swing.UIManagerimport rice.Continuation.MultiContinuation
 import p2pmud.Tools
 import p2pmud.CloudProperties
 import java.text.SimpleDateFormat
@@ -141,6 +141,10 @@ public class Test {
 		names = [p0: name]
 		ids[name] = 'p0'
 		if (Plexus.props.headless == '0') {
+			//PlasticLookAndFeel.setPlasticTheme(new DesertBlue());
+			try {
+			   UIManager.setLookAndFeel(new Plastic3DLookAndFeel());
+			} catch (Exception e) {}
 			swing = new SwingBuilder()
 			swing.build {
 				def field = {lbl, key ->
@@ -174,9 +178,8 @@ public class Test {
 			}
 			start(args[0])
 		}
-		P2PMudPeer.main({id, topic, cmd ->
-				try {
-					if (topic == null && cmd == null) {
+		P2PMudPeer.main(			{id, topic, cmd ->
+				try {					if (topic == null && cmd == null) {
 						id = id.toStringFull()
 						transmitRemoveCloudProperty("player/$id")
 					} else {
@@ -187,10 +190,7 @@ public class Test {
 							}
 						}
 					}
-				} catch (Exception ex) {
-					Tools.stackTrace(ex)
-				}
-			} as P2PMudCommandHandler,
+				} catch (Exception ex) {					err("Problem executing command: " + cmd, ex)				}			} as P2PMudCommandHandler,
 			{
 				//sauer('peers', "peers ${peer.getNeighborCount()}")
 				//dumpCommands()
@@ -319,7 +319,7 @@ public class Test {
 								sauerCmds.invoke(it)
 							}
 						} catch (Exception ex) {
-							Tools.stackTrace(ex)
+							err("Problem executing sauer command: " + it, ex)
 						}
 					}
 					try {it.shutdownInput()} catch (Exception ex) {}
@@ -497,8 +497,7 @@ public class Test {
 		peer.broadcastCmds(plexusTopic, ["removeCloudProperty $key $value"] as String[])
 		println "BROADCAST REMOVE PROPERTY: $key"
 	}
-	def receiveproperties(props) {
-		cloudProperties.setProperties(props, true)
+	def receiveCloudProperties(props) {//	def receiveproperties(props) {		cloudProperties.setProperties(props, true)
 		receivedPropertiesHooks.each {it()}
 	}
 	def updateMyPlayerInfo() {
