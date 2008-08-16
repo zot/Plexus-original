@@ -914,6 +914,25 @@ void findanims(const char *pattern, vector<int> &anims)
 void loadskin(const char *dir, const char *altdir, Texture *&skin, Texture *&masks) // model skin sharing
 {
 #define ifnoload(tex, path) if((tex = textureload(path, 0, true, false))==notexture)
+#ifdef TC
+#define tryload(tex, prefix, name) \
+ifnoload(tex, makerelpath(tc_dir, name ".jpg", prefix)) \
+{ \
+   ifnoload(tex, makerelpath(tc_dir, name ".png", prefix)) \
+   { \
+    ifnoload(tex, makerelpath(mdir, name ".jpg", prefix)) \
+    { \
+        ifnoload(tex, makerelpath(mdir, name ".png", prefix)) \
+        { \
+            ifnoload(tex, makerelpath(maltdir, name ".jpg", prefix)) \
+            { \
+                ifnoload(tex, makerelpath(maltdir, name ".png", prefix)) return; \
+            } \
+        } \
+      } \
+    } \
+    }
+#else
 #define tryload(tex, prefix, name) \
     ifnoload(tex, makerelpath(mdir, name ".jpg", prefix)) \
     { \
@@ -925,13 +944,13 @@ void loadskin(const char *dir, const char *altdir, Texture *&skin, Texture *&mas
             } \
         } \
     }
-   
-    s_sprintfd(mdir)("packages/models/%s", dir);
-#ifdef TC
-    s_sprintfd(maltdir)("%s/%s", altdir, dir);
-#else
-	s_sprintfd(maltdir)("packages/models/%s", altdir);
 #endif
+
+#ifdef TC
+    s_sprintfd(tc_dir)("%s/%s", altdir, dir);
+#endif
+    s_sprintfd(mdir)("packages/models/%s", dir);
+	s_sprintfd(maltdir)("packages/models/%s", altdir);
     masks = notexture;
     tryload(skin, NULL, "skin");
     tryload(masks, "<ffmask:25>", "masks");
