@@ -1,4 +1,4 @@
-import java.awt.FlowLayoutimport net.miginfocom.swing.MigLayout
+import javax.swing.UIManagerimport com.jgoodies.looks.plastic.PlasticLookAndFeelimport com.jgoodies.looks.plastic.Plastic3DLookAndFeelimport com.jgoodies.looks.plastic.theme.DesertBlueimport javax.swing.DefaultListModelimport java.awt.FlowLayoutimport net.miginfocom.swing.MigLayout
 import groovy.swing.SwingBuilder
 import java.awt.Dimension
 import javax.swing.JFileChooser
@@ -13,7 +13,7 @@ import javax.swing.ImageIcon
 import javax.swing.SwingConstants
 
 class ModelImporter {	def static props = [:] as Properties	def static defaultProps = [   		importDir: '',   		exportDir: '',   		mogrifyDir: '',   	] as Properties	
-	static void main(args) {		readProps()
+	static void main(args) {		//PlasticLookAndFeel.setPlasticTheme(new DesertBlue());		try {		   UIManager.setLookAndFeel(new Plastic3DLookAndFeel());		} catch (Exception e) {}				readProps()
 		showGui()
 	}
 	def static readProps() {		def dir = new File('fred').getAbsoluteFile().getParent()		def propsFile = new File(dir, 'modelimporter.properties')		if (propsFile.exists()) {			def input = new FileInputStream(propsFile)				props = [:] as Properties			props.load(input)			input.close()		}		// if there are any missing props after a read, fill them in with defaults		for (e in defaultProps) {			if (!props[e.key]) props[e.key] = e.value		}	}	def static saveProps(imp, exp) {		props['importDir'] = imp		props['exportDir'] = exp		def dir = new File('fred').getAbsoluteFile().getParent()		def propsFile = new File(dir, 'modelimporter.properties')		def output = propsFile.newOutputStream()		props.store(output, "Plexus ModelImporter Properties")		output.close()	}	
@@ -102,7 +102,7 @@ class ModelConvertor
 		if (md2.isFile()) return convertMd2(md2)
 		if (md3.isFile()) return convertMd3(md3)
 	}
-	def handleLicense() {		// make the user review and accept the license agreement		def f		new SwingBuilder().build {				f = dialog(title: title, windowClosing: {System.exit(0)}, layout: new MigLayout('fillx'), pack: true, modal: true) {								label(text:'Please identify which file below is the license file and that the files you are uploading are freely distributable', constraints:('span 2, wrap'))				label(text:'Users found uploading copyrighted material will be banned!', constraints:('span 2, wrap'))				list(size: [400, 400])				textPane(text: 'asdfasdfadsfaf asdfajdf;a fajfakfakfja;sf', constraints: ('wrap'), size: [400, 400])				button(text: "I have read and verified the license is acceptible", actionPerformed: {  license = 'readme.txt'; f.show(false); })				button(text: "Cancel", actionPerformed: { license = ''; f.show(false);})			}			f.setLocation(550, 550)			f.size = [500, (int)f.size.height] as Dimension			f.pack()			f.visible = true		}		return license	}
+	def handleLicense() {		// make the user review and accept the license agreement		def files = getReadme()		def f, mylist, contentsPane		def model =  new DefaultListModel()		new SwingBuilder().build {				f = dialog(title: title, windowClosing: {System.exit(0)}, layout: new MigLayout('fillx'), pack: true, modal: true) {								label(text:'Please identify which file below is the license file and that the files you are uploading are freely distributable', constraints:('span 2, wrap'))				label(text:'Users found uploading copyrighted material will be banned!', constraints:('span 2, wrap'))				mylist = list(model: model, valueChanged: { license = files[mylist.selectedIndex]; contentsPane.setPage(license.toURL()); },  size: [100, 400])				contentsPane = textPane(text: '<Please select the license file from the list>', contentType: 'text/plain', constraints: ('wrap'), size: [700, 400])				button(text: "I have read and verified the license is acceptible", actionPerformed: {  license = 'readme.txt'; f.show(false); })				button(text: "Cancel", actionPerformed: { license = ''; f.show(false);})			}			for (foo in files) { model.add(0, foo.getName().toString()) }			f.setLocation(550, 550)			f.size = [500, (int)f.size.height] as Dimension			f.pack()			f.visible = true		}		return license	}
 	def mogrify(ext) {
 		def dir = srcDir.getAbsolutePath()
 		def cmd = "${ModelImporter.props.mogrifyDir}/mogrify -format png -type TrueColor -depth 16 $dir/*.$ext"
