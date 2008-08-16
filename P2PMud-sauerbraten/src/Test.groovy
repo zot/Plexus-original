@@ -117,8 +117,8 @@ public class Test {
 					removePlayerFromSauerMap(key.substring('player/'.length()))
 				}
 			}
-			cloudProperties.setPropertyHooks[~'map/..*'] = {key, values, isNew ->
-				if (isNew) {
+			cloudProperties.setPropertyHooks[~'map/..*'] = {key, values, oldValue ->				key = key.substring('map/'.length())
+				if (!oldValue) {
 					playerCount[key] = 0
 				}
 				if (key == mapTopic?.getId()?.toStringFull()) {
@@ -486,19 +486,18 @@ public class Test {
 				peer.wimpyStoreFile(cacheDir, file, mcont.getSubContinuation(count++), false, true)
 			}
 		}
-	}
-	def transmitSetCloudProperty(key, value) {
+	}	def setCloudProperty(key, value) {		cloudProperties[key] = value	}	def transmitSetCloudProperty(key, value) {
 		cloudProperties[key] = value
 		peer.broadcastCmds(plexusTopic, ["setCloudProperty $key $value"] as String[])
 		println "BROADCAST PROPERTY: $key=$value"
 	}
 	def transmitRemoveCloudProperty(key) {
 		cloudProperties.removeProperty(key)
-		peer.broadcastCmds(plexusTopic, ["removeCloudProperty $key $value"] as String[])
+		peer.broadcastCmds(plexusTopic, ["removeCloudProperty $key"] as String[])
 		println "BROADCAST REMOVE PROPERTY: $key"
 	}
-	def receiveCloudProperties(props) {//	def receiveproperties(props) {		cloudProperties.setProperties(props, true)
-		receivedPropertiesHooks.each {it()}
+	def receiveCloudProperties(props) {		cloudProperties.setProperties(props, true)
+		receivedCloudPropertiesHooks.each {it()}
 	}
 	def updateMyPlayerInfo() {
 		def id = mapTopic?.getId()?.toStringFull()
@@ -757,8 +756,7 @@ println "pushMap: [$nameArgs]"
 					def topic = newMap ? peer.randomId().toStringFull() : mapTopic.getId().toStringFull()
 					def id = it[0].getId().toStringFull()
 
-					addMap(topic, id, name)
-					peer.broadcastCmds(plexusTopic, ["addMap $topic $id $name"] as String[])
+					transmitSetCloudProperty(topic, "$id $name")
 				},
 				receiveException: {err("Error pushing map", it)}
 			] as Continuation

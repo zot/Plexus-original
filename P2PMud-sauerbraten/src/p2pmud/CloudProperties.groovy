@@ -10,11 +10,11 @@ public class CloudProperties {
 	 */
 	def persistentPropertyPattern
 	def main
-	def fileName
+	def file
 
-	def CloudProperties(main, fileName) {
+	def CloudProperties(main, file) {
 		this.main = main
-		this.fileName = fileName
+		this.file = file
 	}
 	def each(closure) {
 		properties.each(closure)
@@ -33,9 +33,10 @@ public class CloudProperties {
 	}
 	def putAt(String key, value) {
 		def values = value.split(' ')
+		def old = properties[key]
 
 		properties[key as String] = value as String
-		setPropertyHooks.each {key ==~ it.key &&  it.value(key, values)}
+		setPropertyHooks.each {key ==~ it.key && it.value(key, values, old)}
 		propertiesChanged(key)
 	}
 	def removeProperty(key) {
@@ -47,7 +48,7 @@ public class CloudProperties {
 	}
 	def propertiesChanged(key) {
 		if (!key || (persistentPropertyPattern && key ==~ persistentPropertyPattern)) {
-			saveProperties()
+			save()
 		}
 		changedPropertyHooks.each {it()}
 		println "NEW PROPERTIES"
@@ -69,7 +70,7 @@ public class CloudProperties {
 		def saving = []
 		def output = file.newOutputStream()
 
-		properties.each {
+		properties.each {prop ->
 			if (persistentPropertyPattern && prop.key ==~ persistentPropertyPattern) {
 				saving.add("$prop.key=$prop.value")
 			}

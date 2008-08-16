@@ -40,7 +40,7 @@ public class PastryCmds extends Cmds {
 	def sendCloudProperties() {
 		def cmd = new P2PMudCommand(main.peer.nodeId, "receiveCloudProperties")
 
-		cmd.payload = main.cloudProperties
+		cmd.payload = main.cloudProperties.properties
 		main.peer.sendCmds(main.pastryCmd.from, cmd)
 	}
 	def receiveCloudProperties() {
