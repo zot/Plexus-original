@@ -1,5 +1,6 @@
 import rice.Continuation.MultiContinuation
 import p2pmud.Tools
+import p2pmud.CloudProperties
 import java.text.SimpleDateFormat
 import rice.p2p.commonapi.IdFactory
 import rice.Continuation
@@ -55,37 +56,19 @@ public class Test {
 	 * its keys are path-strings, representing information organized in
 	 * a tree
 	 */
-	def cloudProperties = [:] as Properties
-	/**
-	 * Pattern for properties which should be saved
-	 */
-	def persistentPropertyPattern = ~'(map|costume)/..*'
-	def mapId
+	def cloudProperties
 	def plexusTopic
 	def presenceLock = new Object()
-	def playersDoc
 	def costumesDoc = [:]
 	def pendingCostumes = [:]
-	def idToMap = [:]
+	def playerCount = [:]
 	def peerToSauerIdMap = [:]
 	def triggerLambdas = [:]
 	def portals = [:]
-	def setCloudPropertyHooks = [
-		(~'player/..*'): {key, values ->
-			if (mapTopic && values[1] != mapTopic.getId().toStringFull()) {
-				removePlayerFromSauerMap(key.substring('player/'.length()))
-			}
-		}
-	]
-	def removeCloudPropertyHooks = [
-		(~'player/..*'): {key, values ->
-			removePlayerFromSauerMap(key.substring('player/'.length()))
-		}
-	]
-	def receiveCloudPropertiesHooks = [
+	def receivedCloudPropertiesHooks = [
 		{updateMyPlayerInfo()}
 	]
-	
+
 	def static sauerExec
 	def static soleInstance
 	def static TIME_STAMP = new SimpleDateFormat("yyyyMMdd-HHmmsszzz")
@@ -127,6 +110,26 @@ public class Test {
 			}
 			sauerDir = new File(sauerDir)
 			plexusDir = new File(sauerDir, "packages/plexus")
+			cloudProperties = new CloudProperties(this, new File(plexusDir, 'cloud.properties'))
+			cloudProperties.persistentPropertyPattern = ~'(map|costume)/..*'
+			cloudProperties.setPropertyHooks[~'player/..*'] = {key, values ->
+				if (mapTopic && values[0] != mapTopic.getId().toStringFull()) {
+					removePlayerFromSauerMap(key.substring('player/'.length()))
+				}
+			}
+			cloudProperties.setPropertyHooks[~'map/..*'] = {key, values, isNew ->
+				if (isNew) {
+					playerCount[key] = 0
+				}
+				if (key == mapTopic?.getId()?.toStringFull()) {
+					loadMap(values[1..-1].join(' '), values[0])
+				}
+			}
+			cloudProperties.removePropertyHooks[~'player/..*'] = {key, values ->
+				removePlayerFromSauerMap(key.substring('player/'.length()))
+			}
+			cloudProperties.changedPropertyHooks.add {updateFriendList()}
+			cloudProperties.changedPropertyHooks.add {updateMapGui()}
 			cacheDir = new File(plexusDir, "cache")
 			def pastStor = new File(plexusDir, "PAST-storage")
 			Tools.deleteAll(pastStor)
@@ -144,7 +147,7 @@ public class Test {
 					label(text: lbl)
 					fields[key] = textField(actionPerformed: {sauerEnt(key)}, focusLost: {sauerEnt(key)}, constraints: 'wrap, growx')
 				}
-				def f = frame(title: 'Plexus', windowClosing: {System.exit(0)}, layout: new MigLayout('fillx'), pack: true, show: true) {
+				def f = frame(title: 'Plexus', windowClosing: {System.exit(0)}, layout: new MigLayout('fill'), pack: true, show: true) {
 					field('x: ', 'x')
 					field('y: ', 'y')
 					field('z: ', 'z')
@@ -175,8 +178,7 @@ public class Test {
 				try {
 					if (topic == null && cmd == null) {
 						id = id.toStringFull()
-						removePlayer(id)
-						peer.broadcastCmds(plexusTopic, ["removePlayer $id"] as String[])
+						transmitRemoveCloudProperty("player/$id")
 					} else {
 						pastryCmd = cmd
 						cmd.msgs.each {
@@ -332,14 +334,6 @@ public class Test {
 			pendingCommands[key] = value
 		}
 	}
-	def runCommand(str, cmds) {
-		def a = str.split()
-		def func = cmds[a[0]]
-	
-		if (func) {
-			func(a.length > 1 ? a[1..-1] : [])
-		}
-	}
 	def dumpCommands() {
 		if (output) {
 			synchronized (pendingCommands) {
@@ -375,7 +369,7 @@ public class Test {
 			'echo INIT'
 		].join(';'))
 	 	dumpCommands()
-	 	updateFriendList()
+//	 	updateFriendList()
 	}
 	def broadcast(cmds) {
 		if (peer) peer.broadcastCmds(mapTopic, cmds as String[])
@@ -428,7 +422,6 @@ public class Test {
 				} else {
 					def mapPath = Tools.subpath(new File(sauerDir, "packages"), mapDir)
 
-					mapId = id.toStringFull()
 					println "Retrieved map from PAST: $mapDir, executing: map [$mapPath/map]"
 					sauer('load', "echo loading new map: [$mapPath/map]; tc_loadmsg [$name]; map [$mapPath/map]")
 					dumpCommands()
@@ -444,32 +437,18 @@ public class Test {
 	}
 	def initBoot() {
 		def docFile = new File(plexusDir, "cloud.properties")
-		def maps = new File(plexusDir, "mapsdoc")
 		def costumes = new File(plexusDir, "costumesdoc")
 
-		setCloudProperties(docFile.exists() ? Tools.properties(docFile) : [:] as Properties)
-		if (maps.exists()) {
-			def props = Tools.properties(maps)
-			def newIds = [:]
-
-			for (map in props) {
-				def entry = map.value.split(' ')
-
-				newIds[map.key] = [entry[0], entry.length == 2 ? entry[1] : entry[1..-1].join(' '), 0]
-				println "$map.key: $map.value"
-				println "$map.key: ${newIds[map.key]}"
-			}
-			setMapsDoc(newIds, false)
-		} else {
-			setMapsDoc([:], true)
+		if (docFile.exists()) {
+			cloudProperties.load()
 		}
 		if (costumes.exists()) {
 			def props = Tools.properties(costumes)
 
 			for (costume in props) {
-				def entry = map.value.split(' ')
+				def entry = costumes.value.split(' ')
 
-				costumesDoc[map.key] = [entry[0], entry[1]]
+				costumesDoc[costume.key] = [entry[0], entry[1]]
 			}
 			setCostumesDoc(costumesDoc, false)
 		} else {
@@ -479,7 +458,6 @@ public class Test {
 		storeCache()
 	}
 	def initJoin() {
-		peer.anycastCmds(plexusTopic, "sendMaps")
 		peer.anycastCmds(plexusTopic, "sendCostumes")
 		peer.anycastCmds(plexusTopic, "sendCloudProperties")
 	}
@@ -509,17 +487,27 @@ public class Test {
 			}
 		}
 	}
+	def transmitSetCloudProperty(key, value) {
+		cloudProperties[key] = value
+		peer.broadcastCmds(plexusTopic, ["setCloudProperty $key $value"] as String[])
+		println "BROADCAST PROPERTY: $key=$value"
+	}
+	def transmitRemoveCloudProperty(key) {
+		cloudProperties.removeProperty(key)
+		peer.broadcastCmds(plexusTopic, ["removeCloudProperty $key $value"] as String[])
+		println "BROADCAST REMOVE PROPERTY: $key"
+	}
+	def receiveproperties(props) {
+		cloudProperties.setProperties(props, true)
+		receivedPropertiesHooks.each {it()}
+	}
 	def updateMyPlayerInfo() {
 		def id = mapTopic?.getId()?.toStringFull()
 
 		println "UPDATING PLAYER INFO"
 //		after we get the players list, send ourselves out
 		def node = peer.nodeId.toStringFull()
-		transmitSetCloudProperty("player/$node", "$name $id")
-	}
-	def removePlayer(node) {
-		transmitRemoveCloudProperty("player/$node")
-		removePlayerFromSauerMap(node)
+		transmitSetCloudProperty("player/$node", "${id ?: 'null'} $name")
 	}
 	def removePlayerFromSauerMap(node) {
 		if (peerToSauerIdMap[node]) {
@@ -532,6 +520,9 @@ public class Test {
 			ids.remove(who)
 		}
 	}
+	def mapName(id) {
+		cloudProperties["map/$id"][1..-1].join(' ')
+	}
 	def updateFriendList() {
 		if (!peer?.nodeId) return
 		synchronized (presenceLock) {
@@ -542,15 +533,13 @@ public class Test {
 			def mname = "Limbo"
 
 			updateMapGui()
-			println "playersDoc: $playersDoc"
-			eachCloudProperty('player/(..*)') { key, value, match ->
+			cloudProperties.each('player/(..*)') { key, value, match ->
 				def pid = match.group(1)
 
 				if (pid != id) {
 					def info = value.split(' ')
-					println info
-					def who = info[0]
-					def map = (!info[1] || info[1] == 'null') ? 'none' : idToMap[info[1]][1]
+					def map = (!info[0] || info[0] == 'null') ? 'none' : mapName(info[0])
+					def who = info[1..-1].join(' ')
 					friendGui += "guibutton [$who ($map)] [alias tc_whisper $pid; "  + 'saycommand [/whisper ""] ]\n'
 					++cnt
 				}
@@ -560,17 +549,17 @@ public class Test {
 			if (mapTopic) {
 				def mid = mapTopic.getId().toStringFull()
 
-				mname = idToMap[mid][1]
+				mname = mapName(mid)
 				friendGui += "guitab $mname\n"
 				mapCnt = 1
-				eachCloudProperty('player/(..*)') { key, value, match ->
+				cloudProperties.each('player/(..*)') { key, value, match ->
 					def pid = match.group(1)
 	
 					if (pid != id) {
 						def info = value.split(' ')
-						def who = info[0]
+						def who = info[1..-1].join(' ')
 						
-						if (info[1] == mid) {
+						if (info[0] == mid) {
 							friendGui += "guibutton [$who] [echo $pid]\n"
 							++mapCnt
 						}
@@ -585,133 +574,24 @@ public class Test {
 			dumpCommands()
 		}
 	}
-	def eachCloudProperty(pattern, closure) {
-		cloudProperties.each {
-			def match = it.key =~ pattern
-
-			if (match.matches()) {
-				closure(it.key, it.value, match)
-			}
-		}
-	}
-	def transmitSetCloudProperty(key, value) {
-		setCloudProperty(key, value)
-		peer.broadcastCmds(plexusTopic, ["setCloudProperty $key $value"] as String[])
-		println "BROADCAST PROPERTY: $key=$value"
-	}
-	def setCloudProperty(key, value) {
-		def values = value.split(' ')
-
-		synchronized (presenceLock) {
-			cloudProperties[key as String] = value as String
-			setCloudPropertyHooks.each {key ==~ it.key &&  it.value(key, values)}
-			cloudPropertiesChanged(key)
-		}
-	}
-	def transmitRemoveCloudProperty(key) {
-		removeCloudProperty(key)
-		peer.broadcastCmds(plexusTopic, ["removeCloudProperty $key $value"] as String[])
-		println "BROADCAST REMOVE PROPERTY: $key"
-	}
-	def removeCloudProperty(key) {
-		def values
-		synchronized (presenceLock) {
-			values = cloudProperties[key]?.split(' ')
-			cloudProperties.remove(key)
-			removeCloudPropertyHooks.each {key ==~ it.key &&  it.value(key, values)}
-			cloudPropertiesChanged(key)
-		}
-	}
-	def cloudPropertiesChanged(key) {
-		if (!key || key ==~ persistentPropertyPattern) {
-			saveCloudProperties()
-		}
-		updateFriendList()
-		synchronized (presenceLock) {
-			println "NEW PROPERTIES"
-			for (prop in cloudProperties) {
-				println "$prop.key: $prop.value"
-			}
-		}
-	}
-	def receiveCloudProperties(props) {
-		setCloudProperties(props, true)
-		receiveCloudPropertiesHooks.each {it()}
-	}
-	def setCloudProperties(props, save) {
-		synchronized (presenceLock) {
-			cloudProperties = props
-			cloudPropertiesChanged()
-		}
-	}
-	def loadCloudProperties() {
-		def propsFile = new File(plexusDir, "cloud.properties")
-
-		setCloudProperties(propsFile.exists() ? Tools.properties(propsFile) : [:] as Properties, false)
-	}
-	/**
-	 * must be synchronized on presenceLock
-	 */
-	def saveCloudProperties() {
-		def saving = []
-		def output = new File(plexusDir, 'cloud.properties').newOutputStream()
-
-		for (prop in cloudProperties) {
-			if (prop.key ==~ persistentPropertyPattern) {
-				saving.add("$prop.key=$prop.value")
-			}
-		}
-		saving.sort()
-		output << "#Plexus cloud properties\n#${new Date()}\n"
-		saving.each {
-			output << "$it\n"
-		}
-		output.close()
-	}
-	def addMap(topic, tree, name) {
-		setCloudProperty("map/$topic", "$tree $name")
-		synchronized (presenceLock) {
-			idToMap[topic] = [tree, name, 0]
-		}
-		updateMapGui()
-		saveMapsDoc()
-		if (topic == mapTopic?.getId()?.toStringFull()) {
-			loadMap(name, tree)
-		}
-	}
-	def setMapsDoc(newIds, save) {
-		synchronized (presenceLock) {
-			idToMap = newIds
-			updateMapGui()
-			if (save) {
-				saveMapsDoc()
-			}
-		}
-	}
-	def saveMapsDoc() {
-		def maps = [:] as Properties
-
-		for (map in idToMap) {
-			maps[map.key] = map.value[0..1].join(' ')
-		}
-		Tools.store(maps, new File(plexusDir, 'mapsdoc'), "Maps document")
-	}
 	def updateMapGui() {
-		for (world in idToMap) {
-			world.value[2] = 0
+		cloudProperties.each('map/(.*)') {key, value, match ->
+			playerCount[match.group(1)] = 0
 		}
-		for (player in playersDoc) {
-println "player.value: $player.value"
-			def map = player.value[1]
+		cloudProperties.each('player/(.*)') {key, value, match ->
+			def map = value.split(' ')[0]
 
 			if (map && map != 'null') {
-				idToMap[map][2]++
+				playerCount[map]++
 			}
 		}
 		def mapsGui = "newgui Worlds ["
 		def ents = []
-		for (world in idToMap) {
-			ents.add([world.value[1], world.key, world.value[2]])
+		cloudProperties.each('map/(.*)') {key, value, match ->
+			def topic = match.group(1)
+			def name = value.split(' ')[1..-1].join(' ')
+
+			ents.add([name, topic, playerCount[topic]])
 		}
 		ents.sort {a, b -> a[0].compareTo(b[0])}
 		for (world in ents) {
@@ -846,17 +726,18 @@ println "COSTUME SELS: $triples"
 		Tools.store(costumes, new File(plexusDir, 'costumesdoc'), "Costumes document")
 	}
 	def connectWorld(id) {
-		def entry = idToMap[id]
+		def entry = cloudProperties["map/$id"].split(' ')
 
 		if (entry) {
-			println "CONNECTING TO WORLD: entry[1] ($id)"
+			def name = mapName(id)
+
+			println "CONNECTING TO WORLD: $name ($id)"
 			if (mapTopic) {
 				peer.unsubscribe(mapTopic)
 			}
 			mapTopic = peer.subscribe(Id.build(id), [
 				receiveResult: {topic ->
-					mapTopic = topic
-					loadMap(entry[1], entry[0])
+					loadMap(name, entry[0])
 				},
 				receiveException: {exception -> err("Couldn't subscribe to topic: ", id)}
 			] as Continuation)
@@ -869,7 +750,7 @@ println "pushMap: [$nameArgs]"
 
 		if (newMap || mapTopic) {
 			if (!newMap) {
-				name = idToMap[mapTopic.getId().toStringFull()][1]
+				name = mapName(mapTopic.getId().toStringFull())
 			}
 			println "1"
 			def cont = [
@@ -877,9 +758,6 @@ println "pushMap: [$nameArgs]"
 					def topic = newMap ? peer.randomId().toStringFull() : mapTopic.getId().toStringFull()
 					def id = it[0].getId().toStringFull()
 
-					if (!newMap) {
-						mapId = id
-					}
 					addMap(topic, id, name)
 					peer.broadcastCmds(plexusTopic, ["addMap $topic $id $name"] as String[])
 				},
@@ -927,9 +805,9 @@ println "pushMap: [$nameArgs]"
 	}
 	def bindPortal(id, topic) {
 		portals[id] = topic
-		if (idToMap[topic]) {
-println "bindPortal: portal_$id = ${idToMap[topic][1]}"
-			sauer('portal', "portal_$id = ${idToMap[topic][1]}")
+		if (cloudProperties["map/$topic"]) {
+println "bindPortal: portal_$id = ${mapName(topic)}"
+			sauer('portal', "portal_$id = ${mapName(topic)}")
 			dumpCommands()
 		}
 	}

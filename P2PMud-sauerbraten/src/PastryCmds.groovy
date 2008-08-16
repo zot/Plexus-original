@@ -52,18 +52,6 @@ public class PastryCmds extends Cmds {
 	def setCloudProperty(key, String... values) {
 		main.setCloudProperty(key, values.join(' '))
 	}
-	def sendMaps() {
-		def cmd = new P2PMudCommand(main.peer.nodeId, "receiveMaps")
-
-		cmd.payload = main.idToMap
-		main.peer.sendCmds(main.pastryCmd.from, cmd)
-	}
-	def receiveMaps() {
-		main.setMapsDoc(main.pastryCmd.payload, true)
-	}
-	def addMap(topic, tree, String... name) {
-		main.addMap(topic, tree, name.join(' '))
-	}
 	def removePlayer(node) {
 		main.removePlayer(node)
 	}
