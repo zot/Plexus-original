@@ -15,7 +15,7 @@ public class Prep {
 	def static lastPeerName
 	def static defaultProps = [
 		sauer_port: '12345',
-		name: 'bubba-' + System.currentTimeMillis(),
+		name: 'bubba-' + System.currentTimeMillis(),		guild: '',
 		pastry_port: '9090',
 		pastry_boot_host: '-',
 		pastry_boot_port: '9090',
@@ -217,8 +217,8 @@ public class Prep {
 				fields[key] = textField(actionPerformed: {setprop(key)}, focusLost: {setprop(key)}, text: p[key], constraints: 'span 2, wrap, growx')
 			}
 			f = frame(title: 'Plexus Configuration', windowClosing: {System.exit(0)}, layout: new MigLayout('fillx'), pack: true, show: true) {
-				field('Peer name: ', 'name')
-				//field('External IP: ', 'external_ip')
+				field('Your name: ', 'name')
+				field('Team/Guild: ', 'guild')				//field('External IP: ', 'external_ip')
 				label(text: 'External IP: ')
 				fields['external_ip'] = textField(actionPerformed: {setprop('external_ip')}, focusLost: {setprop('external_ip')}, text: p['external_ip'], constraints: 'growx')
 				button(text: "Discover", actionPerformed: { discoverExternalIP() }, constraints: 'wrap')
