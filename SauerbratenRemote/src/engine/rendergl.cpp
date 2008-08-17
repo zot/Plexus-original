@@ -696,8 +696,8 @@ int swingyaw = 0, swingpitch = 0;
 void swingcamera(int dx, int dy)
 {
 	if (thirdperson) {
-		swingyaw += dx / 5.0;
-		swingpitch -= dy / 5.0;
+		swingyaw += dx / 3.0;
+		swingpitch -= dy / 3.0;
 		return;
 	} else {
 		swingyaw = swingpitch = 0;
@@ -751,6 +751,7 @@ void recomputecamera()
 		camera1->yaw += swingyaw;
 		camera1->pitch += swingpitch;
 		fixcamerarange(camera1);
+		camera1->maxspeed = 100; // this decouples the camera backing up from the player's maxspeed
 #endif
         loopi(10)
         {

@@ -675,7 +675,7 @@ void checkinput()
 									p->pitch = 0.0;
 								}
 								extern void swingcamera(int dx, int dy);
-								swingcamera(event.motion.xrel * 5.0, event.motion.yrel * 5.0);
+								swingcamera(event.motion.xrel * 3.0, event.motion.yrel * 3.0);
 							} else if (ms) {
 								extern void clearswing(physent *p);
 								clearswing(p);
