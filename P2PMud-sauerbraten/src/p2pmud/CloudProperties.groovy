@@ -9,12 +9,23 @@ public class CloudProperties {
 	 * Pattern for properties which should be saved
 	 */
 	def persistentPropertyPattern
+	def privatePropertyPattern = ''
 	def main
 	def file
 
 	def CloudProperties(main, file) {
 		this.main = main
 		this.file = file
+	}
+	def transmitProperties() {
+		def props = [:] as Properties
+
+		properties.each {
+			if (!(it.key ==~ privatePropertyPattern)) {
+				props[it.key] = it.value
+			}
+		}
+		props
 	}
 	def each(closure) {
 		properties.each(closure)

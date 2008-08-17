@@ -1,4 +1,6 @@
-import com.jgoodies.looks.plastic.Plastic3DLookAndFeelimport javax.swing.UIManagerimport rice.Continuation.MultiContinuation
+import com.jgoodies.looks.plastic.Plastic3DLookAndFeel
+import javax.swing.UIManager
+import rice.Continuation.MultiContinuation
 import p2pmud.Tools
 import p2pmud.CloudProperties
 import java.text.SimpleDateFormat
@@ -52,6 +54,7 @@ public class Test {
 	def peer
 	def mapname
 	def mapTopic
+	def mapIsPrivate
 	/** cloudProperties is the shared properties object for Plexus
 	 * its keys are path-strings, representing information organized in
 	 * a tree
@@ -111,15 +114,30 @@ public class Test {
 			sauerDir = new File(sauerDir)
 			plexusDir = new File(sauerDir, "packages/plexus")
 			cloudProperties = new CloudProperties(this, new File(plexusDir, 'cloud.properties'))
-			cloudProperties.persistentPropertyPattern = ~'(map|costume)/..*'
-			cloudProperties.setPropertyHooks[~'player/..*'] = {key, values ->
+			cloudProperties.persistentPropertyPattern = ~'(map|privateMap|costume)/..*'
+			cloudProperties.privatePropertyPattern = ~'(privateMap)/..*'
+			cloudProperties.setPropertyHooks[~'player/..*'] = {key, values, oldValue ->
 				if (mapTopic && values[0] != mapTopic.getId().toStringFull()) {
 					removePlayerFromSauerMap(key.substring('player/'.length()))
 				}
 			}
-			cloudProperties.setPropertyHooks[~'map/..*'] = {key, values, oldValue ->				key = key.substring('map/'.length())
+			cloudProperties.setPropertyHooks[~'map/..*'] = {key, values, oldValue ->
+				key = key.substring('map/'.length())
 				if (!oldValue) {
 					playerCount[key] = 0
+				}
+				if (key == mapTopic?.getId()?.toStringFull()) {
+					loadMap(values[1..-1].join(' '), values[0])
+				}
+			}
+			cloudProperties.setPropertyHooks[~'privateMap/..*'] = {key, values, oldValue ->
+				key = key.substring('privateMap/'.length())
+				if (!oldValue && pastryCmd) {
+					def senderId = pastryCmd.from.getId().toStringFull()
+					def senderName = cloudProperties["player/$senderId"]
+
+					playerCount[key] = 0
+					sauer('private', "showmessage [You received a private map, ${values[1..-1].join(' ')}: ${values[0]}] [from $senderName ($senderId)]")
 				}
 				if (key == mapTopic?.getId()?.toStringFull()) {
 					loadMap(values[1..-1].join(' '), values[0])
@@ -178,8 +196,10 @@ public class Test {
 			}
 			start(args[0])
 		}
-		P2PMudPeer.main(			{id, topic, cmd ->
-				try {					if (topic == null && cmd == null) {
+		P2PMudPeer.main(
+			{id, topic, cmd ->
+				try {
+					if (topic == null && cmd == null) {
 						id = id.toStringFull()
 						transmitRemoveCloudProperty("player/$id")
 					} else {
@@ -189,8 +209,12 @@ public class Test {
 								pastryCmds.invoke(it)
 							}
 						}
+						pastryCmd = null
 					}
-				} catch (Exception ex) {					err("Problem executing command: " + cmd, ex)				}			} as P2PMudCommandHandler,
+				} catch (Exception ex) {
+					err("Problem executing command: " + cmd, ex)
+				}
+			} as P2PMudCommandHandler,
 			{
 				//sauer('peers', "peers ${peer.getNeighborCount()}")
 				//dumpCommands()
@@ -486,7 +510,11 @@ public class Test {
 				peer.wimpyStoreFile(cacheDir, file, mcont.getSubContinuation(count++), false, true)
 			}
 		}
-	}	def setCloudProperty(key, value) {		cloudProperties[key] = value	}	def transmitSetCloudProperty(key, value) {
+	}
+	def setCloudProperty(key, value) {
+		cloudProperties[key] = value
+	}
+	def transmitSetCloudProperty(key, value) {
 		cloudProperties[key] = value
 		peer.broadcastCmds(plexusTopic, ["setCloudProperty $key $value"] as String[])
 		println "BROADCAST PROPERTY: $key=$value"
@@ -496,7 +524,8 @@ public class Test {
 		peer.broadcastCmds(plexusTopic, ["removeCloudProperty $key"] as String[])
 		println "BROADCAST REMOVE PROPERTY: $key"
 	}
-	def receiveCloudProperties(props) {		cloudProperties.setProperties(props, true)
+	def receiveCloudProperties(props) {
+		cloudProperties.setProperties(props, true)
 		receivedCloudPropertiesHooks.each {it()}
 	}
 	def updateMyPlayerInfo() {
@@ -519,7 +548,9 @@ public class Test {
 		}
 	}
 	def mapName(id) {
-		cloudProperties["map/$id"][1..-1].join(' ')
+		def entry = cloudProperties["map/$id"] ?: cloudProperties["privateMap/$id"]
+
+		entry.substring(entry.indexOf(' ') + 1)
 	}
 	def updateFriendList() {
 		if (!peer?.nodeId) return
@@ -538,7 +569,7 @@ public class Test {
 					def info = value.split(' ')
 					def map = (!info[0] || info[0] == 'null') ? 'none' : mapName(info[0])
 					def who = info[1..-1].join(' ')
-					friendGui += "guibutton [$who ($map)] [alias tc_whisper $pid; "  + 'saycommand [/whisper ""] ]\n'
+					friendGui += "guibutton [$who ($map)] [alias tc_whisper $pid; alias selected_friend [$who]; showgui Friend]\n"
 					++cnt
 				}
 			}
@@ -572,8 +603,19 @@ public class Test {
 			dumpCommands()
 		}
 	}
+	def shareMap(to) {
+		def key = "privateMap/${mapTopic.getId().toStringFull()}"
+		def value = cloudProperties[key]
+
+		peer.sendCmds(Id.build(id), ["setCloudProperty $key $value"] as String[])
+	}
 	def updateMapGui() {
+		def ents = []
+		def privates = []
 		cloudProperties.each('map/(.*)') {key, value, match ->
+			playerCount[match.group(1)] = 0
+		}
+		cloudProperties.each('privateMap/(.*)') {key, value, match ->
 			playerCount[match.group(1)] = 0
 		}
 		cloudProperties.each('player/(.*)') {key, value, match ->
@@ -584,7 +626,6 @@ public class Test {
 			}
 		}
 		def mapsGui = "newgui Worlds ["
-		def ents = []
 		cloudProperties.each('map/(.*)') {key, value, match ->
 			def topic = match.group(1)
 			def name = value.split(' ')[1..-1].join(' ')
@@ -594,6 +635,20 @@ public class Test {
 		ents.sort {a, b -> a[0].compareTo(b[0])}
 		for (world in ents) {
 			mapsGui += "guibutton [${world[0]} (${world[2]})] [remotesend connectWorld ${world[1]}]\n"
+		}
+		cloudProperties.each('privateMap/(.*)') {key, value, match ->
+			def topic = match.group(1)
+			def name = value.split(' ')[1..-1].join(' ')
+
+			ents.add([name, topic, playerCount[topic]])
+			privates.add([name, topic, playerCount[topic]])
+		}
+		if (privates) {
+			privates.sort {a, b -> a[0].compareTo(b[0])}
+			mapsGui += "guitab [Private Worlds]\n"
+			privates.each {
+				mapsGui += "guibutton [${it[0]} (${it[2]})] [remotesend connectWorld ${it[1]}]\n"
+			}
 		}
 		mapsGui += "]\nnewgui Portals ["
 		for (world in ents) {
@@ -724,24 +779,31 @@ println "COSTUME SELS: $triples"
 		Tools.store(costumes, new File(plexusDir, 'costumesdoc'), "Costumes document")
 	}
 	def connectWorld(id) {
-		def entry = cloudProperties["map/$id"].split(' ')
-
+		def entry = cloudProperties["map/$id"]
+		def privateMap = false
+		
+		if (!entry) {
+			entry = cloudProperties["privateMap/$id"]
+			privateMap = true
+		}
 		if (entry) {
 			def name = mapName(id)
 
+			entry = entry.split(' ')
 			println "CONNECTING TO WORLD: $name ($id)"
 			if (mapTopic) {
 				peer.unsubscribe(mapTopic)
 			}
 			mapTopic = peer.subscribe(Id.build(id), [
-				receiveResult: {topic ->
-					loadMap(name, entry[0])
-				},
+				receiveResult: {topic -> loadMap(name, entry[0])},
 				receiveException: {exception -> err("Couldn't subscribe to topic: ", id)}
 			] as Continuation)
+			mapIsPrivate = privateMap
+		} else {
+			sauer('entry', "showmessage [Couldn't find map] [Unknown map id: $id]")
 		}
 	}
-	def pushMap(String... nameArgs) {
+	def pushMap(privateMap, String... nameArgs) {
 println "pushMap: [$nameArgs]"
 		def name = nameArgs.join(' ')
 		def newMap = name?.length()
@@ -756,7 +818,7 @@ println "pushMap: [$nameArgs]"
 					def topic = newMap ? peer.randomId().toStringFull() : mapTopic.getId().toStringFull()
 					def id = it[0].getId().toStringFull()
 
-					transmitSetCloudProperty(topic, "$id $name")
+					transmitSetCloudProperty("${privateMap == '1' ? 'privateMap' : 'map'}/$topic", "$id $name")
 				},
 				receiveException: {err("Error pushing map", it)}
 			] as Continuation

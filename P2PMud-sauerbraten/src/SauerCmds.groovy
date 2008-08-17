@@ -69,8 +69,8 @@ public class SauerCmds extends Cmds {
 	def connectWorld(id) {
 		main.connectWorld(id)
 	}
-	def pushMap(String... nameArgs) {
-		main.pushMap(*nameArgs)
+	def pushMap(privateMap, String... nameArgs) {
+		main.pushMap(privateMap, *nameArgs)
 	}
 	def pushMap(mapName, update) {
 		println "Sauer sent: pushMap $mapName"
@@ -85,6 +85,9 @@ public class SauerCmds extends Cmds {
 	}
 	def whisperPlayer(from, to, String... msg) {
 		main.send(to, ["whisperPlayer $from ${msg.join(' ')}"])
+	}
+	def shareMap(to) {
+		main.shareMap(to)
 	}
 	def activePortals(String... portalIds) {
 		main.activePortals(portalIds)
