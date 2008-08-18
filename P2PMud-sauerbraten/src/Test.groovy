@@ -126,6 +126,7 @@ public class Test {
 						def oldPl = getPlayer(pid, oldValue)
 
 						if (oldPl.costume != pl.costume) {
+							println "Costume changed.  Loading new costume for $pl"
 							loadCostume(pl)
 						}
 					}
@@ -704,21 +705,23 @@ public class Test {
 	}
 	def loadCostume(who) {
 		if (who.costume) {
+println "loading costume: $who.costume"
 			def costume = getCostume(who.costume)
 			def costumeFile = new File(plexusDir, "costumes/$costume.dir")
 
 			if (costumeFile.exists()) {
-				clothe(who)
+				clothe(who, costume.dir)
 			} else {
 				P2PMudFile.fetchDir(costume.dir, cacheDir, new File(plexusDir, "costumes/$costume.dir"), [
-					receiveResult: {r -> clothe(who)},
+					receiveResult: {r -> clothe(who, costume.dir)},
 					receiveException: {ex -> err("Could not fetch data for costume: $costume.dir")}
 				], false)
 			}
 		}
 	}
-	def clothe(who) {
-		sauer('clothe', "playerinfo ${ids[who.id]} [] $who.costume")
+	def clothe(who, costumeDir) {
+println "Clothing $who.id with costume: $costumeDir"
+		sauer('clothe', "playerinfo ${ids[who.id]} [] $costumeDir")
 	}
 	def pushCostume(name) {
 println "PUSHING COSTUME: $name"
@@ -859,7 +862,7 @@ println "pushMap: [$nameArgs]"
 		def newMap = name?.length()
 
 		if (newMap || mapTopic) {
-			def map = getMap(mapTopic.getId().toStringFull())
+			def map = mapTopic ? getMap(mapTopic.getId().toStringFull()) : null
 
 			if (!newMap) {
 				name = map.name

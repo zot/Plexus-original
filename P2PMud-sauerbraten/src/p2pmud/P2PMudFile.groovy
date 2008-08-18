@@ -65,8 +65,12 @@ println "STORE: $file.key -> $file.value"
 		} else {
 			dir = dir as File
 			dir.eachFileRecurse {
-				println "adding file: $it"
-				files.add([it, Tools.subpath(dir, it)])
+				if (it.getName() == "Thumbs.db") {
+					println "IGNORING FILE: $it"
+				} else {
+					println "adding file: $it"
+					files.add([it, Tools.subpath(dir, it)])
+				}
 			}
 		}
 		println "${files.size()} files"
