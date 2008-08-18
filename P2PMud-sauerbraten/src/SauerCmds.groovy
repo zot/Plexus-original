@@ -11,11 +11,11 @@ public class SauerCmds extends Cmds {
 		])
 	}
 	def showplayergui() {
-		main.player.showGui(main)
+		main.playerObj.showGui(main)
 	}
 	def player(prop, value) {
-		main.player."$prop" = value
-		def val = main.player."$prop"
+		main.playerObj."$prop" = value
+		def val = main.playerObj."$prop"
 		println "set player $prop to $val"
 	}
 	def chat(String... args) {

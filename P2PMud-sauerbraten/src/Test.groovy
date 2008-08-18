@@ -46,7 +46,7 @@ public class Test {
 	def fields = [:]
 	def runs = 0
 	def pastryCmd
-	def player = new Player()
+	def playerObj = new Player()
 	def sauerDir
 	def plexusDir
 	def cacheDir
@@ -557,7 +557,7 @@ public class Test {
 				costume: entry[1] == 'none' ? null : entry[1],
 				name: entry[2..-1].join(' ')
 			]
-			
+
 			if (pl.map == 'none') {
 				pl.map = null
 			}
@@ -704,7 +704,7 @@ public class Test {
 	}
 	def loadCostume(who) {
 		if (who.costume) {
-			def costume = getCostume(id)
+			def costume = getCostume(who.costume)
 			def costumeFile = new File(plexusDir, "costumes/$costume.dir")
 
 			if (costumeFile.exists()) {
@@ -718,7 +718,7 @@ public class Test {
 		}
 	}
 	def clothe(who) {
-		sauer('clothe', "playerinfo ${ids[who.id]} [] $player.costume")
+		sauer('clothe', "playerinfo ${ids[who.id]} [] $who.costume")
 	}
 	def pushCostume(name) {
 println "PUSHING COSTUME: $name"
