@@ -488,9 +488,12 @@ struct md5 : skelmodel
 #ifdef TC
         s_sprintf(md5dir)("packages/plexus/costumes/%s", loadname);
         s_sprintfd(cfgname)("packages/plexus/costumes/%s/md5.cfg", loadname);
-		if (!fileexists(md5dir, "r")) {
+		if (!fileexists(cfgname, "r")) {
 	        s_sprintf(md5dir)("packages/models/%s", loadname);
 		    s_sprintf(cfgname)("packages/models/%s/md5.cfg", loadname);
+			if (!fileexists(cfgname, "r")) {
+				return false;
+			}
 		}
 #else
         s_sprintf(md5dir)("packages/models/%s", loadname);

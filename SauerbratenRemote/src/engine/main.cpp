@@ -666,7 +666,8 @@ void checkinput()
                 		extern void tc_movecursor(int x, int y, bool hide);
                 		if (tc_amgrabbingmouse) {
 							ms = SDL_GetMouseState(NULL, NULL);
-							if (0 != (ms & SDL_BUTTON_LMASK) && 0 == (ms & SDL_BUTTON_RMASK)) {
+							extern int thirdperson;
+							if (0 != (ms & SDL_BUTTON_LMASK) && 0 == (ms & SDL_BUTTON_RMASK) && thirdperson) {
 								// force toon upright if swinging the camera
 								if (p->pitch) {
 									extern int swingpitch;
@@ -674,7 +675,7 @@ void checkinput()
 									p->pitch = 0.0;
 								}
 								extern void swingcamera(int dx, int dy);
-								swingcamera(event.motion.xrel * 5.0, event.motion.yrel * 5.0);
+								swingcamera(event.motion.xrel * 3.0, event.motion.yrel * 3.0);
 							} else if (ms) {
 								extern void clearswing(physent *p);
 								clearswing(p);

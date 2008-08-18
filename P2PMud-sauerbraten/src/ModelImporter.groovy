@@ -128,27 +128,27 @@ class ModelConvertor
 				anims << line
 			}
 		}
-		
+				def torsoStart = anims[13] =~ /\d+/, legStart = anims[6] =~  /\d+/ 		//println "ts: ${torsoStart[0]} ls: ${legStart[0]}"		def legOffset = Integer.parseInt(torsoStart[0].toString() ) - Integer.parseInt(legStart[0].toString())		//println ("leg anim offset: $legOffset")		
 		// build lower animations
-		extractAnimation(md3, "dying", anims, 0, true)
-		extractAnimation(md3, "dead", anims, 1, true)
-		extractAnimation(md3, "lag|edit", anims, 13, true, true) // single frame
-		extractAnimation(md3, "forward|left|right", anims, 14, true)
-		extractAnimation(md3, "backward", anims, 16, true)
-		extractAnimation(md3, "swim", anims, 17, true)
-		extractAnimation(md3, "jump", anims, 18, true)
-		extractAnimation(md3, "idle", anims, 22, true)
+		extractAnimation(md3, "dying", anims, 0, 0)
+		extractAnimation(md3, "dead", anims, 1, 0)
+		extractAnimation(md3, "lag|edit", anims, 13, legOffset, true) // single frame
+		extractAnimation(md3, "forward|left|right", anims, 14, legOffset)
+		extractAnimation(md3, "backward", anims, 16, legOffset)
+		extractAnimation(md3, "swim", anims, 17, legOffset)
+		extractAnimation(md3, "jump", anims, 18, legOffset)
+		extractAnimation(md3, "idle", anims, 22, legOffset)
 		
 		copyMD3Section(md3, 'upper', upper, needCopy)
 		
 		// build uppper animations
-		extractAnimation(md3, "dying", anims, 0, false)
-		extractAnimation(md3, "dead", anims, 1, false)
-		extractAnimation(md3, "idle|lag|edit", anims, 11, false, true) // single frame
-		extractAnimation(md3, "shoot", anims, 7, false)
-		extractAnimation(md3, "punch", anims, 8, false)
-		//extractAnimation(md3, "pain", anims, 22, false)
-		extractAnimation(md3, "taunt", anims, 6, false)
+		extractAnimation(md3, "dying", anims, 0, 0)
+		extractAnimation(md3, "dead", anims, 1, 0)
+		extractAnimation(md3, "idle|lag|edit", anims, 11, 0, true) // single frame
+		extractAnimation(md3, "shoot", anims, 7, 0)
+		extractAnimation(md3, "punch", anims, 8, 0)
+		//extractAnimation(md3, "pain", anims, 22, 0)
+		extractAnimation(md3, "taunt", anims, 6, 0)
 		
 		copyMD3Section(md3, 'head', head, needCopy)
 		
@@ -173,7 +173,7 @@ class ModelConvertor
 	def extractAnimation(md3, name, anims, index, legs) {
 		extractAnimation(md3, name, anims, index, legs, false)
 	}
-	def extractAnimation(md3, name, anims, index, legs, single) {
+	def extractAnimation(md3, name, anims, index, animOffset, single) {
 		def first, length, speed
 		def line = anims[index]
 		def pattern = /(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/
@@ -181,7 +181,7 @@ class ModelConvertor
 		first = Integer.parseInt(m[0][1])
 		length = single ? 1 : m[0][2]
 		speed = m[0][4]
-		if (legs && first >= 60) first -= 60
+		if (animOffset) first -= animOffset
 		if (name.contains('|')) name = '"' + name + '"'
 		def out = "md3anim $name $first $length $speed"
 		println out
