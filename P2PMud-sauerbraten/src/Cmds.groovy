@@ -7,10 +7,14 @@ public class Cmds {
 	def invoke(cmdString) {
 		def args = cmdString.split() as List
 
-		if (args.size() == 1) {
-			"${args[0]}"()
-		} else if (args.size() > 1) {
-			"${args[0]}"(*args[1..-1])
+		try {
+			if (args.size() == 1) {
+				"${args[0]}"()
+			} else if (args.size() > 1) {
+				"${args[0]}"(*args[1..-1])
+			}
+		} catch (Exception ex) {
+			main.err("Problem occured while executing command: " + cmdString, ex)
 		}
 	}
 }

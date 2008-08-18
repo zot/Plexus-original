@@ -548,7 +548,7 @@ public class Test {
 			pl = [
 				id: id,
 				map: entry[0],
-				costume: entry[1],
+				costume: entry[1] == 'none' ? null : entry[1],
 				name: entry[2..-1].join(' ')
 			]
 			
@@ -589,10 +589,11 @@ public class Test {
 			peerToSauerIdMap.remove(node)
 			names.remove(sauerId)
 			ids.remove(who)
+			updateMapGui()
 		}
 	}
 	def newPlayer(name, id) {
-		def who = getPlayer(main.pastryCmd.from.toStringFull())
+		def who = getPlayer(pastryCmd.from.toStringFull())
 
 		ids[name] = id
 		++id_index
@@ -620,12 +621,12 @@ public class Test {
 
 				if (pid != id) {
 					def who = getPlayer(pid)
-					def map = (!who.map || who.map == 'null') ? 'none' : getMap(who.map).name
+					def map = (!who.map || who.map == 'null') ? 'none' : getMap(who.map)?.name ?: 'unknown map'
 
 					friendGui += "guibutton [$who.name ($map)] [alias tc_whisper $who.id; alias selected_friend [$who.name]; alias mapIsPrivate $mapIsPrivate; showgui Friend]\n"
 					++cnt
 					if (myMap?.id == who.map) {
-						mapTabGui += "guibutton [$who.name] [echo $who.id]\n"
+						mapTab += "guibutton [$who.name] [echo $who.id]\n"
 						++mapCnt
 					}
 				}
@@ -697,16 +698,18 @@ public class Test {
 		dumpCommands()
 	}
 	def loadCostume(who) {
-		def costume = getCostume(id)
-		def costumeFile = getCostumeFile(entrya)
+		if (who.costume) {
+			def costume = getCostume(id)
+			def costumeFile = getCostumeFile(entrya)
 
-		if (costumeFile.exists()) {
-			clothe(who)
-		} else {
-			P2PMudFile.fetchDir(costume.dir, cacheDir, new File(plexusDir, "costumes/$costume.dir"), [
-				receiveResult: {r -> clothe(who)},
-				receiveException: {ex -> err("Could not fetch data for costume: $costume.dir")}
-			], false)
+			if (costumeFile.exists()) {
+				clothe(who)
+			} else {
+				P2PMudFile.fetchDir(costume.dir, cacheDir, new File(plexusDir, "costumes/$costume.dir"), [
+					receiveResult: {r -> clothe(who)},
+					receiveException: {ex -> err("Could not fetch data for costume: $costume.dir")}
+				], false)
+			}
 		}
 	}
 	def clothe(who) {
@@ -831,7 +834,7 @@ println "COSTUME SELS: $triples"
 		
 		if (!map) {
 			sauer('entry', "showmessage [Couldn't find map] [Unknown map id: $id]")
-		} else if (map.id != mapTopic.getId().toStringFull()) {
+		} else if (map.id != mapTopic?.getId()?.toStringFull()) {
 			println "CONNECTING TO WORLD: $map.name ($map.id)"
 			if (mapTopic) {
 				peer.unsubscribe(mapTopic)
@@ -849,13 +852,15 @@ println "pushMap: [$nameArgs]"
 		def newMap = name?.length()
 
 		if (newMap || mapTopic) {
+			def map = getMap(mapTopic.getId().toStringFull())
+
 			if (!newMap) {
-				name = getMapName(getMapEntry(mapTopic.getId().toStringFull()))
+				name = map.name
 			}
 			println "1"
 			def cont = [
 				receiveResult: {
-					def topic = newMap ? peer.randomId().toStringFull() : mapTopic.getId().toStringFull()
+					def topic = newMap ? peer.randomId().toStringFull() : map.id
 					def id = it.file.getId().toStringFull()
 
 					transmitSetCloudProperty("${privateMap == '1' ? 'privateMap' : 'map'}/$topic", "$id $name")
