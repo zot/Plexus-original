@@ -119,7 +119,7 @@ class ModelConvertor
 		def md3 = [], needCopy = [ 'animation.cfg', license ]
 		md3 << "// MD3 model converted by Plexus Convertor V1.0"
 		copyMD3Section(md3, 'lower', lower, needCopy)
-		
+				// clamp the pitch for md3s		md3 << "md3pitch 1 0 -30 30"		
 		// extract only the animation lines from animation.cfg
 		def lines = animcfg.readLines(), anims = []
 		for (line in lines) {
@@ -272,10 +272,9 @@ class ModelConvertor
 	def writeMd2Config() {
 		def f = new File(dstDir, 'md2.cfg')
 		f.withWriter{ writer ->
-	       writer << "// MD2 model converted by Plexus Convertor V1.0\n"
-	       writer << "mdlspec -1 // turn off speculars\n"
+	       writer << "// MD2 model converted by Plexus Convertor V1.0\n"	       // clamp the pitch for md2s	       writer << "md2pitch 1 0 -30 30"	       writer << "mdlspec -1 // turn off speculars\n"
 	       writer << "mdlscale 100 // keep original scale\n"
-	       writer << "mdltrans 0 0 25 // raise feet up to surface plane\n"
+	       writer << "mdltrans 0 0 24 // raise feet up to surface plane\n"
 		   } 
 	}
 	def copyFile(fn) {
