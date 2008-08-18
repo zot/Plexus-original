@@ -566,7 +566,8 @@ public class Test {
 			return [
 				dir: id,
 				thumb: entry[0] == 'none' ? null : entry[0],
-				name: entry[1..-1].join(' ')
+				type: entry[1],
+				name: entry[2..-1].join(' ')
 			]
 		}
 	}
@@ -722,11 +723,16 @@ println "STORING COSTUME"
 			P2PMudFile.storeDir(cacheDir, path, [
 				receiveResult: {
 					def fileId = it.file.getId().toStringFull()
-					def thumb = it.properties['thumb.jpg'] ?: 'none'
-
+					def type = 'png'
+					def thumb = it.properties['thumb.png']
+					
+					if (!thumb) {
+						type = 'png'
+						thumb = it.properties['thumb.jpg'] ?: 'none'
+					}
 					try {
 println "STORED COSTUME, adding"
-						transmitSetCloudProperty("costume/$fileId", "$thumb $name")
+						transmitSetCloudProperty("costume/$fileId", "$thumb ${thumb ? type : 'none'} $name")
 					} catch (Exception ex) {
 						err("Error pushing costume", ex)
 					}
@@ -744,7 +750,7 @@ println "STORED COSTUME, adding"
 			def tume = getCostume(match.group(1))
 
 			tumes.add(tume)
-			if (tume.thumb && !new File(costumesDir, "thumbs/${tume.dir}.jpg").exists()) {
+			if (tume.thumb && !new File(costumesDir, "thumbs/${tume.dir}.$tume.type").exists()) {
 				needed.add(tume)
 			}
 		}
@@ -756,7 +762,7 @@ println "STORED COSTUME, adding"
 					def i = 0
 
 					for (i = 0; i < needed.size(); i++) {
-						def thumbFile = new File(costumesDir, "thumbs/${tumes[i].dir}.jpg")
+						def thumbFile = new File(costumesDir, "thumbs/${needed[i].dir}.${needed[i].type}")
 
 						thumbFile.getParentFile().mkdirs()
 						Tools.copyFile(files[i][0], thumbFile)
@@ -777,7 +783,7 @@ println "STORED COSTUME, adding"
 		println "CREATING EMPTY"
 		def trips = []
 
-		tumes.each {c-> trips.add([c.name, c.thumb ? "${c.dir}.jpg" : '', c.dir])}
+		tumes.each {c-> trips.add([c.name, c.thumb ? "${c.dir}.$c.type" : '', c.dir])}
 		dumpCostumeSelections(trips)
 	}
 	//varval = [do [result $@arg1]]
@@ -813,7 +819,7 @@ println "COSTUME SELS: $triples"
 
 		P2PMudFile.fetchDir(dirId, cacheDir, costumeDir, [
 			receiveResult: {
-				sauer('cost', "playerinfo p0 [I'm a butthead] ${costumeDir.getName()}")
+				sauer('cost', "playerinfo p0 [${Plexus.props.guild}] ${costumeDir.getName()}")
 				dumpCommands()
 				println "USE COSTUME $name ($costumeDir)"
 			},

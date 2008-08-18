@@ -141,7 +141,7 @@ println "STORE: $file.key -> $file.value"
 				def temps = []
 		
 				for (int i = 0; i < o.length; i++) {
-		    		if (o[i][1]) {
+		    		if (!(o[i] instanceof Exception) && o[i][1]) {
 		    			if (succeeded) {
 		    				cont.receiveException(new Exception("Could not retrieve file: " + o[i][0]));
 		    			}
