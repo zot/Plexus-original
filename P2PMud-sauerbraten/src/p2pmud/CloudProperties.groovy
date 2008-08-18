@@ -43,18 +43,15 @@ public class CloudProperties {
 		properties[key as String]
 	}
 	def putAt(String key, value) {
-		def values = value.split(' ')
 		def old = properties[key]
 
 		properties[key as String] = value as String
-		setPropertyHooks.each {key ==~ it.key && it.value(key, values, old)}
+		setPropertyHooks.each {key ==~ it.key && it.value(key, value, old)}
 		propertiesChanged(key)
 	}
 	def removeProperty(key) {
-		def values = properties[key]?.split(' ')
-
 		properties.remove(key)
-		removePropertyHooks.each {key ==~ it.key &&  it.value(key, values)}
+		removePropertyHooks.each {key ==~ it.key &&  it.value(key, value)}
 		propertiesChanged(key)
 	}
 	def propertiesChanged(key) {

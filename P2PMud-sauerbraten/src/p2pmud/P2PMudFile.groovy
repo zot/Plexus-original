@@ -83,7 +83,7 @@ println "STORE: $file.key -> $file.value"
 				println "--- STORING DIR: $props"
 				props.store(stream, "directory")
 				P2PMudPeer.test.wimpyStoreFile(cacheDir, stream.toByteArray(), [
-					receiveResult: {res2 -> cont.receiveResult([res2, props])},
+					receiveResult: {res2 -> cont.receiveResult([file: res2, properties: props])},
 					receiveException: {res2 -> cont.receiveException(res2)}
 				] as Continuation, false, false)
 			},
@@ -107,6 +107,27 @@ println "STORE: $file.key -> $file.value"
 				}
 			] as Continuation, false, false);
 		}
+	}
+	/**
+	 * cont receives dir as result
+	 */
+	def static fetchDir(id, cacheDir, dir, cont, mutable) {
+		id = id instanceof String ? rice.pastry.Id.build(id) : id
+		P2PMudPeer.test.wimpyGetFile(id, cacheDir, [
+			receiveResult: {result ->
+				def filename = result[0]
+				def missing = result[1]
+				def file = result[2]
+
+				if (!missing || missing.isEmpty()) {
+					dir.getAbsoluteFile().getParentFile().mkdirs()
+					P2PMudFile.fetchDirFromProperties(cacheDir, id, Tools.properties(P2PMudFile.filename(cacheDir, id)), dir, cont, mutable)
+				} else {
+					cont.receiveException(new Exception("Couldn't load file: $filename"));
+				}
+			},
+			receiveException: {cont.receiveException(new Exception("Error retrieving file: $id", it))}
+		] as Continuation)
 	}
 	/**
 	 * cont receives dir as result
@@ -163,23 +184,6 @@ println "STORE: $file.key -> $file.value"
 			}
 			P2PMudPeer.test.wimpyGetFile(rice.pastry.Id.build(file.value), cacheDir, mcont.getSubContinuation(fileNum++))
 		}
-	}
-	def static fetchDir(id, cacheDir, dir, cont, mutable) {
-		P2PMudPeer.test.wimpyGetFile(id, cacheDir, [
-			receiveResult: {result ->
-				def filename = result[0]
-				def missing = result[1]
-				def file = result[2]
-
-				if (!missing || missing.isEmpty()) {
-					dir.getAbsoluteFile().getParentFile().mkdirs()
-					P2PMudFile.fetchDirFromProperties(cacheDir, id, Tools.properties(P2PMudFile.filename(cacheDir, id)), dir, cont, mutable)
-				} else {
-					cont.receiveException(new Exception("Couldn't load file: $filename"));
-				}
-			},
-			receiveException: {cont.receiveException(new Exception("Error retrieving file: $id", it))}
-		] as Continuation)
 	}
 
 	public P2PMudFile(Id id, chunks, size) {

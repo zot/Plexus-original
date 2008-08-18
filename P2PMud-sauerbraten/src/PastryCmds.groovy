@@ -9,14 +9,10 @@ public class PastryCmds extends Cmds {
 	}
 	def update(name, String... args) {
 		def id = main.ids[name]
+
 		if (!id) {
 			id = "p$main.id_index"
-			main.ids[name] = id
-			++main.id_index
-			main.names[id] = name
-			main.peerToSauerIdMap[main.pastryCmd.from.toStringFull()] = id
-			println main.peerToSauerIdMap
-			main.sauer('prep', "echo [Welcome player $name to this world.]; createplayer $id $name")
+			main.newPlayer(name, id)
 		}
 		main.sauer("${id}.update", "tc_setinfo $id " + args.join(' '))
 		main.dumpCommands()
