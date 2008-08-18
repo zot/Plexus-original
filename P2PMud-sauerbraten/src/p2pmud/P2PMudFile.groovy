@@ -42,7 +42,7 @@ public class P2PMudFile extends ContentHashPastContent {
 			result.add(0, p2pFile)
 			return result as ArrayList
 		} catch (Exception ex) {
-			Tools.err(ex)
+			Tools.stackTrace(ex)
 			return null;
 		}
 	}

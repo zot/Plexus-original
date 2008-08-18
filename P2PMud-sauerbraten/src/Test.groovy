@@ -53,6 +53,7 @@ public class Test {
 	def mapPrefix = 'packages/dist/storage'
 	def peer
 	def mapname
+	def costume
 	def mapTopic
 	def mapIsPrivate
 	/** cloudProperties is the shared properties object for Plexus
@@ -62,8 +63,6 @@ public class Test {
 	def cloudProperties
 	def plexusTopic
 	def presenceLock = new Object()
-	def costumesDoc = [:]
-	def pendingCostumes = [:]
 	def playerCount = [:]
 	def peerToSauerIdMap = [:]
 	def triggerLambdas = [:]
@@ -118,10 +117,17 @@ public class Test {
 			cloudProperties.privatePropertyPattern = ~'(privateMap)/..*'
 			cloudProperties.setPropertyHooks[~'player/..*'] = {key, value, oldValue ->
 				if (mapTopic) {
-					def pl = getPlayer(key.substring('player/'.length()))
+					def pid = key.substring('player/'.length())
+					def pl = getPlayer(pid)
 
-					if (pl.map == mapTopic.getId().toStringFull()) {
+					if (pl.map != mapTopic.getId().toStringFull()) {
 						removePlayerFromSauerMap(pl.id)
+					} else if (oldValue) {
+						def oldPl = getPlayer(pid, oldValue)
+
+						if (oldPl.costume != pl.costume) {
+							loadCostume(pl)
+						}
 					}
 				}
 			}
@@ -520,10 +526,10 @@ public class Test {
 		cloudProperties.setProperties(props, true)
 		receivedCloudPropertiesHooks.each {it()}
 	}
-	def getMap(id) {
-		def entry = cloudProperties["map/$id"]
+	def getMap(id, entry = null) {
 		def privateMap = false
 		
+		entry = cloudProperties["map/$id"]
 		if (!entry) {
 			entry = cloudProperties["privateMap/$id"]
 			privateMap = true
@@ -539,10 +545,10 @@ public class Test {
 		}
 		return null
 	}
-	def getPlayer(id) {
-		def entry = cloudProperties["player/$id"]
+	def getPlayer(id, entry = null) {
 		def pl
 
+		entry = entry ?: cloudProperties["player/$id"]
 		if (entry) {
 			entry = entry.split(' ')
 			pl = [
@@ -558,9 +564,8 @@ public class Test {
 		}
 		return pl
 	}
-	def getCostume(id) {
-		def entry = cloudProperties["costume/$id"]
-
+	def getCostume(id, entry = null) {
+		entry = cloudProperties["costume/$id"]
 		if (entry) {
 			entry = entry.split(' ')
 			return [
@@ -578,7 +583,7 @@ public class Test {
 //		after we get the players list, send ourselves out
 		def node = peer.nodeId.toStringFull()
 //TODO put tume in here and persist in props
-		transmitSetCloudProperty("player/$node", "${id ?: 'null'} none $name")
+		transmitSetCloudProperty("player/$node", "${id ?: 'null'} ${costume ?: 'none'} $name")
 	}
 	def removePlayerFromSauerMap(node) {
 		if (peerToSauerIdMap[node]) {
@@ -700,7 +705,7 @@ public class Test {
 	def loadCostume(who) {
 		if (who.costume) {
 			def costume = getCostume(id)
-			def costumeFile = getCostumeFile(entrya)
+			def costumeFile = new File(plexusDir, "costumes/$costume.dir")
 
 			if (costumeFile.exists()) {
 				clothe(who)
@@ -822,6 +827,8 @@ println "COSTUME SELS: $triples"
 
 		P2PMudFile.fetchDir(dirId, cacheDir, costumeDir, [
 			receiveResult: {
+				costume = dirId
+				updateMyPlayerInfo()
 				sauer('cost', "playerinfo p0 [${Plexus.props.guild}] ${costumeDir.getName()}")
 				dumpCommands()
 				println "USE COSTUME $name ($costumeDir)"

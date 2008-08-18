@@ -10,6 +10,7 @@ public class Tools {
 	def static digest = new SHA1Digest()
 
 	def static stackTrace(ex) {
+		ex.printStackTrace()
 		StackTraceUtils.printSanitizedStackTrace(ex)
 	}
 	def static deleteAll(file) {

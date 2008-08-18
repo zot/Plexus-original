@@ -273,7 +273,6 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	public Id randomId() {
 		return idFactory.buildRandomId(env.getRandomSource());
 	}
-	public void disconnect() {}
 	/**
 	 * This constructor sets up a PastryNode.  It will bootstrap to an 
 	 * existing ring if it can find one at the specified location, otherwise
