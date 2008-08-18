@@ -111,4 +111,7 @@ public class SauerCmds extends Cmds {
 	def useCostume(name, id) {
 		main.useCostume(name, id)
 	}
+	def hit(shooter, target, type) {
+		println "HIT shooter: $shooter, target: $target, type: $type"
+	}
 }
