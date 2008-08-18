@@ -47,6 +47,7 @@ public class Test {
 	def runs = 0
 	def pastryCmd
 	def playerObj = new Player()
+	def peerId
 	def sauerDir
 	def plexusDir
 	def cacheDir
@@ -169,8 +170,6 @@ public class Test {
 			new File(sauerDir, mapPrefix).mkdirs()
 			if (Plexus.props.auto_sauer != '0') launchSauer();
 		}
-		names = [p0: name]
-		ids[name] = 'p0'
 		if (Plexus.props.headless == '0') {
 			//PlasticLookAndFeel.setPlasticTheme(new DesertBlue());
 			try {
@@ -234,6 +233,9 @@ public class Test {
 			},
 			args[2..-1] as String[])
 		peer = P2PMudPeer.test
+		peerId = peer.nodeId.toStringFull()
+		names = [p0: peerId]
+		ids[peerId] = 'p0'
 		plexusTopic = peer.subscribe(peer.buildId(PLEXUS_KEY), null)
 		if (peer.node.getLeafSet().getUniqueCount() == 1) {
 			initBoot()
@@ -386,7 +388,7 @@ public class Test {
 	}
 	def sauerEnt(label) {
 		if (fields[label]?.text && fields[label].text[0]) {
-			def cmd = "ent.$label ${ids[name]} ${fields[label].text}"
+			def cmd = "ent.$label ${ids[peerId]} ${fields[label].text}"
 			sauer(label, cmd)
 			dumpCommands()
 		}
@@ -601,9 +603,9 @@ public class Test {
 	def newPlayer(name, id) {
 		def who = getPlayer(pastryCmd.from.toStringFull())
 
-		ids[name] = id
+		ids[who.id] = id
 		++id_index
-		names[id] = name
+		names[id] = who.id
 		peerToSauerIdMap[who.id] = id
 		println peerToSauerIdMap
 		sauer('prep', "echo [Welcome player $name to this world.]; createplayer $id $name")
@@ -721,7 +723,9 @@ println "loading costume: $who.costume"
 	}
 	def clothe(who, costumeDir) {
 println "Clothing $who.id with costume: $costumeDir"
+println "SENDING: playerinfo ${ids[who.id]} [] $costumeDir"
 		sauer('clothe', "playerinfo ${ids[who.id]} [] $costumeDir")
+dumpCommands()
 	}
 	def pushCostume(name) {
 println "PUSHING COSTUME: $name"
@@ -729,6 +733,7 @@ println "PUSHING COSTUME: $name"
 
 		if (!path.exists()) {
 			sauer('err', "showmessage [File costume not found] [Could not find costume in directory $path]")
+			dumpCommands()
 		} else {
 println "STORING COSTUME"
 			P2PMudFile.storeDir(cacheDir, path, [

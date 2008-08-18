@@ -8,7 +8,7 @@ public class PastryCmds extends Cmds {
 		update(name, *args)
 	}
 	def update(name, String... args) {
-		def id = main.ids[name]
+		def id = main.ids[main.pastryCmd.from.toStringFull()]
 
 		if (!id) {
 			id = "p$main.id_index"
@@ -18,8 +18,10 @@ public class PastryCmds extends Cmds {
 		main.dumpCommands()
 	}
 	def chat(name, String... args) {
-		def id = main.ids[name]
-		main.sauer('chat', "psay $id [${args.join(' ')}]")
+		def id = main.ids[main.pastryCmd.from.toStringFull()]
+		def player = main.getPlayer(main.pastryCmd.from.toStringFull())
+
+		main.sauer('chat', "psay $player.name [${args.join(' ')}]")
 		main.dumpCommands()
 	}
 	def tc_upmap(String... args) {
