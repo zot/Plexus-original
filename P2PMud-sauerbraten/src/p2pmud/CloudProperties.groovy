@@ -51,7 +51,7 @@ public class CloudProperties {
 	}
 	def removeProperty(key) {
 		properties.remove(key)
-		removePropertyHooks.each {key ==~ it.key &&  it.value(key, value)}
+		removePropertyHooks.each {key ==~ it.key && it.value(key, properties[key])}
 		propertiesChanged(key)
 	}
 	def propertiesChanged(key) {
@@ -66,7 +66,7 @@ public class CloudProperties {
 	}
 	def setProperties(props, saveProps) {
 		properties = props
-		propertiesChanged()
+		propertiesChanged(null)
 		if (saveProps) {
 			save()
 		}

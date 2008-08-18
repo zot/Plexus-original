@@ -619,9 +619,9 @@ public class Test {
 
 				if (pid != id) {
 					def who = getPlayer(pid)
-					def map = (!info[0] || info[0] == 'null') ? null : getMap(info[0])
+					def map = (!who.map || who.map == 'null') ? 'none' : getMap(who.map).name
 
-					friendGui += "guibutton [$who.name ($map.name)] [alias tc_whisper $who.id; alias selected_friend [$who.name]; alias mapIsPrivate $mapIsPrivate; showgui Friend]\n"
+					friendGui += "guibutton [$who.name ($map)] [alias tc_whisper $who.id; alias selected_friend [$who.name]; alias mapIsPrivate $mapIsPrivate; showgui Friend]\n"
 					++cnt
 					if (myMap?.id == who.map) {
 						mapTabGui += "guibutton [$who.name] [echo $who.id]\n"
@@ -790,7 +790,7 @@ println "STORED COSTUME, adding"
 		def i = 0
 
 println "COSTUME SELS: $triples"
-		guitext += 'showcostumesgui = [echo Lara Croft: (get $costumenames [[laracroft]]); showgui Costumes];'
+		guitext += 'showcostumesgui = [showgui Costumes];'
 		guitext += 'alias showcostume [ guibar; guiimage (concatword "packages/plexus/costumes/thumbs/" (get $costumenames [[@@guirollovername]])) $guirolloveraction 4 1 "packages/plexus/dist/tc_logo.jpg"];'
 		guitext += "alias costumenames ["
 		for (trip in triples) {
