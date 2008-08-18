@@ -18,4 +18,5 @@ struct moderation {
 	void defaulthit();
 };
 FVAR(tc_kickback, 0);
+VAR(tc_useammo, 0, 0, 1);
 extern struct moderation moderator;

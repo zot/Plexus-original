@@ -676,7 +676,11 @@ struct weaponstate
             }
             return;
         }
+#ifdef TC
+        if(d->gunselect && tc_useammo) d->ammo[d->gunselect]--;
+#else
         if(d->gunselect) d->ammo[d->gunselect]--;
+#endif
         vec from = d->o;
         vec to = targ;
 
@@ -687,7 +691,7 @@ struct weaponstate
         vec kickback(unitv);
         kickback.mul(guns[d->gunselect].kickamount*-2.5f * tc_kickback);
         d->vel.add(kickback);
-        if(d->pitch<80.0f) d->pitch += guns[d->gunselect].kickamount*0.05f * tc_kickback;
+       	if(fabs(tc_kickback) < 1.1 && d->pitch<80.0f) d->pitch += guns[d->gunselect].kickamount*0.05f * tc_kickback;
 #else
         vec kickback(unitv);
         kickback.mul(guns[d->gunselect].kickamount*-2.5f);
