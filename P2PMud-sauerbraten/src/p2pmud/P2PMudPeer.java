@@ -347,7 +347,8 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		String storageDirectory = System.getProperty("past.storage", "/tmp/storage"+node.getId().hashCode());
 	
 		// create the persistent part
-		Storage stor = new PersistentStorage(idFactory, storageDirectory, 4 * 1024 * 1024, node.getEnvironment());
+		PersistentStorage stor = new PersistentStorage(idFactory, storageDirectory, 4 * 1024 * 1024, node.getEnvironment());
+		stor.setStorageSize(Integer.parseInt(System.getProperty("past.storagesize", String.valueOf(1024 * 1024 * 300))));
 		past = new PastImpl(node, new StorageManagerImpl(idFactory, stor, new LRUCache(new MemoryStorage(idFactory), 512 * 1024, node.getEnvironment())), 3, "") {
 			public void deliver(Id id, rice.p2p.commonapi.Message message) {
 				System.out.println("received PAST message: " + message);

@@ -217,15 +217,15 @@ public class Test {
 						id = id.toStringFull()
 						transmitRemoveCloudProperty("player/$id")
 					} else {
-						pastryCmd = cmd
-						cmd.msgs.each {
-							executor.submit {
+						executor.submit {
+							pastryCmd = cmd
+							cmd.msgs.each {line ->
 								synchronized (presenceLock) {
-									pastryCmds.invoke(it)
+									pastryCmds.invoke(line)
 								}
 							}
+							pastryCmd = null
 						}
-						pastryCmd = null
 					}
 				} catch (Exception ex) {
 					err("Problem executing command: " + cmd, ex)
@@ -356,11 +356,11 @@ public class Test {
 					println("Got connection from sauerbraten...")
 					output = it.getOutputStream()
 					init()
-					it.getInputStream().eachLine {
+					it.getInputStream().eachLine {line ->
 						executor.submit {
 							try {
 								synchronized (presenceLock) {
-									sauerCmds.invoke(it)
+									sauerCmds.invoke(line)
 								}
 							} catch (Exception ex) {
 								err("Problem executing sauer command: " + it, ex)
