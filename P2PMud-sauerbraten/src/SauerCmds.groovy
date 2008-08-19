@@ -42,7 +42,7 @@ public class SauerCmds extends Cmds {
 		main.levelTrigger(trigger)
 	}
 	def position(name, String... args) {
-		if (main.names[name] == main.peerId) {
+		if (main.names && main.names[name] == main.peerId) {
 			if (main.swing) {
 				synchronized (positionLock) {
 					currentPosition = args

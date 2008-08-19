@@ -1,3 +1,4 @@
+import java.util.concurrent.Executors
 import com.jgoodies.looks.plastic.Plastic3DLookAndFeel
 import javax.swing.UIManager
 import rice.Continuation.MultiContinuation
@@ -63,7 +64,7 @@ public class Test {
 	 */
 	def cloudProperties
 	def plexusTopic
-	def presenceLock = new Object()
+	def presenceLock = new Lock('presence')
 	def playerCount = [:]
 	def peerToSauerIdMap = [:]
 	def triggerLambdas = [:]
@@ -71,6 +72,7 @@ public class Test {
 	def receivedCloudPropertiesHooks = [
 		{updateMyPlayerInfo()}
 	]
+	def executor = Executors.newSingleThreadExecutor()
 
 	def static sauerExec
 	def static soleInstance
@@ -217,8 +219,10 @@ public class Test {
 					} else {
 						pastryCmd = cmd
 						cmd.msgs.each {
-							synchronized (presenceLock) {
-								pastryCmds.invoke(it)
+							executor.submit {
+								synchronized (presenceLock) {
+									pastryCmds.invoke(it)
+								}
 							}
 						}
 						pastryCmd = null
@@ -353,12 +357,14 @@ public class Test {
 					output = it.getOutputStream()
 					init()
 					it.getInputStream().eachLine {
-						try {
-							synchronized (presenceLock) {
-								sauerCmds.invoke(it)
+						executor.submit {
+							try {
+								synchronized (presenceLock) {
+									sauerCmds.invoke(it)
+								}
+							} catch (Exception ex) {
+								err("Problem executing sauer command: " + it, ex)
 							}
-						} catch (Exception ex) {
-							err("Problem executing sauer command: " + it, ex)
 						}
 					}
 					try {it.shutdownInput()} catch (Exception ex) {}
@@ -389,15 +395,21 @@ public class Test {
 	def sauerEnt(label) {
 		if (fields[label]?.text && fields[label].text[0]) {
 			def cmd = "ent.$label ${ids[peerId]} ${fields[label].text}"
-			sauer(label, cmd)
-			dumpCommands()
+			executor.submit {
+				sauer(label, cmd)
+				dumpCommands()
+			}
 		}
 	}
 	def cmd() {
 		if (fields.cmd.text && fields.cmd.text[0]) {
-			sauer('cmd', fields.cmd.text)
+			def txt = fields.cmd.text
+
 			fields.cmd.text = ""
-			dumpCommands()
+			executor.submit {
+				sauer('cmd', fields.cmd.text)
+				dumpCommands()
+			}
 		}
 	}
 	def init() {
