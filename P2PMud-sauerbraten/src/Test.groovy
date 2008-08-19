@@ -175,7 +175,6 @@ public class Test {
 			cloudProperties.changedPropertyHooks.add {updateCostumeGui()}
 			new File(sauerDir, mapPrefix).mkdirs()
 			if (Plexus.props.auto_sauer != '0') launchSauer();
-			plexusDir = new File(sauerDir, "plexus")
 			//PlasticLookAndFeel.setPlasticTheme(new DesertBlue());
 			try {
 			   UIManager.setLookAndFeel(new Plastic3DLookAndFeel());
@@ -445,41 +444,19 @@ public class Test {
 		"$name-${TIME_STAMP.format(new Date())}"
 	}
 	def loadMap(name, id) {
-		def tmpDir = new File(plexusDir, "maps/loadMap-${System.currentTimeMillis()}")
+		def mapDir = new File(plexusDir, "maps/$id")
 
 		println "Loading map: ${id}"
 		if (id instanceof String) {
 			id = Id.build(id)
 		}
-		P2PMudFile.fetchDir(id, cacheDir, tmpDir, [
+		P2PMudFile.fetchDir(id, cacheDir, mapDir, [
 			receiveResult: {
-				def mapDir = new File(plexusDir, "maps/$name")
-				if (mapDir.exists()) {
-					def count = 0
-					def backupDir = new File(plexusDir, "backups")
-					if (!backupDir.exists()) backupDir.mkdirs()
-					
-					def backup = new File(backupDir, "$name")
-					while (backup.exists()) {
-						count++
-						backup = new File(backupDir, "$name-$count")
-					}
-					if (!mapDir.renameTo(backup)) {
-						sauer('msg', "showmessage [Could not backup old map dir: backup]")
-						dumpCommands()
-						Tools.deleteAll(tmpDir)
-						return
-					}
-				}
-				if (!tmpDir.renameTo(mapDir)) {
-					err("Couldn't rename temporary load map dir to $mapDir", new Exception())
-				} else {
-					def mapPath = Tools.subpath(new File(sauerDir, "packages"), mapDir)
+				def mapPath = Tools.subpath(new File(sauerDir, "packages"), mapDir)
 
-					println "Retrieved map from PAST: $mapDir, executing: map [$mapPath/map]"
-					sauer('load', "echo loading new map: [$mapPath/map]; tc_loadmsg [$name]; map [$mapPath/map]")
-					dumpCommands()
-				}
+				println "Retrieved map from PAST: $mapDir, executing: map [$mapPath/map]"
+				sauer('load', "echo loading new map: [$mapPath/map]; tc_loadmsg [$name]; map [$mapPath/map]")
+				dumpCommands()
 			},
 			receiveException: {err("Couldn't load map: $id", it)}
 		] as Continuation, false)
