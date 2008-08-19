@@ -272,7 +272,7 @@ class ModelConvertor
 	def writeMd2Config() {
 		def f = new File(dstDir, 'md2.cfg')
 		f.withWriter{ writer ->
-	       writer << "// MD2 model converted by Plexus Convertor V1.0\n"	       // clamp the pitch for md2s	       writer << "md2pitch 1 0 -30 30"	       writer << "mdlspec -1 // turn off speculars\n"
+	       writer << "// MD2 model converted by Plexus Convertor V1.0\n"	       // clamp the pitch for md2s	       writer << "md2pitch 1 0 -30 30\n"	       writer << "mdlspec -1 // turn off speculars\n"
 	       writer << "mdlscale 100 // keep original scale\n"
 	       writer << "mdltrans 0 0 24 // raise feet up to surface plane\n"
 		   } 
