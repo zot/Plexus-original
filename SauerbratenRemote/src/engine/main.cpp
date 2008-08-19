@@ -1078,9 +1078,7 @@ int main(int argc, char **argv)
 
 		extern ENetSocket mysocket;
 		if (-1 == mysocket && 0 == strstr(cl->getclientmap(), "limbo")) {
-			strcpy(tc_loadmsg, "Limbo");
-			  cc->changemap("plexus/dist/limbo/map.ogz");
-			  executeret("cleargui; newgui  Disconnected [ \n guititle [Plexus Connectivity Error] \n	guitext [Please restart the Plexus peer and reconnect] \n guibar \n 	guibutton Reconnect remoteconnect \n	]; showgui  Disconnected");
+			  executeret("tc_disconnect");
 		}
 #endif       
         menuprocess();

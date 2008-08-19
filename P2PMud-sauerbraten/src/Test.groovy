@@ -265,7 +265,7 @@ public class Test {
 	def generateDungeon() {
 		println ("Going to generate dungeon")
 		Thread.start {
-			sauer('newmap', 'if (= 1 $editing) [ edittoggle ]; tc_allowedit 1; newmap; musicvol 0; entdrop 3')
+			sauer('newmap', 'if (= 1 $editing) [ edittoggle ]; tc_allowedit 1; thirdperson 0; newmap; musicvol 0; entdrop 3')
 			dumpCommands()
 			def dungeon = new Dungeon(6, 6)
 
@@ -321,7 +321,7 @@ public class Test {
 			}
 			
 			sauer("spawn", "selcube 32 32 416 1 1 1 32 5; ent.yaw p0 135; newent playerstart; tc_respawn p0")
-			sauer('finished', 'tc_allowedit 0')
+			sauer('finished', 'remip; tc_allowedit 0; thirdperson 1')
 			dumpCommands()
 			
 			bindLevelTrigger("12345", {trigger-> println "Triggered: $trigger" })
