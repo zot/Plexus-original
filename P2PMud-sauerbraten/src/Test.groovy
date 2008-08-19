@@ -115,9 +115,18 @@ public class Test {
 			}
 			sauerDir = new File(sauerDir)
 			plexusDir = new File(sauerDir, "packages/plexus")
-			cloudProperties = new CloudProperties(this, new File(plexusDir, 'cloud.properties'))
-			cloudProperties.persistentPropertyPattern = ~'(map|privateMap|costume)/..*'
-			cloudProperties.privatePropertyPattern = ~'(privateMap)/..*'
+		} else {
+			plexusDir = new File('plexus')
+		}
+		cloudProperties = new CloudProperties(this, new File(plexusDir, 'cloud.properties'))
+		cloudProperties.persistentPropertyPattern = ~'(map|privateMap|costume)/..*'
+		cloudProperties.privatePropertyPattern = ~'(privateMap)/..*'
+		cacheDir = new File(plexusDir, "cache")
+		def pastStor = new File(plexusDir, "PAST-storage")
+		Tools.deleteAll(pastStor)
+		pastStor.mkdirs()
+		System.setProperty('past.storage', pastStor.getAbsolutePath())
+		if (Plexus.props.headless == '0') {
 			cloudProperties.setPropertyHooks[~'player/..*'] = {key, value, oldValue ->
 				if (mapTopic) {
 					def pid = key.substring('player/'.length())
@@ -164,15 +173,9 @@ public class Test {
 			cloudProperties.changedPropertyHooks.add {updateFriendList()}
 			cloudProperties.changedPropertyHooks.add {updateMapGui()}
 			cloudProperties.changedPropertyHooks.add {updateCostumeGui()}
-			cacheDir = new File(plexusDir, "cache")
-			def pastStor = new File(plexusDir, "PAST-storage")
-			Tools.deleteAll(pastStor)
-			pastStor.mkdirs()
-			System.setProperty('past.storage', pastStor.getAbsolutePath())
 			new File(sauerDir, mapPrefix).mkdirs()
 			if (Plexus.props.auto_sauer != '0') launchSauer();
-		}
-		if (Plexus.props.headless == '0') {
+			plexusDir = new File(sauerDir, "plexus")
 			//PlasticLookAndFeel.setPlasticTheme(new DesertBlue());
 			try {
 			   UIManager.setLookAndFeel(new Plastic3DLookAndFeel());
