@@ -119,7 +119,7 @@ class ModelConvertor
 		def md3 = [], needCopy = [ 'animation.cfg', license ]
 		md3 << "// MD3 model converted by Plexus Convertor V1.0"
 		copyMD3Section(md3, 'lower', lower, needCopy)
-				// clamp the pitch for md3s		md3 << "md3pitch 1 0 -30 30"		
+				// clamp the pitch for md3s		md3 << "md3pitch 1 0 -0 1  // don't allow the legs to bend"		
 		// extract only the animation lines from animation.cfg
 		def lines = animcfg.readLines(), anims = []
 		for (line in lines) {
@@ -139,8 +139,8 @@ class ModelConvertor
 		extractAnimation(md3, "jump", anims, 18, legOffset)
 		extractAnimation(md3, "idle", anims, 22, legOffset)
 		
-		copyMD3Section(md3, 'upper', upper, needCopy)
-		
+		copyMD3Section(md3, 'upper', upper, needCopy)		
+		// clamp the pitch for md3s		md3 << "md3pitch 1 0 -30 30  // bend the torso up to 30 degrees each way"		
 		// build uppper animations
 		extractAnimation(md3, "dying", anims, 0, 0)
 		extractAnimation(md3, "dead", anims, 1, 0)
