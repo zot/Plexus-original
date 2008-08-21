@@ -269,7 +269,7 @@ public class Test {
 		Thread.start {
 			sauer('newmap', 'if (= 1 $editing) [ edittoggle ]; tc_allowedit 1; thirdperson 0; newmap; musicvol 0; entdrop 3')
 			dumpCommands()
-			def dungeon = new Dungeon(6, 6)
+			def dungeon = new Dungeon(6, 6, 3, 1)
 
 		    dungeon.generate_maze();
 
@@ -284,7 +284,11 @@ public class Test {
 						def wx = x - 32, wy = y - 32
 						//println "x: $x y: $y"
 						def h = b == ' ' ? 2 : 1
-						sauer('delcube', "selcube $x $y 430 1 1 $h 32 5; delcube")
+						if (b == 'z') {
+							sauer('secret', "selcube $x $y 430 1 1 $h 32 5; editmat noclip")
+						} else {
+							sauer('delcube', "selcube $x $y 430 1 1 $h 32 5; delcube")
+						}
 						if (b == 'e') {
 							sauer('door', "selcube $x $y 430 1 1 1 32 4; ent.yaw p0 0; newent mapmodel 27 6")
 						}
@@ -584,7 +588,7 @@ public class Test {
 		if (peerToSauerIdMap[node]) {
 			def sauerId = peerToSauerIdMap[node]
 			def who = names[sauerId]
-			println "Going to remove player from sauer: $sauerId"
+			println "Going to remove player $who from sauer: $sauerId"
 			sauer('delplayer', "echo [Player $who has left this world.]; deleteplayer $sauerId")
 			peerToSauerIdMap.remove(node)
 			names.remove(sauerId)

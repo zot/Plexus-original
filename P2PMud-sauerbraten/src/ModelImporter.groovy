@@ -130,25 +130,25 @@ class ModelConvertor
 		}
 				def torsoStart = anims[13] =~ /\d+/, legStart = anims[6] =~  /\d+/ 		//println "ts: ${torsoStart[0]} ls: ${legStart[0]}"		def legOffset = Integer.parseInt(torsoStart[0].toString() ) - Integer.parseInt(legStart[0].toString())		//println ("leg anim offset: $legOffset")		
 		// build lower animations
-		extractAnimation(md3, "dying", anims, 0, 0)
-		extractAnimation(md3, "dead", anims, 1, 0)
-		extractAnimation(md3, "lag|edit", anims, 13, legOffset, true) // single frame
-		extractAnimation(md3, "forward|left|right", anims, 14, legOffset)
-		extractAnimation(md3, "backward", anims, 16, legOffset)
-		extractAnimation(md3, "swim", anims, 17, legOffset)
-		extractAnimation(md3, "jump", anims, 18, legOffset)
-		extractAnimation(md3, "idle", anims, 22, legOffset)
+		extractAnimation(md3, "dying", anims, 0, 2, 0)
+		extractAnimation(md3, "dead", anims, 1, 2, 0)
+		extractAnimation(md3, "lag|edit", anims, 13, 1, legOffset, true) // single frame
+		extractAnimation(md3, "forward|left|right", anims, 14, 0, legOffset)
+		extractAnimation(md3, "backward", anims, 16, 0, legOffset)
+		extractAnimation(md3, "swim|sink", anims, 17, 0, legOffset)
+		extractAnimation(md3, "jump", anims, 18, 0, legOffset)
+		extractAnimation(md3, "idle", anims, 22, 0, legOffset)
 		
 		copyMD3Section(md3, 'upper', upper, needCopy)		
 		// clamp the pitch for md3s		md3 << "md3pitch 1 0 -30 30  // bend the torso up to 30 degrees each way"		
 		// build uppper animations
-		extractAnimation(md3, "dying", anims, 0, 0)
-		extractAnimation(md3, "dead", anims, 1, 0)
-		extractAnimation(md3, "idle|lag|edit", anims, 11, 0, true) // single frame
-		extractAnimation(md3, "shoot", anims, 7, 0)
-		extractAnimation(md3, "punch", anims, 8, 0)
-		//extractAnimation(md3, "pain", anims, 22, 0)
-		extractAnimation(md3, "taunt", anims, 6, 0)
+		extractAnimation(md3, "dying", anims, 0, 2, 0)
+		extractAnimation(md3, "dead", anims, 1, 2, 0)
+		extractAnimation(md3, "idle|lag|edit", anims, 11, 1, 0, true) // single frame
+		extractAnimation(md3, "shoot", anims, 7, 0, 0)
+		extractAnimation(md3, "punch", anims, 8, 0, 0)
+		//extractAnimation(md3, "pain", anims, 22, 0, 0)
+		extractAnimation(md3, "taunt", anims, 6, 0, 0)
 		
 		copyMD3Section(md3, 'head', head, needCopy)		
 		md3 << "md3pitch 0.5 0 -10 10  // allow the neck to bend slightly"		md3 << ""		
@@ -170,10 +170,10 @@ class ModelConvertor
 		
 		MessageBox.Show("Plexus MD3 Convertor", "Success!")
 	}
-	def extractAnimation(md3, name, anims, index, legs) {
-		extractAnimation(md3, name, anims, index, legs, false)
+	def extractAnimation(md3, name, anims, index, priority, legs) {
+		extractAnimation(md3, name, anims, index, priority, legs, false)
 	}
-	def extractAnimation(md3, name, anims, index, animOffset, single) {
+	def extractAnimation(md3, name, anims, index, priority, animOffset, single) {
 		def first, length, speed
 		def line = anims[index]
 		def pattern = /(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/
@@ -183,7 +183,7 @@ class ModelConvertor
 		speed = m[0][4]
 		if (animOffset) first -= animOffset
 		if (name.contains('|')) name = '"' + name + '"'
-		def out = "md3anim $name $first $length $speed"
+		def out = "md3anim $name $first $length $speed $priority"
 		println out
 		md3 << out
 	}

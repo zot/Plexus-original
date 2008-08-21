@@ -13,12 +13,22 @@ import groovy.swing.SwingBuilderimport groovy.swing.SwingBuilderimport net.mig
 	def E = 2;
 	def S = 4;
 	def W = 8;
-	def roomsize = 3, hallsize = 1, cellsz = roomsize + (hallsize * 2)
+	def roomsize = 3, hallsize = 3, cellsz = roomsize + (hallsize * 2)
 	def blockRows, blockCols
 	
 	def public Dungeon(r, c) {
 		ROWS = r;
 		COLS = c;
+		
+		init_cells()
+	}
+	def public Dungeon(int r, int c, int rsize, int hsize) {
+		ROWS = r;
+		COLS = c;
+
+		roomsize = rsize
+		hallsize = hsize
+		cellsz = roomsize + (hallsize * 2)
 		
 		init_cells()
 	}
@@ -371,6 +381,14 @@ import groovy.swing.SwingBuilderimport groovy.swing.SwingBuilderimport net.mig
 				carveRoom(blocks, i, j, Maze[i][j])
 			}
 		}
+
+		// convert some halls to secret passages to be sneaky
+		for (def i = 0; i < ROWS; ++i) {
+			for (def j = 0; j < COLS; ++j) {
+				if (randint(1, 8) == 1) carveSecret(blocks, i, j, Maze[i][j])
+			}
+		}
+		
 		return blocks
 	}
 	def carveRoom(blocks, i, j, room) {
@@ -380,8 +398,8 @@ import groovy.swing.SwingBuilderimport groovy.swing.SwingBuilderimport net.mig
 			}
 		}
 		
-		def secret = randint(1, 25) == 1
-		def half = Math.floor(cellsz / 2) as Integer, halfhall = Math.floor(hallsize/2) as Integer 
+		def half = Math.floor(cellsz / 2) as Integer
+		def halfhall = hallsize == 1 ? 0 : Math.round(hallsize/2) as Integer 
 		if (!(room & W)) {
 			for (def y = 0; y < hallsize; ++y)
 				blocks[i * cellsz + half][j * cellsz + y] = '.'
@@ -399,6 +417,31 @@ import groovy.swing.SwingBuilderimport groovy.swing.SwingBuilderimport net.mig
 			for (def x = 0; x < hallsize; ++x)
 				blocks[i * cellsz + roomsize + hallsize + x][j * cellsz + half] = '.'
 			blocks[i * cellsz + roomsize + hallsize + halfhall ][j * cellsz + half] = 's'
+		}
+	}
+	
+	def carveSecret(blocks, i, j, room) {
+		def half = Math.floor(cellsz / 2) as Integer, halfhall = Math.floor(hallsize/2) as Integer
+		while (true) {
+			def secret = randint(0, 100) % 4
+			if (secret  == 0 && !(room & W)) {
+				for (def y = -hallsize; y < hallsize; ++y)
+					blocks[i * cellsz + half][j * cellsz + y] = 'z'
+			}
+			if (secret == 1 && !(room & E)) {
+				for (def y = -hallsize; y < hallsize; ++y)
+					blocks[i * cellsz + half][j * cellsz + roomsize + hallsize + y + half - 1] = 'z'
+			}
+			if (secret  == 2 && !(room & N)) {
+				for (def x = -hallsize; x < hallsize; ++x)
+					blocks[i * cellsz + x][j * cellsz + half] = 'z'
+			}
+			if (secret  ==13 && !(room & S)) {
+				def cell = randint(1, 10) == 1 ? 'z' : '.'
+				for (def x = -hallsize; x < hallsize; ++x)
+					blocks[i * cellsz + roomsize + hallsize + x + half - 1][j * cellsz + half] = 'z'
+			}
+			if (randint(0, 100) % 3 != 0) return
 		}
 	}
 	
@@ -429,7 +472,7 @@ import groovy.swing.SwingBuilderimport groovy.swing.SwingBuilderimport net.mig
 			c = args[1]
 		}
 		println "Generating maze rows: $r cols: $c"
-		def dungeon = new Dungeon(r, c)
+		def dungeon = new Dungeon(6, 6, 3, 1) // new Dungeon(r, c)
 	    dungeon.generate_maze();
 		
 		def blocks = dungeon.convertTo3DBlocks()

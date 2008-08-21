@@ -13,6 +13,7 @@
 	#include "../remote/fpsplug.h"
 
 	VAR(peers, 0, 0, 9999);
+	VAR(tc_lagtime, 30000, 0, 999999);
 	SVAR(tc_hud_image, "packages/plexus/dist/hud_plexus.png");
 	SVAR(tc_hud_connect_image, "packages/plexus/dist/hud_connect.png");
 	SVAR(tc_hud_disconnect_image, "packages/plexus/dist/hud_disconnect.png");
@@ -254,7 +255,11 @@ struct fpsclient : igameclient
 
             const int lagtime = lastmillis-d->lastupdate;
             if(!lagtime || intermission) continue;
+#ifdef TC
+            else if(lagtime>tc_lagtime && d->state==CS_ALIVE)
+#else
             else if(lagtime>1000 && d->state==CS_ALIVE)
+#endif
             {
                 d->state = CS_LAGGED;
                 continue;
