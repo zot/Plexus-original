@@ -105,7 +105,7 @@ class ModelConvertor
 	def handleLicense() {		// make the user review and accept the license agreement		def files = getReadme()		def f, mylist, contentsPane		def model =  new DefaultListModel()		new SwingBuilder().build {				f = dialog(title: title, layout: new MigLayout('fillx'), pack: true, modal: true) {								label(text:'Please identify which file below is the license file and that the files you are uploading are freely distributable', constraints:('span 2, wrap'))				label(text:'Users found uploading copyrighted material will be banned!', constraints:('span 2, wrap'))				mylist = list(model: model, valueChanged: { def tmp = files[mylist.selectedIndex]; contentsPane.setPage(tmp.toURL()); },  size: [100, 400])				scrollPane(constraints: ('wrap'), size: [700, 400]) {					contentsPane = textPane(text: '<Please select the license file from the list>', contentType: 'text/plain')				}				button(text: "Cancel", actionPerformed: { license = ''; f.show(false);})				button(text: "I have read and verified the license is acceptible", actionPerformed: {  license = files[mylist.selectedIndex].getName(); f.show(false); })			}			f.setLocation(550, 550)			f.size = [800, 600] as Dimension			for (foo in files) { model.addElement(foo.getName().toString()) }			mylist.selectedIndex = 0;			//f.pack()			f.visible = true		}		return license	}
 	def mogrify(ext) {
 		def dir = srcDir.getAbsolutePath()
-		def cmd = "${ModelImporter.props.mogrifyDir}/mogrify -format png -type TrueColor -depth 16 $dir/*.$ext"
+		def cmd = "${ModelImporter.props.mogrifyDir}/mogrify -format png -type TrueColor -depth 16 \"$dir/*.$ext\""
 		//println "Mogrify Cmd: $cmd"
 		def proc = Runtime.getRuntime().exec(cmd)
 		proc.waitFor()
@@ -150,8 +150,8 @@ class ModelConvertor
 		//extractAnimation(md3, "pain", anims, 22, 0)
 		extractAnimation(md3, "taunt", anims, 6, 0)
 		
-		copyMD3Section(md3, 'head', head, needCopy)
-		
+		copyMD3Section(md3, 'head', head, needCopy)		
+		md3 << "md3pitch 0.5 0 -10 10  // allow the neck to bend slightly"		md3 << ""		
 		md3 << "md3link 0 1 tag_torso"
 		md3 << "md3link 1 2 tag_head"
 		md3 << ""
@@ -267,7 +267,7 @@ class ModelConvertor
 	def copyThumb(base) {
 		copyFile('thumb.png')
 		def f = new File(dstDir, 'thumb.png')
-		if (!f.isFile()) copyFile(base, 'thumb.png')
+		if (!f.isFile()) copyFile(base, 'thumb.png')		// resize the thumb		def cmd = "${ModelImporter.props.mogrifyDir}/mogrify -resize 256x256 \"${f.getAbsolutePath()}\""		//println cmd		def proc = Runtime.getRuntime().exec(cmd)		proc.waitFor()
 	}
 	def writeMd2Config() {
 		def f = new File(dstDir, 'md2.cfg')

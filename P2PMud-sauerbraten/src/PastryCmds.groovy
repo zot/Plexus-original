@@ -24,6 +24,13 @@ public class PastryCmds extends Cmds {
 		main.sauer('chat', "psay $player.name [${args.join(' ')}]")
 		main.dumpCommands()
 	}
+	def tc_taunt() {
+		def id = main.ids[main.pastryCmd.from.toStringFull()]
+		def player = main.getPlayer(main.pastryCmd.from.toStringFull())
+
+		main.sauer('taunt', "tc_taunt $player.name")
+		main.dumpCommands()
+	}
 	def tc_upmap(String... args) {
 		main.sauer('tc_upmap', "tc_upmap ${args.join(' ')}")
 		main.dumpCommands()

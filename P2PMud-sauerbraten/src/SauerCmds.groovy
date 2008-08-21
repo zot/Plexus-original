@@ -28,6 +28,11 @@ public class SauerCmds extends Cmds {
 			"tc_upmap ${args.join(' ')}"
 		])
 	}
+	def tc_taunt() {
+		main.broadcast([
+			"tc_taunt"
+		])
+	}
 	def tc_editent(String... args) {
 		main.broadcast([
 			"tc_editent ${args.join(' ')}"

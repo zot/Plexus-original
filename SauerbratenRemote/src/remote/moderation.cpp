@@ -593,6 +593,10 @@ void tc_edittrigger(const selinfo &sel, int op, int arg1, int arg2, int arg3)
     executehook(buf);
 }
 
+void tc_taunthook() {
+	strcpy(buf, "tc_taunthook");
+	executehook(buf);
+}
 
 static void moderationTick() {
 	loopi(watchers.length()) {

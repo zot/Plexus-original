@@ -67,7 +67,7 @@ public class Prep {
 		propsFile = new File(plexusdir, 'plexus.properties')
 		readProps()
 		
-		if (props.headless == '0') {
+		if (props.headless != '0') {
 			buildMainArgs()
 			return
 		}

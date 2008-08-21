@@ -403,6 +403,17 @@ ICOMMAND(tc_respawn, "s", (char *ent), {
 	}
 });
 
+ICOMMAND(tc_taunt, "s", (char *ent), {
+	if (ent && ent[0] == 'p') {
+		fpsent *p = (fpsent *) getdynent(ent);
+		if (NULL == p) {
+			conoutf("/tc_taunt error: player %s not found", ent);
+			return;
+		}
+		p->lasttaunt = fpscl->lastmillis;
+	}
+});
+
 void playersetmodel(fpsent *p, char *model)
 {
 	if (p->modelname) { free(p->modelname); p->modelname = NULL; }
