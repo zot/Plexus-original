@@ -165,6 +165,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 											}
 											public void receiveException(Exception exception) {
 												System.out.println("Couldn't subscribe to topic");
+												Tools.stackTrace(exception);
 											}
 										});
 										break;
@@ -336,10 +337,12 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 				subscriptionContinuations.put(topic, cont);
 			}
 		}
+		System.out.println("SUBSCRIBING TO: " + topic);
 		myScribe.subscribe(topic, this);
 		return topic;
 	}
 	public void unsubscribe(Topic topic) {
+		System.out.println("UNSUBSCRIBING FROM: " + topic);
 		myScribe.unsubscribe(topic, this);
 	}
 	private void startPast() throws IOException {

@@ -73,6 +73,7 @@ public class Test {
 		{updateMyPlayerInfo()}
 	]
 	def executor = Executors.newSingleThreadExecutor()
+	def neighborField
 
 	def static sauerExec
 	def static soleInstance
@@ -205,8 +206,13 @@ public class Test {
 					field('max speed: ', 'ms')
 					label(text: "Command: ")
 					fields.cmd = textField(actionPerformed: {cmd()}, constraints: 'wrap, growx')
+					label(text: "Node id: ")
+					label(text: Plexus.props.nodeId ?: "none", constraints: 'wrap, growx')
+					label(text: "Neighbors: ")
+					neighborField = label(text: 'none', constraints: 'wrap, growx')
 					button(text: "Launch 3D", actionPerformed: {launchSauer()})
-					button(text: "Generate Dungeon", actionPerformed: {generateDungeon()})
+					button(text: "Generate Dungeon", actionPerformed: {generateDungeon()}, constraints: 'wrap')
+					button(text: "Update Neighbor List", actionPerformed: {updateNeighborList()})
 				}
 				f.size = [500, (int)f.size.height] as Dimension
 			}
@@ -253,6 +259,11 @@ public class Test {
 			Plexus.props.nodeId = peer.node.getId().toStringFull()
 			Plexus.saveProps()
 		}
+	}
+	def updateNeighborList() {
+		try {
+			neighborField.text = String.valueOf(peer.getNeighborCount())
+		} catch (Exception ex) {}
 	}
 	// launch sauer in its own thread
 	def launchSauer() {
@@ -712,7 +723,7 @@ println "loading costume: $who.costume"
 			} else {
 				P2PMudFile.fetchDir(costume.dir, cacheDir, new File(plexusDir, "costumes/$costume.dir"), [
 					receiveResult: {r -> clothe(who, costume.dir)},
-					receiveException: {ex -> err("Could not fetch data for costume: $costume.dir")}
+					receiveException: {ex -> err("Could not fetch data for costume: $costume.dir", new Exception(""))}
 				], false)
 			}
 		}
