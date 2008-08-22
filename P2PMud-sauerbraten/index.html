@@ -657,73 +657,79 @@ You can even see a reference to TEAM CTHULHU in the CREDITS file of [[LPMud|http
 #Fall 2005, we commission Steven Missal to create Lovecraftian art
 #Spring 2008, we switch to Sauerbraten, Groovy, and Pastry (on top of Java)</pre>
 </div>
-<div title="RoadMap" modifier="BillBurdick" created="200806191122" modified="200808190705" changecount="133">
+<div title="RoadMap" modifier="BillBurdick" created="200806191122" modified="200808221820" changecount="142">
 <pre>!Milestones
 *~TinyPlexus
+**Groovy version of build script
+**on find map, couldn't find map with tume id instead of map id
 **notification of droppage
-**map member count is always 0
-**left msg uses nodename instead of player name
 **remote guild names not showing
 **evertaunt bug
-**switches remote player costume before d/l completed
+**Pastry reconnect business (multiple root peers?)
+**options for cleanup on start/completely fresh start
 **UI
 ***Save menu choice (which calls saveGroovyData())
 ***Finish tutorial menus
-**Pastry reconnect business (multiple root peers?)
 **World Building
 ***clean up obsolete maps
 ***fix bug in saveGroovyData()
 **Plubble Peer
+***Test
 **Simple game
 ***use crosshairs for aiming when they are visible
 ***register sauer cmds for hit effects based on shooter and/or target
 ***show bio when you shoot someone with an examination gun
 ***DONE allow turning off recoil for shots
-**DONE Deadlocking?
 **DONE Storage
 ***DONE Check out out of PAST disk space errors
 ***DONE Global, shared directory for cloud
 ***DONE Costumes
-** DONE Rework existing editing menu, much doesn't apply
-** DONE decouple camera speed from players speed
-** DONE Make players start off in Limbo
-** DONE World portals
-** DONE make LMB detach camera to orbit around the toon
-** DONE make sauer load models from plexus folder
-** DONE Global whispers
-**DONE Map name on load screen
-**DONE Make push handle regular maps (make manifest that places it in a subdir)
-**DONE MapStorage
-**DONE Replace map should broadcast &quot;switchmap&quot; pastry cmd
-** DONE Message dialog: showmessage title text
-** DONE make cursors load from plexus/dist
-** DONE separate backup directory
-** DONE Use UPnP to discover external IP address
-** DONE delete player on peer disconnect
-** DONE clean up players on world connection
 **DONE Plexus topic
 ***DONE Presence topic for total online count
 ***DONE available world listing/selection from gui
 **DONE HUD
 ***DONE Current map
 ***DONE Map connection count
+**DONE left msg uses nodename instead of player name
+**DONE switches remote player costume before d/l completed
+**DONE download into temp dirs and only rename when completed
+**DONE map member count is always 0
+**DONE don't subscribe to map until successfully downloaded
+**DONE Deadlocking?
+**DONE Rework existing editing menu, much doesn't apply
+**DONE decouple camera speed from players speed
+**DONE Make players start off in Limbo
+**DONE World portals
+**DONE make LMB detach camera to orbit around the toon
+**DONE make sauer load models from plexus folder
+**DONE Global whispers
+**DONE Map name on load screen
+**DONE Make push handle regular maps (make manifest that places it in a subdir)
+**DONE MapStorage
+**DONE Replace map should broadcast &quot;switchmap&quot; pastry cmd
+**DONE Message dialog: showmessage title text
+**DONE make cursors load from plexus/dist
+**DONE separate backup directory
+**DONE Use UPnP to discover external IP address
+**DONE delete player on peer disconnect
+**DONE clean up players on world connection
 **DONE Show connection count in world menu
 **DONE Investigate occasional sauer/groovy lag on linux
-** DONE Headless peer on Plubble
-** DONE include UPnP to open external port in firewall
-** DONE add tc_respawn command to put players back at spawn points
-** DONE don't show original menu on startup
-** DONE Hide Gun in First Person mode
-** DONE Disable weapon swapping, disable shooting
-** DONE Make Limbo map come up by default
-** DONE Rename wowmode to tcmode
-** DONE make cursor float above HUD
-** DONE load limbo in sauer on startup
-** DONE Show only filename on map thumbnails when loading
-** DONE HUD add peer count
-** DONE launch sauer in sep thread while connecting to pastry
-** DONE add button to reload sauer
-** DONE move commands from groovy init into a .cfg file
+**DONE Headless peer on Plubble
+**DONE include UPnP to open external port in firewall
+**DONE add tc_respawn command to put players back at spawn points
+**DONE don't show original menu on startup
+**DONE Hide Gun in First Person mode
+**DONE Disable weapon swapping, disable shooting
+**DONE Make Limbo map come up by default
+**DONE Rename wowmode to tcmode
+**DONE make cursor float above HUD
+**DONE load limbo in sauer on startup
+**DONE Show only filename on map thumbnails when loading
+**DONE HUD add peer count
+**DONE launch sauer in sep thread while connecting to pastry
+**DONE add button to reload sauer
+**DONE move commands from groovy init into a .cfg file
 *Next
 **Authentication
 ***Groups

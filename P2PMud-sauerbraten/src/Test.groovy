@@ -162,7 +162,7 @@ public class Test {
 					def player = getPlayer(pastryCmd.from.toStringFull())
 
 					playerCount[map.id] = 0
-					sauer('private', "showmessage [You received the key to a private world, $map.name: $map.id] [from $player.name ($player.id)]")
+					sauer('private', "tc_msgbox [You received the key to a private world, $map.name: $map.id] [from $player.name ($player.id)]")
 				}
 				if (key == mapTopic?.getId()?.toStringFull()) {
 					loadMap(map.name, map.id)
@@ -171,9 +171,11 @@ public class Test {
 			cloudProperties.removePropertyHooks[~'player/..*'] = {key, value ->
 				removePlayerFromSauerMap(key.substring('player/'.length()))
 			}
-			cloudProperties.changedPropertyHooks.add {updateFriendList()}
-			cloudProperties.changedPropertyHooks.add {updateMapGui()}
-			cloudProperties.changedPropertyHooks.add {updateCostumeGui()}
+			cloudProperties.changedPropertyHooks.add {
+				updateFriendList()
+				updateMapGui()
+				updateCostumeGui()
+			}
 			new File(sauerDir, mapPrefix).mkdirs()
 			if (Plexus.props.auto_sauer != '0') launchSauer();
 			//PlasticLookAndFeel.setPlasticTheme(new DesertBlue());
@@ -458,7 +460,7 @@ public class Test {
 	def uniqify(name) {
 		"$name-${TIME_STAMP.format(new Date())}"
 	}
-	def loadMap(name, id) {
+	def loadMap(name, id, cont = null) {
 		def mapDir = new File(plexusDir, "maps/$id")
 
 		println "Loading map: ${id}"
@@ -472,8 +474,15 @@ public class Test {
 				println "Retrieved map from PAST: $mapDir, executing: map [$mapPath/map]"
 				sauer('load', "echo loading new map: [$mapPath/map]; tc_loadmsg [$name]; map [$mapPath/map]")
 				dumpCommands()
+				if (cont) {cont.receiveResult(it)}
 			},
-			receiveException: {err("Couldn't load map: $id", it)}
+			receiveException: {
+				if (cont) {
+					cont.receiveException(it)
+				} else {
+					err("Couldn't load map: $id", it)
+				}
+			}
 		] as Continuation, false)
 	}
 	def err(msg, err) {
@@ -506,7 +515,7 @@ public class Test {
 			def mcont = new MultiContinuation([
 				receiveResult: {
 					println "FINISHED PUSHING CACHE"
-//					sauer('msg', 'showmessage Ready [Finished pushing cache in PAST]')
+//					sauer('msg', 'tc_msgbox Ready [Finished pushing cache in PAST]')
 					dumpCommands()
 				},
 				receiveException: {
@@ -539,7 +548,9 @@ public class Test {
 	def getMap(id, entry = null) {
 		def privateMap = false
 		
-		entry = cloudProperties["map/$id"]
+		if (!entry) {
+			entry = cloudProperties["map/$id"]
+		}
 		if (!entry) {
 			entry = cloudProperties["privateMap/$id"]
 			privateMap = true
@@ -575,7 +586,9 @@ public class Test {
 		return pl
 	}
 	def getCostume(id, entry = null) {
-		entry = cloudProperties["costume/$id"]
+		if (!entry) {
+			entry = cloudProperties["costume/$id"]
+		}
 		if (entry) {
 			entry = entry.split(' ')
 			return [
@@ -598,13 +611,21 @@ public class Test {
 	def removePlayerFromSauerMap(node) {
 		if (peerToSauerIdMap[node]) {
 			def sauerId = peerToSauerIdMap[node]
-			def who = names[sauerId]
-			println "Going to remove player $who from sauer: $sauerId"
-			sauer('delplayer', "echo [Player $who has left this world.]; deleteplayer $sauerId")
+			
+			if (sauerId) {
+				def who = sauerId ? getPlayer(names[sauerId]) : null
+
+				if (who) {
+					println "Going to remove player $who.name from sauer: $sauerId"
+					sauer('msgplayer', "echo [Player $who.name has left this world.]")
+					ids.remove(who.id)
+				}
+				names.remove(sauerId)
+				sauer('delplayer', "deleteplayer $sauerId")
+				updateMapGui()
+				dumpCommands()
+			}
 			peerToSauerIdMap.remove(node)
-			names.remove(sauerId)
-			ids.remove(who)
-			updateMapGui()
 		}
 	}
 	def newPlayer(name, id) {
@@ -677,7 +698,7 @@ public class Test {
 		cloudProperties.each('player/(.*)') {key, value, match ->
 			def player = getPlayer(match.group(1))
 
-			if (player.map && playerCount[player.map]) {
+			if (player.map) {
 				playerCount[player.map]++
 			}
 		}
@@ -723,7 +744,7 @@ println "loading costume: $who.costume"
 			} else {
 				P2PMudFile.fetchDir(costume.dir, cacheDir, new File(plexusDir, "costumes/$costume.dir"), [
 					receiveResult: {r -> clothe(who, costume.dir)},
-					receiveException: {ex -> err("Could not fetch data for costume: $costume.dir", new Exception(""))}
+					receiveException: {ex -> err("Could not fetch data for costume: $costume.dir", ex)}
 				], false)
 			}
 		}
@@ -739,7 +760,7 @@ println "PUSHING COSTUME: $name"
 		def path = new File(plexusDir, "costumes/$name")
 
 		if (!path.exists()) {
-			sauer('err', "showmessage [File costume not found] [Could not find costume in directory $path]")
+			sauer('err', "tc_msgbox [File costume not found] [Could not find costume in directory $path]")
 			dumpCommands()
 		} else {
 println "STORING COSTUME"
@@ -855,17 +876,24 @@ println "COSTUME SELS: $triples"
 		def map = getMap(id)
 		
 		if (!map) {
-			sauer('entry', "showmessage [Couldn't find map] [Unknown map id: $id]")
+			sauer('entry', "tc_msgbox [Couldn't find map] [Unknown map id: $id]")
 		} else if (map.id != mapTopic?.getId()?.toStringFull()) {
 			println "CONNECTING TO WORLD: $map.name ($map.id)"
 			if (mapTopic) {
 				peer.unsubscribe(mapTopic)
 			}
-			mapTopic = peer.subscribe(Id.build(id), [
-				receiveResult: {topic -> loadMap(map.name, map.dir)},
-				receiveException: {exception -> err("Couldn't subscribe to topic: ", exception)}
+			loadMap(map.name, map.dir, [
+				receiveResult: {
+					peer.subscribe(Id.build(id), [
+						receiveResult: {topic ->
+							mapTopic = topic
+							mapIsPrivate = map.privateMap
+						},
+						receiveException: {exception -> err("Couldn't subscribe to topic: ", exception)}
+					] as Continuation)
+				},
+				receiveException: {err("Trouble loading map", it)}
 			] as Continuation)
-			mapIsPrivate = map.privateMap
 		}
 	}
 	def pushMap(privateMap, String... nameArgs) {
@@ -917,7 +945,7 @@ println "pushMap: [$nameArgs]"
 				P2PMudFile.storeDir(cacheDir, dirmap, cont)
 			}
 		} else {
-			sauer('msg', "showmessage [Error] [No current map]")
+			sauer('msg', "tc_msgbox [Error] [No current map]")
 		}
 	}
 	def activePortals(ids) {

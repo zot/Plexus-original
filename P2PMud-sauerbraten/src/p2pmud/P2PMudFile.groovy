@@ -46,7 +46,6 @@ public class P2PMudFile extends ContentHashPastContent {
 			return null;
 		}
 	}
-	
 	/**
 	 * sends [P2PMudFile, dirProps] to cont
 	 */
@@ -124,8 +123,17 @@ println "STORE: $file.key -> $file.value"
 				def file = result[2]
 
 				if (!missing || missing.isEmpty()) {
-					dir.getAbsoluteFile().getParentFile().mkdirs()
-					P2PMudFile.fetchDirFromProperties(cacheDir, id, Tools.properties(P2PMudFile.filename(cacheDir, id)), dir, cont, mutable)
+					def tmpDir = new File(cacheDir, "download/$id")
+			
+					tmpDir.mkdirs()
+					P2PMudFile.fetchDirFromProperties(cacheDir, id, Tools.properties(P2PMudFile.filename(cacheDir, id)), tmpDir, [
+						receiveResult: {
+							dir.getAbsoluteFile().getParentFile().mkdirs()
+							tmpDir.renameTo(dir)
+							cont.receiveResult(it)
+						},
+						receiveException: {cont.receiveException(it)}
+					] as Continuation, mutable)
 				} else {
 					cont.receiveException(new Exception("Couldn't load file: $filename"));
 				}
