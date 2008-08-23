@@ -574,7 +574,7 @@ public class Test {
 			entry = entry.split(' ')
 			pl = [
 				id: id,
-				map: entry[0],
+				map: entry[0] == 'none' ? null : entry[0],
 				costume: entry[1] == 'none' ? null : entry[1],
 				name: entry[2..-1].join(' ')
 			]
@@ -606,7 +606,7 @@ public class Test {
 //		after we get the players list, send ourselves out
 		def node = peer.nodeId.toStringFull()
 //TODO put tume in here and persist in props
-		transmitSetCloudProperty("player/$node", "${id ?: 'null'} ${costume ?: 'none'} $name")
+		transmitSetCloudProperty("player/$node", "${id ?: 'none'} ${costume ?: 'none'} $name")
 	}
 	def removePlayerFromSauerMap(node) {
 		if (peerToSauerIdMap[node]) {
@@ -657,7 +657,7 @@ public class Test {
 
 				if (pid != id) {
 					def who = getPlayer(pid)
-					def map = (!who.map || who.map == 'null') ? 'none' : getMap(who.map)?.name ?: 'unknown map'
+					def map = (!who.map || who.map == 'none') ? 'none' : getMap(who.map)?.name ?: 'unknown map'
 
 					friendGui += "guibutton [$who.name ($map)] [alias tc_whisper $who.id; alias selected_friend [$who.name]; alias mapIsPrivate $mapIsPrivate; showgui Friend]\n"
 					++cnt
@@ -698,7 +698,7 @@ public class Test {
 		cloudProperties.each('player/(.*)') {key, value, match ->
 			def player = getPlayer(match.group(1))
 
-			if (player.map) {
+			if (player.map && playerCount[player.map]) {
 				playerCount[player.map]++
 			}
 		}
