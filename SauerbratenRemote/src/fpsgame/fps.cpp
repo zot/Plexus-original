@@ -13,7 +13,7 @@
 	#include "../remote/fpsplug.h"
 
 	VAR(peers, 0, 0, 9999);
-	VAR(tc_lagtime, 30000, 0, 999999);
+	VAR(tc_lagtime, 0, 30000, 999999);
 	SVAR(tc_hud_image, "packages/plexus/dist/hud_plexus.png");
 	SVAR(tc_hud_connect_image, "packages/plexus/dist/hud_connect.png");
 	SVAR(tc_hud_disconnect_image, "packages/plexus/dist/hud_disconnect.png");
