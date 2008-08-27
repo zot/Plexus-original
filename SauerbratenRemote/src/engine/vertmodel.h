@@ -273,7 +273,11 @@ struct vertmodel : animmodel
                     type &v = ((type *)vdata)[i]; \
                     body; \
                 }
+#ifdef TC
+            if(tangents && bumpverts)
+#else
             if(tangents)
+#endif
             {
                 bumpvert *bvert1 = &bumpverts[as.cur.fr1 * numverts],
                          *bvert2 = &bumpverts[as.cur.fr2 * numverts],
