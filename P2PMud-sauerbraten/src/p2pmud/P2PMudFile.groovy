@@ -123,7 +123,7 @@ println "STORE: $file.key -> $file.value"
 				def file = result[2]
 
 				if (!missing || missing.isEmpty()) {
-					def tmpDir = new File(cacheDir, "download/$id")
+					def tmpDir = new File(cacheDir, "download/${id.toStringFull()}")
 			
 					tmpDir.mkdirs()
 					P2PMudFile.fetchDirFromProperties(cacheDir, id, Tools.properties(P2PMudFile.filename(cacheDir, id)), tmpDir, [

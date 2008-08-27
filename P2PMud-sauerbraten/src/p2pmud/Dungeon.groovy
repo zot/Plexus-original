@@ -397,8 +397,10 @@ import groovy.swing.SwingBuilderimport groovy.swing.SwingBuilderimport net.mig
 				blocks[i * cellsz + x][j * cellsz + y] = ' '
 			}
 		}
-		
+		// place a light in the center of the room
 		def half = Math.floor(cellsz / 2) as Integer
+		blocks[i * cellsz + half][j * cellsz + half] = 'l'
+		
 		def halfhall = hallsize == 1 ? 0 : Math.round(hallsize/2) as Integer 
 		if (!(room & W)) {
 			for (def y = 0; y < hallsize; ++y)
