@@ -689,6 +689,8 @@ public class Test {
 	def updateMapGui() {
 		def ents = []
 		def privates = []
+
+		playerCount = [:]
 		cloudProperties.each('map/(.*)') {key, value, match ->
 			playerCount[match.group(1)] = 0
 		}
@@ -698,7 +700,7 @@ public class Test {
 		cloudProperties.each('player/(.*)') {key, value, match ->
 			def player = getPlayer(match.group(1))
 
-			if (player.map && playerCount[player.map]) {
+			if (player.map && (playerCount[player.map] == 0 || playerCount[player.map])) {
 				playerCount[player.map]++
 			}
 		}

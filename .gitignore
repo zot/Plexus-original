@@ -1,4 +1,4 @@
-Makefile
+#Makefile
 *.o
 *.a
 *.so
