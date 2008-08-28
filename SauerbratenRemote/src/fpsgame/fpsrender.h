@@ -139,7 +139,7 @@ struct fpsrender
             int team = 0;
             if(m_assassin) team = cl.asc.targets.find(d)>=0 ? 2 : (cl.asc.hunters.find(d)>=0 ? 0 : 1);
             else if(teamskins() || m_teammode) team = isteam(cl.player1->team, d->team) ? 1 : 2;
-#ifdef OLDTC
+#ifdef TC
             d->renderplayer(cl, (void *) &mdl, team);
 #else
             if(d->state!=CS_DEAD || d->superdamage<50) renderplayer(d, mdl, team);
@@ -148,7 +148,7 @@ struct fpsrender
             if(d->state!=CS_DEAD) particle_text(d->abovehead(), d->info, team ? (team==1 ? 16 : 13) : 11, 1);
 #endif
         }
-#ifdef OLDTC
+#ifdef TC
         if(isthirdperson()) cl.player1->renderplayer(cl, (void *) &mdl, teamskins() || m_teamskins ? 1 : 0);
 #else
         if(isthirdperson() && !cl.followingplayer()) renderplayer(cl.player1, mdl, teamskins() || m_teamskins ? 1 : 0);

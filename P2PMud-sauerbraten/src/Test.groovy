@@ -280,7 +280,8 @@ public class Test {
 	def generateDungeon() {
 		println ("Going to generate dungeon")
 		Thread.start {
-			sauer('newmap', 'if (= 1 $editing) [ edittoggle ]; tc_allowedit 1; thirdperson 0; newmap; musicvol 0; entdrop 3')
+			sauer('newmap', 'if (= 1 $editing) [ edittoggle ]; tc_allowedit 1; thirdperson 0; newmap; musicvol 0')
+			sauer('models', 'mapmodelreset ; mmodel tc_door ')
 			dumpCommands()
 			def dungeon = new Dungeon(6, 6, 3, 1)
 
@@ -296,17 +297,20 @@ public class Test {
 						def y = j * 32
 						def wx = x - 32, wy = y - 32
 						//println "x: $x y: $y"
-						def h = b == ' ' ? 2 : 1
+						def h = (b == ' ' || b == 'l') ? 2 : 1
 						if (b == 'z') {
 							sauer('secret', "selcube $x $y 430 1 1 $h 32 5; editmat noclip")
 						} else {
 							sauer('delcube', "selcube $x $y 430 1 1 $h 32 5; delcube")
 						}
 						if (b == 'e') {
-							sauer('door', "selcube $x $y 430 1 1 1 32 4; ent.yaw p0 0; newent mapmodel 27 6")
+							sauer('door', "selcube $x $y 430 1 1 1 32 4; ent.yaw p0 180;  entdrop 3; newent mapmodel 0 6")
 						}
 						else if (b == 's') {
-							sauer('door', "selcube $x $y 430 1 1 1 32 4; ent.yaw p0 90; newent mapmodel 27 6")
+							sauer('door', "selcube $x $y 430 1 1 1 32 4; ent.yaw p0 90;  entdrop 3; newent mapmodel 0 6")
+						}
+						else if (b == 'l') {
+							sauer('light', "selcube $x $y 450 1 1 1 32 4;  entdrop 2; newent light 128 255 255 255")
 						}
 						dumpCommands()
 						
@@ -340,7 +344,7 @@ public class Test {
 			}
 			
 			sauer("spawn", "selcube 32 32 416 1 1 1 32 5; ent.yaw p0 135; newent playerstart; tc_respawn p0")
-			sauer('finished', 'remip; tc_allowedit 0; thirdperson 1')
+			sauer('finished', 'remip; calclight 3; tc_allowedit 0; thirdperson 1')
 			dumpCommands()
 			
 			bindLevelTrigger("12345", {trigger-> println "Triggered: $trigger" })
