@@ -304,7 +304,7 @@ public class Test {
 							sauer('delcube', "selcube $x $y 430 1 1 $h 32 5; delcube")
 						}
 						if (b == 'e') {
-							sauer('door', "selcube $x $y 430 1 1 1 32 4; ent.yaw p0 0;  entdrop 3; newent mapmodel 0 6")
+							sauer('door', "selcube $x $y 430 1 1 1 32 4; ent.yaw p0 180;  entdrop 3; newent mapmodel 0 6")
 						}
 						else if (b == 's') {
 							sauer('door', "selcube $x $y 430 1 1 1 32 4; ent.yaw p0 90;  entdrop 3; newent mapmodel 0 6")
