@@ -30,6 +30,9 @@ import javax.swing.*
 import javax.swing.border.*
 import groovy.swing.SwingBuilder
 import net.miginfocom.swing.MigLayout
+import DFMapBuilder
+
+
 
 public class Test {
 	def output = null
@@ -215,6 +218,7 @@ public class Test {
 					button(text: "Launch 3D", actionPerformed: {launchSauer()})
 					button(text: "Generate Dungeon", actionPerformed: {generateDungeon()}, constraints: 'wrap')
 					button(text: "Update Neighbor List", actionPerformed: {updateNeighborList()})
+					button(text: "Load DF Map", actionPerformed: {loadDFMap()}, constraints: 'wrap')
 				}
 				f.size = [500, (int)f.size.height] as Dimension
 			}
@@ -276,6 +280,34 @@ public class Test {
 			}
 		};
 	}
+	
+	def loadDFMap() {
+		def ch = new JFileChooser();
+		ch.setDialogTitle("Please choose the DF map to load");
+		ch.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES)
+		
+		def filter = {
+                  //accept: {
+					//dir, 
+					name -> name.toLowerCase().endsWith(".txt") 
+					//},
+                  //getDescription: { "DF ASCII Maps (*.txt)" }
+		} as FileFilter
+                  
+		//def filter = new DFMapFileFilter()
+		ch.setFileFilter(filter)
+		if (ch.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+			Thread.start {
+				if (ch.getSelectedFile().isFile()) {
+					def dir = ch.getSelectedFile().getAbsolutePath();
+				
+					def df = new DFMapBuilder()
+					df.buildMap(this, dir)
+				}
+			}
+		}
+	}
+	
 	// generate a random dungeon
 	def generateDungeon() {
 		println ("Going to generate dungeon")
@@ -346,9 +378,6 @@ public class Test {
 			sauer("spawn", "selcube 32 32 416 1 1 1 32 5; ent.yaw p0 135; newent playerstart; tc_respawn p0")
 			sauer('finished', 'remip; calclight 3; tc_allowedit 0; thirdperson 1')
 			dumpCommands()
-			
-			bindLevelTrigger("12345", {trigger-> println "Triggered: $trigger" })
-			
 		};
 	}
 	//Test.bindLevelTrigger(35, 'remotesend levelTrigger 35 $more $data') {println "duh"} remotesend levelTrigger 35
