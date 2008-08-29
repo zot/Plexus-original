@@ -36,11 +36,11 @@ public class DFMapBuilder {
 			for (def j = 0; j < cols; j += rle) {
 				// get chunks of identical letters to process them all the same
 				rle = getRLE(dfmapcolarray, j, cols)
-				if (dfmapcolarray[j] != 'X') {
+				if (dfmapcolarray[j] == 'X') {
 					//println "i got an rle of $rle at index: $j"
 					def x = j * cubesize;
 					def y = i * cubesize;
-					m_plexus.sauer('delcube', "selcube $x $y 4088 $rle 1 1 $cubesize 5; delcube")
+					m_plexus.sauer('delcube', "selcube $x $y 4088 $rle 1 1 $cubesize 5; delcube; editmat water")
 					m_plexus.dumpCommands()
 				}
 			}
