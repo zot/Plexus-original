@@ -138,7 +138,7 @@ println "STORE: $file.key -> $file.value"
 					cont.receiveException(new Exception("Couldn't load file: $filename"));
 				}
 			},
-			receiveException: {cont.receiveException(new Exception("Error retrieving file: $id", it))}
+			receiveException: {cont.receiveException(new Exception("Error retrieving file: ${id.toStringFull()}", it))}
 		] as Continuation)
 	}
 	/**

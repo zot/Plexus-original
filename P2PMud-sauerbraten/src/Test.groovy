@@ -722,6 +722,8 @@ public class Test {
 	def updateMapGui() {
 		def ents = []
 		def privates = []
+
+		playerCount = [:]
 		cloudProperties.each('map/(.*)') {key, value, match ->
 			playerCount[match.group(1)] = 0
 		}
