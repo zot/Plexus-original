@@ -31,8 +31,7 @@ import javax.swing.border.*
 import groovy.swing.SwingBuilder
 import net.miginfocom.swing.MigLayout
 import DFMapBuilder
-
-
+import p2pmud.GroovyFileFilter
 
 public class Test {
 	def output = null
@@ -297,7 +296,7 @@ public class Test {
 			}
 		}
 	}
-	
+
 	// generate a random dungeon
 	def generateDungeon() {
 		println ("Going to generate dungeon")

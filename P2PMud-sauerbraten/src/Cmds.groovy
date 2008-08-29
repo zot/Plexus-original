@@ -8,7 +8,7 @@ public class Cmds {
 		def args = cmdString.split() as List
 
 		try {
-			"${args[0]}"(*(args.size() == 1 ? [] : args[1..-1]))
+			if (args.size()) {"${args[0]}"(*(args.size() == 1 ? [] : args[1..-1]))}
 		} catch (Exception ex) {
 			main.err("Problem occured while executing command: " + cmdString, ex)
 		}

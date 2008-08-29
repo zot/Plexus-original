@@ -1,21 +1,5 @@
 import Test;
 
-public class GroovyFileFilter extends javax.swing.filechooser.FileFilter {
-	def description
-	def filter
-
-	def GroovyFileFilter(description, filter) {
-		this.description = description
-		this.filter = filter
-	}
-	public boolean accept(File f) {
-		filter(f)
-	}
-	public String getDescription() {
-		description
-	}
-}
-
 public class DFMapBuilder {
 	Test m_plexus
 	def static cubesize = 32  // the size in sauer to make each square from the DF map
