@@ -18,20 +18,31 @@ public class DFMapBuilder {
 	def loadFromFile(filename) {
 		def dfmap = new File(filename);
 		def dfmaprow = dfmap.readLines();
-		def rows = dfmaprow.size
-		for (def i = 0; i < rows; ++i ){
+		def info = dfmaprow.get(0).split(",")
+		def layers = info[1].toInteger()
+		def rows = ((dfmaprow.size - layers) / layers)
+		def totalrows = dfmaprow.size();
+		for (def i = 0; i < totalrows; ++i ){
 			def dfmapcol = dfmaprow.get(i)
-			def dfmapcolarray = dfmapcol.split('')
+			def h = (i / rows).toInteger();
+			def ir = i - (h * rows)
+			def dfmapcolarray = dfmapcol.split('  ')
 			def rle = 0, cols = dfmapcolarray.length
 			println "cols: $cols, line: $dfmapcol"
 			for (def j = 0; j < cols; j += rle) {
 				// get chunks of identical letters to process them all the same
 				rle = getRLE(dfmapcolarray, j, cols)
-				if (dfmapcolarray[j] == 'X') {
+				if (dfmapcolarray[j] != ' -1') {
 					//println "i got an rle of $rle at index: $j"
 					def x = j * cubesize;
-					def y = i * cubesize;
-					m_plexus.sauer('delcube', "selcube $x $y 4088 $rle 1 1 $cubesize 5; delcube; editmat water")
+					def y = ir * cubesize;
+					def z = 2056 + h * cubesize;
+					if (dfmapcolarray[j] == '375' ){
+					m_plexus.sauer('delcube', "selcube $x $y $z $rle 1 1 $cubesize 5; delcube; editmat water")
+					} else if(dfmapcolarray[j] == '265'){
+					m_plexus.sauer('delcube', "selcube $x $y $z $rle 1 1 $cubesize 5; delcube; editmat water")
+					} else {
+					m_plexus.sauer('delcube', "selcube $x $y $z $rle 1 1 $cubesize 5; delcube")}	
 					m_plexus.dumpCommands()
 				}
 			}
