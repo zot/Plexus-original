@@ -1,12 +1,19 @@
 import Test;
 
-public class DFMapFileFilter extends javax.swing.filechooser.FileFilter {
-    public boolean accept(File f) {
-        return f.isDirectory() || f.getName().toLowerCase().endsWith(".txt")
-    }
-    public String getDescription() {
-        return "DF ASCII Maps (*.txt)";
-    }
+public class GroovyFileFilter extends javax.swing.filechooser.FileFilter {
+	def description
+	def filter
+
+	def GroovyFileFilter(description, filter) {
+		this.description = description
+		this.filter = filter
+	}
+	public boolean accept(File f) {
+		filter(f)
+	}
+	public String getDescription() {
+		description
+	}
 }
 
 public class DFMapBuilder {
