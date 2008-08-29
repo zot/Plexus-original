@@ -285,9 +285,7 @@ public class Test {
 		def ch = new JFileChooser();
 		ch.setDialogTitle("Please choose the DF map to load");
 		ch.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES)
-                  
-		def filter = new DFMapFileFilter()
-		ch.setFileFilter(filter)
+		ch.setFileFilter(new GroovyFileFilter("DF ASCII MAPS (*.txt)") {it.isDirectory() || it.name.toLowerCase().endsWith(".txt")})
 		if (ch.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
 			Thread.start {
 				if (ch.getSelectedFile().isFile()) {
