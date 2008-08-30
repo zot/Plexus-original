@@ -459,7 +459,7 @@ struct md5 : skelmodel
         do --fname; while(fname >= loadname && *fname!='/' && *fname!='\\');
         fname++;
 #ifdef TC
-        s_sprintfd(meshname)("packages/plexus/costumes/%s/%s.md5mesh", loadname, fname);
+        s_sprintfd(meshname)("packages/plexus/models/%s/%s.md5mesh", loadname, fname);
 		if (!fileexists(meshname, "r")) {
 	       s_sprintf(meshname)("packages/models/%s/%s.md5mesh", loadname, fname);
 		}
@@ -471,9 +471,9 @@ struct md5 : skelmodel
         mdl.initanimparts();
         mdl.initskins();
 #ifdef TC
-        s_sprintfd(animname)("packages/plexus/costumes/%s/%s.md5anim", loadname, fname);
+        s_sprintfd(animname)("packages/plexus/models/%s/%s.md5anim", loadname, fname);
 		if (!fileexists(animname, "r")) {
-			s_sprintf(animname)("packages/plexus/costumes/%s/%s.md5anim", loadname, fname);
+			s_sprintf(animname)("packages/plexus/models/%s/%s.md5anim", loadname, fname);
 		}
 #else
         s_sprintfd(animname)("packages/models/%s/%s.md5anim", loadname, fname);
@@ -486,8 +486,8 @@ struct md5 : skelmodel
     {
         if(loaded) return true;
 #ifdef TC
-        s_sprintf(md5dir)("packages/plexus/costumes/%s", loadname);
-        s_sprintfd(cfgname)("packages/plexus/costumes/%s/md5.cfg", loadname);
+        s_sprintf(md5dir)("packages/plexus/models/%s", loadname);
+        s_sprintfd(cfgname)("packages/plexus/models/%s/md5.cfg", loadname);
 		if (!fileexists(cfgname, "r")) {
 	        s_sprintf(md5dir)("packages/models/%s", loadname);
 		    s_sprintf(cfgname)("packages/models/%s/md5.cfg", loadname);

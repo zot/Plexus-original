@@ -194,7 +194,7 @@ struct md3 : vertmodel
         mdl.model = this;
         mdl.index = 0;
 #ifdef TC
-		pname = "packages/plexus/costumes";
+		pname = "packages/plexus/models";
         s_sprintfd(name1)("%s/%s/tris.md3", pname, loadname);
         mdl.meshes = sharemeshes(path(name1));
         if(!mdl.meshes)
@@ -223,7 +223,7 @@ struct md3 : vertmodel
     {
         if(loaded) return true;
 #ifdef TC
-		const char *pname = "packages/plexus/costumes";
+		const char *pname = "packages/plexus/models";
         s_sprintf(md3dir)("%s/%s", pname, loadname);
         s_sprintfd(cfgname)("%s/%s/md3.cfg", pname, loadname);
 		if (!fileexists(md3dir, "r")) {

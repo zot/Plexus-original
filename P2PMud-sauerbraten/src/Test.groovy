@@ -865,7 +865,7 @@ println "STORED COSTUME, adding"
 
 println "COSTUME SELS: $triples"
 		guitext += 'showcostumesgui = [showgui Costumes];'
-		guitext += 'alias showcostume [ guibar; guiimage (concatword "packages/plexus/costumes/thumbs/" (get $costumenames [[@@guirollovername]])) $guirolloveraction 4 1 "packages/plexus/dist/tc_logo.jpg"];'
+		guitext += 'alias showcostume [ guibar; guiimage (concatword "packages/plexus/models/thumbs/" (get $costumenames [[@@guirollovername]])) $guirolloveraction 4 1 "packages/plexus/dist/tc_logo.jpg"];'
 		guitext += "alias costumenames ["
 		for (trip in triples) {
 //			guitext += " [$i: ${trip[0]}] [${trip[1] ?: ''}]"

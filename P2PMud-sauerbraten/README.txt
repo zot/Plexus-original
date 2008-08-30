@@ -24,3 +24,9 @@ freely, subject to the following restrictions:
 
     3. This notice may not be removed or altered from any source
     distribution.
+
+Plexus Project: http://www.plubble.com
+
+TEAM CTHULHU  http://www.teamcthulhu.com
+
+    

@@ -268,7 +268,7 @@ struct md2 : vertmodel
         mdl.index = 0;
         const char *pname = parentdir(loadname);
 #ifdef TC
-		pname = "packages/plexus/costumes";
+		pname = "packages/plexus/models";
         s_sprintfd(name1)("%s/%s/tris.md2", pname, loadname);
         mdl.meshes = sharemeshes(path(name1));
         if(!mdl.meshes)
