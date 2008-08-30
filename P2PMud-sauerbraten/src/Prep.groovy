@@ -71,7 +71,7 @@ public class Prep {
 			buildMainArgs()
 			return
 		}
-		def str = Plexus.getResourceAsStream('/dist/version')
+		def str = LaunchPlexus.getResourceAsStream('/dist/version')
 		if (str) {
 			str.eachLine {
 				println it
@@ -87,7 +87,7 @@ public class Prep {
 		def basedir
 		def jarfile
 		def verfile
-		def testresource = Plexus.getResource('Plexus.class').getFile()
+		def testresource = LaunchPlexus.getResource('LaunchPlexus.class').getFile()
 		def distdir = new File(plexusdir, 'dist')
 		def plexusver = new File(distdir, 'version')
 		

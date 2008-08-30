@@ -5,7 +5,7 @@ import static net.sbbi.upnp.Discovery.*;
 import net.sbbi.upnp.impls.InternetGatewayDevice;
 import p2pmud.P2PMudPeer
 
-public class Plexus {
+public class LaunchPlexus {
 	def static props
 	def static runCount
 
