@@ -31,9 +31,9 @@ import javax.swing.border.*
 import groovy.swing.SwingBuilder
 import net.miginfocom.swing.MigLayout
 import DFMapBuilder
-import p2pmud.GroovyFileFilter
+import GroovyFileFilter
 
-public class Test {
+public class Plexus {
 	def output = null
 	def name
 	def id_index = 1
@@ -86,10 +86,10 @@ public class Test {
 
 	public static void main(String[] a) {
 		if (a.length < 2) {
-			println "Usage: Test port name pastryArgs"
+			println "Usage: Plexus port name pastryArgs"
 			System.exit(1);
 		}
-		new Test()._main(a)
+		new Plexus()._main(a)
 	}
 	def static verifySauerdir(dir) {
 		if (!dir) return false
@@ -108,7 +108,7 @@ public class Test {
 	}
 	def _main(args) {
 		soleInstance = this
-		if (Plexus.props.headless == '0') {
+		if (LaunchPlexus.props.headless == '0') {
 			sauerDir = System.getProperty("sauerdir");
 			name = args[1]
 			if (!verifySauerdir(sauerDir)) {
@@ -129,7 +129,7 @@ public class Test {
 		Tools.deleteAll(pastStor)
 		pastStor.mkdirs()
 		System.setProperty('past.storage', pastStor.getAbsolutePath())
-		if (Plexus.props.headless == '0') {
+		if (LaunchPlexus.props.headless == '0') {
 			cloudProperties.setPropertyHooks[~'player/..*'] = {key, value, oldValue ->
 				if (mapTopic) {
 					def pid = key.substring('player/'.length())
@@ -179,7 +179,7 @@ public class Test {
 				updateCostumeGui()
 			}
 			new File(sauerDir, mapPrefix).mkdirs()
-			if (Plexus.props.auto_sauer != '0') launchSauer();
+			if (LaunchPlexus.props.auto_sauer != '0') launchSauer();
 			//PlasticLookAndFeel.setPlasticTheme(new DesertBlue());
 			try {
 			   UIManager.setLookAndFeel(new Plastic3DLookAndFeel());
@@ -211,7 +211,7 @@ public class Test {
 					label(text: "Command: ")
 					fields.cmd = textField(actionPerformed: {cmd()}, constraints: 'wrap, growx')
 					label(text: "Node id: ")
-					label(text: Plexus.props.nodeId ?: "none", constraints: 'wrap, growx')
+					label(text: LaunchPlexus.props.nodeId ?: "none", constraints: 'wrap, growx')
 					label(text: "Neighbors: ")
 					neighborField = label(text: 'none', constraints: 'wrap, growx')
 					button(text: "Launch 3D", actionPerformed: {launchSauer()})
@@ -260,9 +260,9 @@ public class Test {
 			initJoin()
 		}
 //		println "Node ID: ${peer.node.getId().toStringFull()}"
-		if (!Plexus.props.nodeId) {
-			Plexus.props.nodeId = peer.node.getId().toStringFull()
-			Plexus.saveProps()
+		if (!LaunchPlexus.props.nodeId) {
+			LaunchPlexus.props.nodeId = peer.node.getId().toStringFull()
+			LaunchPlexus.saveProps()
 		}
 	}
 	def updateNeighborList() {
@@ -369,7 +369,7 @@ public class Test {
 			dumpCommands()
 		};
 	}
-	//Test.bindLevelTrigger(35, 'remotesend levelTrigger 35 $more $data') {println "duh"} remotesend levelTrigger 35
+	//Plexus.bindLevelTrigger(35, 'remotesend levelTrigger 35 $more $data') {println "duh"} remotesend levelTrigger 35
 	def bindLevelTrigger(trigger, lambda) {
 		if (!lambda) println "Error! Trigger lambda is null!"
 		trigger = Integer.parseInt(trigger)
@@ -889,7 +889,7 @@ println "COSTUME SELS: $triples"
 			receiveResult: {
 				costume = dirId
 				updateMyPlayerInfo()
-				sauer('cost', "playerinfo p0 [${Plexus.props.guild}] ${costumeDir.getName()}")
+				sauer('cost', "playerinfo p0 [${LaunchPlexus.props.guild}] ${costumeDir.getName()}")
 				dumpCommands()
 				println "USE COSTUME $name ($costumeDir)"
 			},

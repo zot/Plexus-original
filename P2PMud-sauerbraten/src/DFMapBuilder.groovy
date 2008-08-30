@@ -1,7 +1,7 @@
-import Test;
+import Plexus;
 
 public class DFMapBuilder {
-	Test m_plexus
+	Plexus m_plexus
 	def static cubesize = 32  // the size in sauer to make each square from the DF map
 	
 	// call this function to build a new DF map from the file passed in

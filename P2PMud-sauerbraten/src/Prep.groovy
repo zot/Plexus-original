@@ -45,7 +45,7 @@ public class Prep {
 	}
 	
 	def static verifySauerDir(dir) {
-		while (!Test.verifySauerdir(dir)) {
+		while (!Plexus.verifySauerdir(dir)) {
 			def ch = new JFileChooser(dir);
 			ch.setDialogTitle("$dir is not a Sauerbraten directory.  Please specify your Sauerbraten directory");
 			ch.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY)
@@ -151,7 +151,7 @@ public class Prep {
 		if (start) {
 			saveProps()
 			buildMainArgs()
-			Test.sauerExec = props.sauer_cmd
+			Plexus.sauerExec = props.sauer_cmd
 			synchronized (lock) {
 				lock.notifyAll()
 			}

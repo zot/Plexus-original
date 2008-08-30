@@ -6,22 +6,6 @@ import rice.pastry.Id
 import org.codehaus.groovy.runtime.StackTraceUtils
 import java.util.zip.ZipFile
 
-public class GroovyFileFilter extends javax.swing.filechooser.FileFilter {
-	def description
-	def filter
-
-	def GroovyFileFilter(description, filter) {
-		this.description = description
-		this.filter = filter
-	}
-	public boolean accept(File f) {
-		filter(f)
-	}
-	public String getDescription() {
-		description
-	}
-}
-
 public class Tools {
 	def static digest = new SHA1Digest()
 

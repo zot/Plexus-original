@@ -20,7 +20,7 @@ public class LaunchPlexus {
 		System.setProperty('past_storage', props.past_storage)
 		if (props.upnp == '1') pokeHole("Plexus", Integer.parseInt(props.external_port))
 		if (props.node_interface && props.node_interface != '') P2PMudPeer.node_interface = props.node_interface;
-		Test.main(*args)
+		Plexus.main(*args)
 	}
 	public static saveProps() {
 		Prep.saveProps()
