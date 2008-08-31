@@ -810,7 +810,7 @@ println "STORED COSTUME, adding"
 		}
 	}
 	def updateCostumeGui() {
-		def costumesDir = new File(plexusDir, 'costumes')
+		def costumesDir = new File(plexusDir, 'models')
 		def tumes = []
 		def needed = []
 
