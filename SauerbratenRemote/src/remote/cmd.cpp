@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2008 TEAM CTHULHU, Bill Burdick, Roy Riggs
+ * Plexus is licensed under the ZLIB license (http://www.opensource.org/licenses/zlib-license.php):
+ */
 #include "pch.h"
 #include "cube.h"
 #include "iengine.h"
@@ -11,7 +15,7 @@ int writecompletions(_IO_FILE*) {return 0;}
 void addreleaseaction(char const *duh) {}
 void conoutf(char const *format, ...) {
 	va_list ap;
-	
+
 	va_start(ap, format);
 	vprintf(format, ap);
 	va_end(ap);
