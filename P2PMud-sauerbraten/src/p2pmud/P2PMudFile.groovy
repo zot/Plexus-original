@@ -157,7 +157,7 @@ println "STORE: $file.key -> $file.value"
 					if (o[i] instanceof Exception) {
 						System.err.println "Problem loading file '${files[i]}' while fetching directory..."
 						o[i].printStackTrace()
-						suceeded = false
+						succeeded = false
 					} else if (o[i][1]) {
 		    			if (succeeded) {
 		    				cont.receiveException(new Exception("Could not retrieve file: " + o[i][0]));
