@@ -761,12 +761,12 @@ public class Plexus {
 		if (who.costume) {
 println "loading costume: $who.costume"
 			def costume = getCostume(who.costume)
-			def costumeFile = new File(plexusDir, "costumes/$costume.dir")
+			def costumeFile = new File(plexusDir, "models/$costume.dir")
 
 			if (costumeFile.exists()) {
 				clothe(who, costume.dir)
 			} else {
-				P2PMudFile.fetchDir(costume.dir, cacheDir, new File(plexusDir, "costumes/$costume.dir"), [
+				P2PMudFile.fetchDir(costume.dir, cacheDir, new File(plexusDir, "models/$costume.dir"), [
 					receiveResult: {r -> clothe(who, costume.dir)},
 					receiveException: {ex -> err("Could not fetch data for costume: $costume.dir", ex)}
 				], false)
@@ -781,7 +781,7 @@ dumpCommands()
 	}
 	def pushCostume(name) {
 println "PUSHING COSTUME: $name"
-		def path = new File(plexusDir, "costumes/$name")
+		def path = new File(plexusDir, "models/$name")
 
 		if (!path.exists()) {
 			sauer('err', "tc_msgbox [File costume not found] [Could not find costume in directory $path]")
@@ -800,7 +800,7 @@ println "STORING COSTUME"
 					}
 					try {
 println "STORED COSTUME, adding"
-						transmitSetCloudProperty("costume/$fileId", "$thumb ${thumb ? type : 'none'} $name")
+						transmitSetCloudProperty("models/$fileId", "$thumb ${thumb ? type : 'none'} $name")
 					} catch (Exception ex) {
 						err("Error pushing costume", ex)
 					}
@@ -883,7 +883,7 @@ println "COSTUME SELS: $triples"
 		dumpCommands()
 	}
 	def useCostume(name, dirId) {
-		def costumeDir = new File(plexusDir, "costumes/$dirId")
+		def costumeDir = new File(plexusDir, "models/$dirId")
 
 		P2PMudFile.fetchDir(dirId, cacheDir, costumeDir, [
 			receiveResult: {
