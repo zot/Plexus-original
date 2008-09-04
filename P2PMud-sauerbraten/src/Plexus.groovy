@@ -226,11 +226,11 @@ public class Plexus {
 		P2PMudPeer.main(
 			{id, topic, cmd ->
 				try {
-					if (topic == null && cmd == null) {
-						id = id.toStringFull()
-						transmitRemoveCloudProperty("player/$id")
-					} else {
-						executor.submit {
+					executor.submit {
+						if (topic == null && cmd == null) {
+							id = id.toStringFull()
+							transmitRemoveCloudProperty("player/$id")
+						} else {
 							pastryCmd = cmd
 							cmd.msgs.each {line ->
 								synchronized (presenceLock) {
@@ -793,14 +793,14 @@ println "STORING COSTUME"
 					def fileId = it.file.getId().toStringFull()
 					def type = 'png'
 					def thumb = it.properties['thumb.png']
-					
+
 					if (!thumb) {
-						type = 'png'
+						type = 'jpg'
 						thumb = it.properties['thumb.jpg'] ?: 'none'
 					}
 					try {
 println "STORED COSTUME, adding"
-						transmitSetCloudProperty("models/$fileId", "$thumb ${thumb ? type : 'none'} $name")
+						transmitSetCloudProperty("costume/$fileId", "$thumb ${thumb ? type : 'none'} $name")
 					} catch (Exception ex) {
 						err("Error pushing costume", ex)
 					}
@@ -830,10 +830,15 @@ println "STORED COSTUME, adding"
 					def i = 0
 
 					for (i = 0; i < needed.size(); i++) {
-						def thumbFile = new File(costumesDir, "thumbs/${needed[i].dir}.${needed[i].type}")
+						if (files[i] instanceof Exception) {
+							System.err.println "Error fetching thumb for costume: ${needed[i].name}..."
+							files[i].printStackTrace()
+						} else {
+							def thumbFile = new File(costumesDir, "thumbs/${needed[i].dir}.${needed[i].type}")
 
-						thumbFile.getParentFile().mkdirs()
-						Tools.copyFile(files[i][0], thumbFile)
+							thumbFile.getParentFile().mkdirs()
+							Tools.copyFile(files[i][0], thumbFile)
+						}
 					}
 					showTumes(tumes)
 				},
