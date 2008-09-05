@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2008 TEAM CTHULHU, Bill Burdick, Roy Riggs
+ * Plexus is licensed under the ZLIB license (http://www.opensource.org/licenses/zlib-license.php):
+ */
 #include "tc.h"
 
 // plug in to fps.cpp
@@ -175,7 +179,7 @@ void dumpent(char *id) {
 		switch (id[0]) {
 		case TC_PLAYER:
 			fpsent *p;
-			
+
 			p = getplayer(id);
 			if (p) {
 				conoutf("player: %s %s %s", id, p->name ? p->name : "NO NAME", p->modelname ? p->modelname : "NO MODEL");
@@ -185,7 +189,7 @@ void dumpent(char *id) {
 			break;
 		case TC_MONSTER:
 			fpsclient::monsterset::monster *m;
-			
+
 			m = getmonster(id);
 			if (m) {
 				conoutf("monster: %s %s", id, m->monstertypes[m->mtype].mdlname);
@@ -195,7 +199,7 @@ void dumpent(char *id) {
 			break;
 		case TC_ITEM:
 			fpsclient::movableset::movable *mov;
-			
+
 			mov = getitem(id);
 			if (mov) {
 				conoutf("item: %s %s", id, mapmodelname(mov->mapmodel));

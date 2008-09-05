@@ -147,13 +147,18 @@ println "STORE: $file.key -> $file.value"
 	public static void fetchDirFromProperties(cacheDir, id, props, dir, cont, mutable) {
 		def fileNum = 0
 		def ids = [:]
+		def files = []
 		def mcont = new MultiContinuation([
 			receiveResult: {o ->
 				def succeeded = true
 				def temps = []
 		
 				for (int i = 0; i < o.length; i++) {
-		    		if (!(o[i] instanceof Exception) && o[i][1]) {
+					if (o[i] instanceof Exception) {
+						System.err.println "Problem loading file '${files[i]}' while fetching directory..."
+						o[i].printStackTrace()
+						succeeded = false
+					} else if (o[i][1]) {
 		    			if (succeeded) {
 		    				cont.receiveException(new Exception("Could not retrieve file: " + o[i][0]));
 		    			}
@@ -194,6 +199,7 @@ println "STORE: $file.key -> $file.value"
 			synchronized (ids) {
 				ids[filename(cacheDir, file.value)] = file.key
 			}
+			files.add(file.key)
 			P2PMudPeer.test.wimpyGetFile(rice.pastry.Id.build(file.value), cacheDir, mcont.getSubContinuation(fileNum++))
 		}
 	}
