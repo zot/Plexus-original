@@ -715,6 +715,9 @@ void addundo(undoblock *u)
 
 void makeundoex(selinfo &s)
 {
+#ifdef TC
+	if (tc_allowedit) return;
+#endif
     if(multiplayer(false)) return;
     undoblock *u = newundocube(s);
     addundo(u);
