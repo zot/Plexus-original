@@ -1,4 +1,4 @@
-import com.jgoodies.looks.plastic.Plastic3DLookAndFeelimport javax.swing.UIManagerimport java.awt.Dimension
+import javax.swing.DefaultComboBoxModelimport com.jgoodies.looks.plastic.Plastic3DLookAndFeelimport javax.swing.UIManagerimport java.awt.Dimension
 import net.miginfocom.swing.MigLayout
 import groovy.swing.SwingBuilder
 import p2pmud.Tools
@@ -27,8 +27,8 @@ public class Prep {
 		node_interface: '',
 		past_storage:'/tmp/storage-9090'
 	] as Properties
-	def static props = [:] as Properties
-	def static fields = [:]
+	def static props = [:] as Properties	def static testProfiles
+	def static fields = [:]	def static itemsCombo	def static removeProfileButton	def static propPrefix = ""
 	def static sauerDir
 	def static final MARKER = "\n//THIS LINE ADDED BY TEAM CTHULHU'S PLEXUS: PLEASE DO NOT EDIT THIS LINE OR THE NEXT ONE\n"
 
@@ -168,16 +168,15 @@ public class Prep {
 		output.close()
 	}
 	def static setprop(key) {
-		props[key] = fields[key].text
-	}
+		props["$propPrefix$key"] = fields[key].text
+	}	def static showprop(key) {		 fields[key].text = props["$propPrefix$key"]	}
 	def static readProps() {
 		if (propsFile.exists()) {
 			def input = new FileInputStream(propsFile)
 
 			props = [:] as Properties
 			props.load(input)
-			input.close()
-		}
+			input.close()			testProfiles = [*(props?.testProfiles?.split(',') ?: [])] as Set		}
 		// if there are any missing props after a read, fill them in with defaults
 		for (e in defaultProps) {
 			if (!props[e.key]) props[e.key] = e.value
@@ -203,18 +202,17 @@ public class Prep {
 		  // some IO Exception occured during communication with device
 		}
 	}
-	def static showPropEditor() {
+	def static showPropEditor(prefix = null) {
 		def p = props
-		def f
-
+		def f
+		propPrefix = prefix ? "$prefix-" : ""
 		//PlasticLookAndFeel.setPlasticTheme(new DesertBlue());
 		try {
 		   UIManager.setLookAndFeel(new Plastic3DLookAndFeel());
 		} catch (Exception e) {}
 		new SwingBuilder().build {
-			def field = {lbl, key ->
-				label(text: lbl)
-				fields[key] = textField(actionPerformed: {setprop(key)}, focusLost: {setprop(key)}, text: p[key], constraints: 'span 2, wrap, growx')
+			def field = {lbl, key ->				label(text: lbl)
+				fields[key] = textField(actionPerformed: {setprop(key)}, focusLost: {setprop(key)}, text: p["$propPrefix$key"], constraints: 'span 2, wrap, growx')
 			}
 			f = frame(title: 'Plexus Configuration', windowClosing: {System.exit(0)}, layout: new MigLayout('fillx'), pack: true, show: true) {
 				field('Your name: ', 'name')
@@ -233,9 +231,7 @@ public class Prep {
 				label(text: "Node id: ")
 				label(text: props.nodeId ?: "none", constraints: 'wrap, growx')
 				button(text: "Start", actionPerformed: {f.dispose(); finished(true)})
-				button(text: "Exit", actionPerformed: {f.dispose(); finished(false)})
-			}
+				button(text: "Exit", actionPerformed: {f.dispose(); finished(false)}, constraints: 'wrap')				itemsCombo = comboBox(editable: true, actionPerformed: {profileAdded(it)})				removeProfileButton = button(text: 'Remove Profile', actionPerformed: {removeProfile()}, enabled: false, constraints: "wrap")			}			newItems()
 			f.size = [500, (int)f.size.height] as Dimension
 		}
-	}
-}
+	}	def static newItems() {		itemsCombo.model = new DefaultComboBoxModel(['', *testProfiles.sort()] as Object[])	}	def static profileAdded(evt) {		if (itemsCombo) {			def prof = itemsCombo?.editor?.item ?: ''			println "Text: ${prof}"			if (prof) {				testProfiles.add prof				props.testProfiles = testProfiles.join(',')				saveProps()				newItems()			}			chooseTestProfile(prof)		}	}	def static profileSelected(evt) {		Thread.start {			def d			def name			def ok = {				d.visible = false				println "Name: $name.text"				testProfiles.add name.text				props.testProfiles = testProfiles.join(',')				saveProps()				newItems()				chooseTestProfile(name.text)			}			println "SELECTED: $evt.source.selectedIndex"			switch (evt.source.selectedIndex) {			case 0:				println "new profile"				new SwingBuilder().build {					d = dialog(modal: true, layout: new MigLayout('fillx'), pack: true) {						label(text: 'Profile Name: ')						name = textField(actionPerformed: ok, constraints: 'wrap, growx')						button(text: 'OK', actionPerformed: ok)						button(text: 'Cancel', actionPerformed: {d.visible = false})					}					d.visible = true				}				evt.source.selectedIndex = -1				break			case -1:				println "no selection"				break			default:				chooseTestProfile(evt.source.selectedItem)				break			}		}	}	def static chooseTestProfile(item) {		itemsCombo.selectedItem = item		println "Profile: $item"		propPrefix = item ? "$item-" : ""		removeProfileButton.enabled = !!propPrefix		fields.each {			showprop(it.key)		}	}	def static removeProfile() {		def k = []		def pref = propPrefix.substring(0, propPrefix.length() - 1)				k.addAll(props.keySet())		k.each {			if (it ==~ "$pref-.*") {				props.remove(it)			}		}		testProfiles.remove(pref)		props.testProfiles = testProfiles.join(',')		saveProps()		newItems()		chooseTestProfile('')	}}
