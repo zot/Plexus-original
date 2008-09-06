@@ -42,8 +42,8 @@ public class DFMapBuilder {
 					def x = j * cubesize;
 					def y = ir * cubesize;
 					if (first == 'f') {
-						def z1 = z + 1, len = rle * cubesize, floor = cubesize - 1
-						//m_plexus.sauer('delcube', "selcube $x $y $z1 $len $cubesize $floor 1 5; delcube")
+						def z1 = z + 8, len = rle * cubesize, floor = cubesize - 8
+						m_plexus.sauer('delcube', "selcube $x $y $z1 $len $cubesize $floor 8 5; delcube")
 					}else if (first == 'w') {
 						m_plexus.sauer('delcube', "selcube $x $y $z $rle 1 1 $cubesize 5; delcube; editmat water")
 					} else if(first == 'e'){
