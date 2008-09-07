@@ -242,10 +242,26 @@ public class Prep {
 				button(text: "Start", actionPerformed: {f.dispose(); finished(true)})
 				button(text: "Exit", actionPerformed: {f.dispose(); finished(false)}, constraints: 'wrap')
 				itemsCombo = comboBox(editable: true, actionPerformed: {if (itemsCombo) addProfile(itemsCombo?.editor?.item)})
-				removeProfileButton = button(text: 'Remove Profile', actionPerformed: {removeProfile()}, enabled: false, constraints: "wrap")
+				removeProfileButton = button(text: 'Remove Profile', actionPerformed: {removeProfile()}, enabled: false)
+				button(text: 'Clear P2P Cache', actionPerformed: { clearCache() } )
 			}
 			update()
 			f.size = [500, (int)f.size.height] as Dimension
+		}
+	}
+	def static clearCache() {
+		def dir = new File('fred').getAbsoluteFile().getParent()
+		plexusdir = new File(dir, 'packages/plexus')
+		println "Clearing cache at $plexusdir"
+
+		Tools.deleteAll(new File(plexusdir, "cache"))
+		Tools.deleteAll(new File(plexusdir, "cloud.properties"))
+		Tools.deleteAll(new File(plexusdir, "maps"))
+		Tools.deleteAll(new File(plexusdir, "models/thumbs"))
+		Tools.deleteAll(new File(plexusdir, "PAST-storage"))
+		
+		new File(plexusdir, "models").eachFileMatch(~/^[A-Z0-9]+$/){ f->
+	    	if (f.isDirectory()) f.delete()
 		}
 	}
 	def static setMode(button) {
