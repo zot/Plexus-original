@@ -129,7 +129,7 @@ public class Plexus {
 		} else {
 			plexusDir = new File('plexus')
 		}
-		cloudProperties = new CloudProperties(this, new File(plexusDir, 'cache/$name/cloud.properties'))
+		cloudProperties = new CloudProperties(this, new File(plexusDir, "cache/$name/cloud.properties"))
 		cloudProperties.persistentPropertyPattern = ~'(map|privateMap|costume)/..*'
 		cloudProperties.privatePropertyPattern = ~'(privateMap)/..*'
 		cacheDir = new File(plexusDir, "cache/$name/files")
