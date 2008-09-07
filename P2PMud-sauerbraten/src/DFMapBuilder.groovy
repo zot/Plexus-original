@@ -19,27 +19,30 @@ public class DFMapBuilder {
 	}
 	// read in and process a whole file
 	def loadFromFile(filename) {
+		println "Going to load a DF from from $filename"
 		def dfmap = new File(filename);
 		def dfmaprow = dfmap.readLines();
 		def info = dfmaprow.get(0).split(",")
 		def layers = info[1].toInteger()
 		def rows = ((dfmaprow.size - layers) / layers)
 		def totalrows = dfmaprow.size();
+		println "Rows in file: $totalrows"
 		def z = 0
 		def remipCount = 0
 		def ir = 0
 		def h = 0; //Math.round(i / rows) //sets height
-		for (def i = 0; i < totalrows; ++i ){
+		for (def i = 1; i < totalrows; ++i ){
 			def dfmapcol = dfmaprow.get(i)
 			ir ++;
 			//def ir = Math.round(i - (h * rows)) //resets row
 			def dfmapcolarray = dfmapcol.split()
 			def rle = 0, cols = dfmapcolarray.length
 			if (cols < 3){
+				println "i: $i, New layer found: " + dfmapcolarray.toString()
 				ir = 0;
 				h++;
 				z = 3072 + h * cubesize;
-				continue;}
+			} else {
 			//println "cols: $cols, line: $dfmapcol"
 			for (def j = 0; j < cols; j += rle) {
 				// get chunks of identical letters to process them all the same
@@ -51,7 +54,7 @@ public class DFMapBuilder {
 					def y = ir * cubesize;
 					if (first == 'f') {
 						def z1 = z + floorThick, len = Math.round(rle * cubesize / floorThick), floor = Math.round((cubesize  - floorThick) / floorThick), foo = Math.round(cubesize / floorThick)
-						println  "selcube $x $y $z1 $len $foo $floor $floorThick 5; delcube"
+						//println  "selcube $x $y $z1 $len $foo $floor $floorThick 5; delcube"
 						m_plexus.sauer('delcube', "selcube $x $y $z1 $len $foo $floor $floorThick 5; delcube")
 						remipCount += rle
 					}else if (first == 'w') {
@@ -69,6 +72,7 @@ public class DFMapBuilder {
 				m_plexus.sauer('remip', 'remip')
 				m_plexus.dumpCommands()
 				remipCount = 0
+			}
 			}
 		}
 		//while (z < 4064) {
