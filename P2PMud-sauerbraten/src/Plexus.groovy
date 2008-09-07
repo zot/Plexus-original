@@ -129,9 +129,9 @@ public class Plexus {
 		} else {
 			plexusDir = new File('plexus')
 		}
+		cloudProperties = new CloudProperties(this, new File(plexusDir, 'cache/$name/cloud.properties'))
 		cloudProperties.persistentPropertyPattern = ~'(map|privateMap|costume)/..*'
 		cloudProperties.privatePropertyPattern = ~'(privateMap)/..*'
-		cloudProperties = new CloudProperties(this, new File(plexusDir, 'cache/$name/cloud.properties'))
 		cacheDir = new File(plexusDir, "cache/$name/files")
 		mapDir = new File(plexusDir, "cache/$name/maps")
 		def pastStor = new File(plexusDir, "cache/$name/PAST")
