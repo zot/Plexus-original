@@ -260,7 +260,7 @@ public class Prep {
 		Tools.deleteAll(new File(plexusdir, "models/thumbs"))
 		Tools.deleteAll(new File(plexusdir, "PAST-storage"))
 		
-		new File(plexusdir, "models").eachFileMatch(~/^[A-Z0-9]+$/){ f->
+		new File(plexusdir, "models").eachFileMatch(~/^[A-F0-9]+$/){ f->
 	    	if (f.isDirectory()) f.delete()
 		}
 	}
