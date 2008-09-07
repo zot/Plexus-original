@@ -983,6 +983,7 @@ println "COSTUME SELS: $triples"
 							receiveResult: {topic ->
 								mapTopic = topic
 								mapIsPrivate = map.privateMap
+								updateMyPlayerInfo()
 							},
 							receiveException: {exception -> err("Couldn't subscribe to topic: ", exception)}
 						] as Continuation)
@@ -996,6 +997,7 @@ println "COSTUME SELS: $triples"
 				mapTopic = null
 				sauer('limbo', "map plexus/dist/limbo/map")
 				dumpCommands()
+				updateMyPlayerInfo()
 			}
 		}
 	}

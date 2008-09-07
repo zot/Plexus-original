@@ -256,7 +256,9 @@ public class Prep {
 		plexusdir = new File(dir, 'packages/plexus')
 		println "Clearing cache at $plexusdir"
 
-		Tools.deleteAll(new File(plexusdir, "cache"))
+		if (props.name) {
+			Tools.deleteAll(new File(plexusdir, "cache/$props.name"))
+		}
 		Tools.deleteAll(new File(plexusdir, "models/thumbs"))
 		
 		new File(plexusdir, "models").eachFileMatch(~/^[A-F0-9]+$/){ f->
