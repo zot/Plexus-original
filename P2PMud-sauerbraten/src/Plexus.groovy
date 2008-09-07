@@ -84,6 +84,9 @@ public class Plexus {
 	def mapPlayers
 	def mapPlayersCombo
 	def followingPlayer
+	def cotumeUploadField
+	def tumes
+	def tumesCombo
 
 	def static sauerExec
 	def static soleInstance
@@ -219,21 +222,47 @@ public class Plexus {
 								panel(constraints: 'growx,wrap')
 							}
 							label(text: "Current Map: ")
-							mapCombo = comboBox(editable: false, itemStateChanged: {
-								if (it.stateChange == ItemEvent.SELECTED && mapCombo && mapCombo.selectedIndex > -1) {
+							mapCombo = comboBox(editable: false, actionPerformed: {
+								if (mapCombo && mapCombo.selectedIndex > -1) {
 									connectWorld(mapCombo.selectedIndex == 0 ? null : maps[mapCombo.selectedIndex - 1].id)
 								}
 							}, constraints: 'wrap')
+							label(text: 'Choose Costume')
+							tumesCombo = comboBox(editable: false, actionPerformed: {
+								if (tumesCombo && tumesCombo.selectedIndex > -1) {
+									if (tumesCombo.selectedIndex) {
+										def tume = tumes[tumesCombo.selectedIndex - 1]
+
+										useCostume(tume.name, tume.dir)
+									}
+								}
+							}, constraints: 'wrap')
 							label(text: "Follow player: ")
-							mapPlayersCombo = comboBox(editable: false, itemStateChanged: {
-								if (it.stateChange == ItemEvent.SELECTED && mapPlayersCombo && mapPlayersCombo.selectedIndex > -1) {
+							mapPlayersCombo = comboBox(editable: false, actionPerformed: {
+								if (mapPlayersCombo && mapPlayersCombo.selectedIndex > -1) {
 									followingPlayer = mapPlayersCombo.selectedIndex == 0 ? null : mapPlayers[mapPlayersCombo.selectedIndex - 1]
 println "NOW FOLLOWING: ${followingPlayer?.name}"
 								}
 							}, constraints: 'wrap')
+							button(text: 'Upload Costume', actionPerformed: {
+								if (costumeUploadField.text) {
+									pushCostumeDir(costumeUploadField.text as File)
+								}
+							})
+							panel(constraints: 'growx,wrap', layout: new MigLayout('fill,ins 0')) {
+								costumeUploadField = textField(constraints: 'growx', actionPerformed: {
+									pushCostumeDir(costumeUploadField.text as File)
+								})
+								button(text: '...', actionPerformed: {
+									def file = chooseFile("Choose a model to upload", costumeUploadField, "Costumes", "")
+
+									costumeUploadField.text = file ? file.getAbsolutePath() : ''
+									pushCostumeDir(file)
+								})
+							}
 							panel(constraints: 'growy,wrap')
 						}
-						panel(name: 'Stats', layout: new MigLayout('fill')) {
+						panel(name: 'Stats', layout: new MigLayout('fill,ins 0')) {
 							field('x: ', 'x')
 							field('y: ', 'y')
 							field('z: ', 'z')
@@ -302,6 +331,17 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			println "SAVING NEW NODE ID: $LaunchPlexus.props.nodeId"
 			LaunchPlexus.saveProps()
 		}
+	}
+	def chooseFile(message, field, filterName, filterRegexp) {
+		def ch = new JFileChooser();
+
+		if (field.text) {
+			ch.setSelectedFile(field.text as File)
+		}
+		ch.setDialogTitle(message);
+		ch.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES)
+		ch.setFileFilter(new GroovyFileFilter(filterName) {it.isDirectory() || it.name ==~ filterRegexp})
+		return ch.showOpenDialog(null) == JFileChooser.APPROVE_OPTION ? ch.getSelectedFile() : null
 	}
 	def updateNeighborList() {
 		try {
@@ -549,7 +589,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		Tools.stackTrace(err)
 	}
 	def initBoot() {
-		def docFile = new File(plexusDir, "cloud.properties")
+		def docFile = new File(plexusDir, "cache/$name/cloud.properties")
 
 		if (docFile.exists()) {
 			cloudProperties.load()
@@ -846,9 +886,10 @@ dumpCommands()
 	}
 	def pushCostume(name) {
 println "PUSHING COSTUME: $name"
-		def path = new File(plexusDir, "models/$name")
-
-		if (!path.exists()) {
+		pushCostumeDir(name, new File(plexusDir, "models/$name"))
+	}
+	def pushCostumeDir(name = path ? (path as File).getName() : null, path) {
+		if (!path?.exists()) {
 			sauer('err', "tc_msgbox [File costume not found] [Could not find costume in directory $path]")
 			dumpCommands()
 		} else {
@@ -921,6 +962,17 @@ println "STORED COSTUME, adding"
 		println "CREATING EMPTY"
 		def trips = []
 
+		tumes.sort {a,b -> a.name.compareTo(b.name)}
+		if (tumes != this.tumes) {
+			this.tumes = tumes
+			swing.doLater {
+				tumesCombo.removeAllItems()
+				tumesCombo.addItem('')
+				tumes.each {
+					tumesCombo.addItem(it.name)
+				}
+			}
+		}
 		tumes.each {c-> trips.add([c.name, c.thumb ? "${c.dir}.$c.type" : '', c.dir])}
 		dumpCostumeSelections(trips)
 	}
