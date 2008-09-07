@@ -1,3 +1,4 @@
+import java.awt.event.ItemEvent
 import java.util.concurrent.Executors
 import com.jgoodies.looks.plastic.Plastic3DLookAndFeel
 import javax.swing.UIManager
@@ -76,6 +77,9 @@ public class Plexus {
 	]
 	def executor = Executors.newSingleThreadExecutor()
 	def neighborField
+	def playerListeners = [:]
+	def maps
+	def mapCombo
 
 	def static sauerExec
 	def static soleInstance
@@ -209,6 +213,13 @@ public class Plexus {
 								button(text: "Load DF Map", actionPerformed: {loadDFMap()})
 								panel(constraints: 'growx,wrap')
 							}
+							label(text: "Current Map: ")
+							mapCombo = comboBox(editable: false, itemStateChanged: {
+								if (it.stateChange == ItemEvent.SELECTED && mapCombo && mapCombo.selectedIndex > -1) {
+									System.out.println(it)
+									connectWorld(maps[mapCombo.selectedIndex].id)
+								}
+							})
 							panel(constraints: 'growy,wrap')
 						}
 						panel(name: 'Stats', layout: new MigLayout('fill')) {
@@ -746,14 +757,26 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			}
 		}
 		def mapsGui = "newgui Worlds ["
+		def oldMaps = maps
+		maps = []
 		cloudProperties.each('map/(.*)') {key, value, match ->
 			def map = getMap(match.group(1))
 
 			ents.add([map.name, map.id, playerCount[map.id]])
+			maps.add(map)
 		}
 		ents.sort {a, b -> a[0].compareTo(b[0])}
 		for (world in ents) {
 			mapsGui += "guibutton [${world[0]} (${world[2]})] [remotesend connectWorld ${world[1]}]\n"
+		}
+		maps.sort {a, b -> a.name.compareTo(b.name)}
+		if (oldMaps != maps) {
+			swing.edt {
+				mapCombo.removeAllItems()
+				for (map in maps) {
+					mapCombo.addItem(map.name)
+				}
+			}
 		}
 		cloudProperties.each('privateMap/(.*)') {key, value, match ->
 			def map = getMap(match.group(1))
@@ -1054,5 +1077,12 @@ println "createPortal portal_$trigger = $name; portal $trigger"
 			txt += "];findPortals"
 		}
 		cfg.write(txt)
+	}
+	def playerUpdate(id, update) {
+		def l = playerListeners[id]
+
+		if (l) {
+			l(update)
+		}
 	}
 }
