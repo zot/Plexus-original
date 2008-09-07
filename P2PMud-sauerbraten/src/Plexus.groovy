@@ -201,14 +201,15 @@ public class Plexus {
 					label(text: "Command: ")
 					fields.cmd = textField(actionPerformed: {cmd()}, constraints: 'wrap, growx')
 					tabbedPane(constraints: 'spanx,width 100%,growy,wrap') {
-						label(text: 'Generation')
 						panel(name: 'Commands', layout: new MigLayout('fill')) {
+							label(text: 'Generation')
 							panel(layout: new MigLayout('fill, ins 0'), constraints: 'growx,wrap') {
 								button(text: "Launch 3D", actionPerformed: {launchSauer()})
 								button(text: "Generate Dungeon", actionPerformed: {generateDungeon()})
 								button(text: "Load DF Map", actionPerformed: {loadDFMap()})
 								panel(constraints: 'growx,wrap')
 							}
+							panel(constraints: 'growy,wrap')
 						}
 						panel(name: 'Stats', layout: new MigLayout('fill')) {
 							field('x: ', 'x')
