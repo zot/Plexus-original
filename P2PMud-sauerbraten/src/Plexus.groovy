@@ -1,3 +1,4 @@
+import java.awt.event.ItemEvent
 import java.util.concurrent.Executors
 import com.jgoodies.looks.plastic.Plastic3DLookAndFeel
 import javax.swing.UIManager
@@ -54,6 +55,7 @@ public class Plexus {
 	def sauerDir
 	def plexusDir
 	def cacheDir
+	def mapDir
 	def mapPrefix = 'packages/dist/storage'
 	def peer
 	def mapname
@@ -76,6 +78,12 @@ public class Plexus {
 	]
 	def executor = Executors.newSingleThreadExecutor()
 	def neighborField
+	def playerListeners = [:]
+	def maps
+	def mapCombo
+	def mapPlayers
+	def mapPlayersCombo
+	def followingPlayer
 
 	def static sauerExec
 	def static soleInstance
@@ -121,11 +129,12 @@ public class Plexus {
 		} else {
 			plexusDir = new File('plexus')
 		}
-		cloudProperties = new CloudProperties(this, new File(plexusDir, 'cloud.properties'))
+		cloudProperties = new CloudProperties(this, new File(plexusDir, "cache/$name/cloud.properties"))
 		cloudProperties.persistentPropertyPattern = ~'(map|privateMap|costume)/..*'
 		cloudProperties.privatePropertyPattern = ~'(privateMap)/..*'
-		cacheDir = new File(plexusDir, "cache")
-		def pastStor = new File(plexusDir, "PAST-storage")
+		cacheDir = new File(plexusDir, "cache/$name/files")
+		mapDir = new File(plexusDir, "cache/$name/maps")
+		def pastStor = new File(plexusDir, "cache/$name/PAST")
 		Tools.deleteAll(pastStor)
 		pastStor.mkdirs()
 		System.setProperty('past.storage', pastStor.getAbsolutePath())
@@ -179,7 +188,7 @@ public class Plexus {
 				updateCostumeGui()
 			}
 			new File(sauerDir, mapPrefix).mkdirs()
-			if (LaunchPlexus.props.auto_sauer != '0') launchSauer();
+			if ((LaunchPlexus.props.sauer_mode ?: 'launch') == 'launch') launchSauer();
 			//PlasticLookAndFeel.setPlasticTheme(new DesertBlue());
 			try {
 			   UIManager.setLookAndFeel(new Plastic3DLookAndFeel());
@@ -190,34 +199,61 @@ public class Plexus {
 					label(text: lbl)
 					fields[key] = textField(actionPerformed: {sauerEnt(key)}, focusLost: {sauerEnt(key)}, constraints: 'wrap, growx')
 				}
-				def f = frame(title: 'Plexus', windowClosing: {System.exit(0)}, layout: new MigLayout('fill'), pack: true, show: true) {
-					field('x: ', 'x')
-					field('y: ', 'y')
-					field('z: ', 'z')
-					field('vx: ', 'vx')
-					field('vy: ', 'vy')
-					field('vz: ', 'vz')
-					field('fx: ', 'fx')
-					field('fy: ', 'fy')
-					field('fz: ', 'fz')
-					field('roll: ', 'rol')
-					field('pitch: ', 'pit')
-					field('yaw: ', 'yaw')
-					field('strafe: ', 's')
-					field('edit: ', 'e')
-					field('move: ', 'm')
-					field('physics state: ', 'ps')
-					field('max speed: ', 'ms')
-					label(text: "Command: ")
-					fields.cmd = textField(actionPerformed: {cmd()}, constraints: 'wrap, growx')
+				def f = frame(title: 'Plexus: ' + LaunchPlexus.props.name, windowClosing: {System.exit(0)}, layout: new MigLayout('fill'), pack: true, show: true) {
 					label(text: "Node id: ")
 					label(text: LaunchPlexus.props.nodeId ?: "none", constraints: 'wrap, growx')
 					label(text: "Neighbors: ")
-					neighborField = label(text: 'none', constraints: 'wrap, growx')
-					button(text: "Launch 3D", actionPerformed: {launchSauer()})
-					button(text: "Generate Dungeon", actionPerformed: {generateDungeon()}, constraints: 'wrap')
-					button(text: "Update Neighbor List", actionPerformed: {updateNeighborList()})
-					button(text: "Load DF Map", actionPerformed: {loadDFMap()}, constraints: 'wrap')
+					panel(layout: new MigLayout('fill, ins 0'), constraints: 'spanx,wrap,growx') {
+						button(text: "Update Neighbor List", actionPerformed: {updateNeighborList()})
+						neighborField = label(text: 'none', constraints: 'wrap, growx')
+					}
+					label(text: "Command: ")
+					fields.cmd = textField(actionPerformed: {cmd()}, constraints: 'wrap, growx')
+					tabbedPane(constraints: 'spanx,width 100%,growy,wrap') {
+						panel(name: 'Commands', layout: new MigLayout('fill')) {
+							label(text: 'Generation')
+							panel(layout: new MigLayout('fill, ins 0'), constraints: 'growx,wrap') {
+								button(text: "Launch 3D", actionPerformed: {launchSauer()})
+								button(text: "Generate Dungeon", actionPerformed: {generateDungeon()})
+								button(text: "Load DF Map", actionPerformed: {loadDFMap()})
+								panel(constraints: 'growx,wrap')
+							}
+							label(text: "Current Map: ")
+							mapCombo = comboBox(editable: false, itemStateChanged: {
+								if (it.stateChange == ItemEvent.SELECTED && mapCombo && mapCombo.selectedIndex > -1) {
+									connectWorld(mapCombo.selectedIndex == 0 ? null : maps[mapCombo.selectedIndex - 1].id)
+								}
+							}, constraints: 'wrap')
+							label(text: "Follow player: ")
+							mapPlayersCombo = comboBox(editable: false, itemStateChanged: {
+								if (it.stateChange == ItemEvent.SELECTED && mapPlayersCombo && mapPlayersCombo.selectedIndex > -1) {
+									followingPlayer = mapPlayersCombo.selectedIndex == 0 ? null : mapPlayers[mapPlayersCombo.selectedIndex - 1]
+println "NOW FOLLOWING: ${followingPlayer?.name}"
+								}
+							}, constraints: 'wrap')
+							panel(constraints: 'growy,wrap')
+						}
+						panel(name: 'Stats', layout: new MigLayout('fill')) {
+							field('x: ', 'x')
+							field('y: ', 'y')
+							field('z: ', 'z')
+							field('vx: ', 'vx')
+							field('vy: ', 'vy')
+							field('vz: ', 'vz')
+							field('fx: ', 'fx')
+							field('fy: ', 'fy')
+							field('fz: ', 'fz')
+							field('roll: ', 'rol')
+							field('pitch: ', 'pit')
+							field('yaw: ', 'yaw')
+							field('strafe: ', 's')
+							field('edit: ', 'e')
+							field('move: ', 'm')
+							field('physics state: ', 'ps')
+							field('max speed: ', 'ms')
+							panel(constraints: 'growy,wrap')
+						}
+					}
 				}
 				f.size = [500, (int)f.size.height] as Dimension
 			}
@@ -260,8 +296,10 @@ public class Plexus {
 			initJoin()
 		}
 //		println "Node ID: ${peer.node.getId().toStringFull()}"
+println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		if (!LaunchPlexus.props.nodeId) {
 			LaunchPlexus.props.nodeId = peer.node.getId().toStringFull()
+			println "SAVING NEW NODE ID: $LaunchPlexus.props.nodeId"
 			LaunchPlexus.saveProps()
 		}
 	}
@@ -483,8 +521,6 @@ public class Plexus {
 		"$name-${TIME_STAMP.format(new Date())}"
 	}
 	def loadMap(name, id, cont = null) {
-		def mapDir = new File(plexusDir, "maps/$id")
-
 		println "Loading map: ${id}"
 		if (id instanceof String) {
 			id = Id.build(id)
@@ -562,6 +598,9 @@ public class Plexus {
 		cloudProperties.removeProperty(key)
 		peer.broadcastCmds(plexusTopic, ["removeCloudProperty $key"] as String[])
 		println "BROADCAST REMOVE PROPERTY: $key"
+	}
+	def removeCloudProperty(key) {
+		cloudProperties.removeProperty(key)
 	}
 	def receiveCloudProperties(props) {
 		cloudProperties.setProperties(props, true)
@@ -671,6 +710,7 @@ public class Plexus {
 			def mname = "Limbo"
 			def myMap = mapTopic ? getMap(mapTopic.getId().toStringFull()) : null
 			def mapTab = ''
+			def newMapPlayers = []
 
 			updateMapGui()
 			mapCnt = 1
@@ -685,7 +725,19 @@ public class Plexus {
 					++cnt
 					if (myMap?.id == who.map) {
 						mapTab += "guibutton [$who.name] [echo $who.id]\n"
+						newMapPlayers.add(who)
 						++mapCnt
+					}
+				}
+			}
+			newMapPlayers.sort {a, b -> a.name.compareTo(b.name)}
+			if (newMapPlayers != mapPlayers) {
+				mapPlayers = newMapPlayers
+				swing.doLater {
+					mapPlayersCombo.removeAllItems()
+					mapPlayersCombo.addItem('')
+					for (player in mapPlayers) {
+						mapPlayersCombo.addItem(player.name)
 					}
 				}
 			}
@@ -727,14 +779,27 @@ public class Plexus {
 			}
 		}
 		def mapsGui = "newgui Worlds ["
+		def newMaps = []
 		cloudProperties.each('map/(.*)') {key, value, match ->
 			def map = getMap(match.group(1))
 
 			ents.add([map.name, map.id, playerCount[map.id]])
+			newMaps.add(map)
 		}
 		ents.sort {a, b -> a[0].compareTo(b[0])}
 		for (world in ents) {
 			mapsGui += "guibutton [${world[0]} (${world[2]})] [remotesend connectWorld ${world[1]}]\n"
+		}
+		newMaps.sort {a, b -> a.name.compareTo(b.name)}
+		if (newMaps != maps) {
+			maps = newMaps
+			swing.doLater {
+				mapCombo.removeAllItems()
+				mapCombo.addItem('')
+				for (map in maps) {
+					mapCombo.addItem(map.name)
+				}
+			}
 		}
 		cloudProperties.each('privateMap/(.*)') {key, value, match ->
 			def map = getMap(match.group(1))
@@ -902,27 +967,38 @@ println "COSTUME SELS: $triples"
 		] as Continuation, false)
 	}
 	def connectWorld(id) {
-		def map = getMap(id)
-		
-		if (!map) {
-			sauer('entry', "tc_msgbox [Couldn't find map] [Unknown map id: $id]")
-		} else if (map.id != mapTopic?.getId()?.toStringFull()) {
-			println "CONNECTING TO WORLD: $map.name ($map.id)"
+		if (id) {
+			def map = getMap(id)
+			
+			if (!map) {
+				sauer('entry', "tc_msgbox [Couldn't find map] [Unknown map id: $id]")
+			} else if (map.id != mapTopic?.getId()?.toStringFull()) {
+				println "CONNECTING TO WORLD: $map.name ($map.id)"
+				if (mapTopic) {
+					peer.unsubscribe(mapTopic)
+				}
+				loadMap(map.name, map.dir, [
+					receiveResult: {
+						peer.subscribe(Id.build(id), [
+							receiveResult: {topic ->
+								mapTopic = topic
+								mapIsPrivate = map.privateMap
+								updateMyPlayerInfo()
+							},
+							receiveException: {exception -> err("Couldn't subscribe to topic: ", exception)}
+						] as Continuation)
+					},
+					receiveException: {err("Trouble loading map", it)}
+				] as Continuation)
+			}
+		} else {
 			if (mapTopic) {
 				peer.unsubscribe(mapTopic)
+				mapTopic = null
+				sauer('limbo', "map plexus/dist/limbo/map")
+				dumpCommands()
+				updateMyPlayerInfo()
 			}
-			loadMap(map.name, map.dir, [
-				receiveResult: {
-					peer.subscribe(Id.build(id), [
-						receiveResult: {topic ->
-							mapTopic = topic
-							mapIsPrivate = map.privateMap
-						},
-						receiveException: {exception -> err("Couldn't subscribe to topic: ", exception)}
-					] as Continuation)
-				},
-				receiveException: {err("Trouble loading map", it)}
-			] as Continuation)
 		}
 	}
 	def pushMap(privateMap, String... nameArgs) {
@@ -1035,5 +1111,25 @@ println "createPortal portal_$trigger = $name; portal $trigger"
 			txt += "];findPortals"
 		}
 		cfg.write(txt)
+	}
+	def playerUpdate(id, update) {
+		if (id == followingPlayer?.id) {
+			def values = [:]
+			def format = []
+
+println "FOLLOW: $id"
+			for (def i = 0; i < update.length; i += 2) {
+				values[update[i]] = update[i + 1]
+			}
+			values.x = (Double.parseDouble(values.x) - 20) as String
+			values.y = (Double.parseDouble(values.y) - 20) as String
+			values.each {
+				format.add(it.key)
+				format.add(it.value)
+			}
+			sauer('follow', "tc_setinfo p0 ${format.join(' ')}")
+			dumpCommands()
+			broadcast(["update $name ${format.join(' ')}"])
+		}
 	}
 }
