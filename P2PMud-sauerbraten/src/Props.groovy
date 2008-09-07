@@ -6,7 +6,6 @@ class Props {
 
 	def setProfile(prof) {
 		profile = prof ? "$prof-" : ""
-println "NEW PROFILE: $profile"
 	}
 	def getAt(String key) {
 		properties["$profile$key" as String]
@@ -38,7 +37,6 @@ println "NEW PROFILE: $profile"
 			properties.load(input)
 			input.close()
 			profiles = [*(properties?.profiles ? properties.profiles.split(',') : [])] as Set
-			println "PROFILES: '$profiles'"
 		}
 	}
 	def addProfile(prof) {

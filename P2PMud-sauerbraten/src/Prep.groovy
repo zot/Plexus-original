@@ -41,7 +41,6 @@ public class Prep {
 	def static final MARKER = "\n//THIS LINE ADDED BY TEAM CTHULHU'S PLEXUS: PLEASE DO NOT EDIT THIS LINE OR THE NEXT ONE\n"
 
 	def static initProps() {
-		println "INITIALIZING PROPS"
 		for (e in defaultProps) {
 			props[e.key] = e.value
 		}
@@ -186,7 +185,6 @@ public class Prep {
 			if (!props[e.key]) props[e.key] = e.value
 		}
 		lastPeerName = props.name
-		println props
 	}
 	def static discoverExternalIP() {
 		println "Discover button pressed"
@@ -233,11 +231,11 @@ public class Prep {
 				field('Pastry boot port: ', 'pastry_boot_port')
 				field('Sauer cmd: ', 'sauer_cmd')
 				field('Sauer port: ', 'sauer_port')
+				label(text: 'Launch sauer: ')
 				modeGroup = buttonGroup();
 				panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
-		        	modeButtons.launch = radioButton(text:"Launch", buttonGroup:modeGroup);
-		        	modeButtons.noLaunch = radioButton(text:"No Launch", buttonGroup:modeGroup);
-		        	modeButtons.test = radioButton(text:"Test", buttonGroup:modeGroup, constraints: 'wrap');
+		        	modeButtons.launch = radioButton(text:"Launch", buttonGroup:modeGroup, actionPerformed: {setMode(it.source)})
+		        	modeButtons.noLaunch = radioButton(text:"No Launch", buttonGroup:modeGroup, actionPerformed: {setMode(it.source)})
 				}
 				label(text: "Node id: ")
 				nodeIdLabel = label(text: props.nodeId ?: "none", constraints: 'wrap, growx')
@@ -250,12 +248,18 @@ public class Prep {
 			f.size = [500, (int)f.size.height] as Dimension
 		}
 	}
+	def static setMode(button) {
+		modeButtons.each {
+			if (it.value == button) {
+				props.sauer_mode = it.key
+			}
+		}
+	}
 	def static update() {
 		itemsCombo.model = new DefaultComboBoxModel(['', *props.profiles.sort()] as Object[])
-		modeGroup.setSelected(modeButtons[props.sauer_mode].model, true)
+		modeGroup.setSelected(modeButtons[props.sauer_mode ?: 'launch'].model, true)
 	}
 	def static addProfile(prof) {
-		println "PROFILE: $prof"
 		if (prof) {
 			if (props.addProfile(prof)) {
 				props.setProfile(prof)
@@ -270,11 +274,9 @@ public class Prep {
 			def name
 			def ok = {
 				d.visible = false
-				println "Name: $name.text"
 				addProfile(name.text)
 			}
 
-			println "SELECTED: $evt.source.selectedIndex"
 			switch (evt.source.selectedIndex) {
 			case 0:
 				println "new profile"
@@ -299,7 +301,6 @@ public class Prep {
 		}
 	}
 	def static chooseProfile(item) {
-		println "Profile: $item"
 		props.setProfile(item)
 		removeProfileButton.enabled = !!props.profile
 		fields.each {

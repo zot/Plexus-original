@@ -179,7 +179,7 @@ public class Plexus {
 				updateCostumeGui()
 			}
 			new File(sauerDir, mapPrefix).mkdirs()
-			if (LaunchPlexus.props.auto_sauer != '0') launchSauer();
+			if ((LaunchPlexus.props.sauer_mode ?: 'launch') == 'launch') launchSauer();
 			//PlasticLookAndFeel.setPlasticTheme(new DesertBlue());
 			try {
 			   UIManager.setLookAndFeel(new Plastic3DLookAndFeel());
@@ -260,6 +260,7 @@ public class Plexus {
 			initJoin()
 		}
 //		println "Node ID: ${peer.node.getId().toStringFull()}"
+println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		if (!LaunchPlexus.props.nodeId) {
 			LaunchPlexus.props.nodeId = peer.node.getId().toStringFull()
 			LaunchPlexus.saveProps()
