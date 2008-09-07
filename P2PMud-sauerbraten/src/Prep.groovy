@@ -241,9 +241,11 @@ public class Prep {
 				nodeIdLabel = label(text: props.nodeId ?: "none", constraints: 'wrap, growx')
 				button(text: "Start", actionPerformed: {f.dispose(); finished(true)})
 				button(text: "Exit", actionPerformed: {f.dispose(); finished(false)}, constraints: 'wrap')
-				itemsCombo = comboBox(editable: true, actionPerformed: {if (itemsCombo) addProfile(itemsCombo?.editor?.item)})
-				removeProfileButton = button(text: 'Remove Profile', actionPerformed: {removeProfile()}, enabled: false)
-				button(text: 'Clear P2P Cache', actionPerformed: { clearCache() } )
+				panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
+					itemsCombo = comboBox(editable: true, actionPerformed: {if (itemsCombo) addProfile(itemsCombo?.editor?.item)})
+					removeProfileButton = button(text: 'Remove Profile', actionPerformed: {removeProfile()}, enabled: false)
+					button(text: 'Clear P2P Cache', actionPerformed: { clearCache() } )
+				}
 			}
 			update()
 			f.size = [500, (int)f.size.height] as Dimension
@@ -255,10 +257,7 @@ public class Prep {
 		println "Clearing cache at $plexusdir"
 
 		Tools.deleteAll(new File(plexusdir, "cache"))
-		Tools.deleteAll(new File(plexusdir, "cloud.properties"))
-		Tools.deleteAll(new File(plexusdir, "maps"))
 		Tools.deleteAll(new File(plexusdir, "models/thumbs"))
-		Tools.deleteAll(new File(plexusdir, "PAST-storage"))
 		
 		new File(plexusdir, "models").eachFileMatch(~/^[A-F0-9]+$/){ f->
 	    	if (f.isDirectory()) f.delete()
