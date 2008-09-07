@@ -190,34 +190,48 @@ public class Plexus {
 					label(text: lbl)
 					fields[key] = textField(actionPerformed: {sauerEnt(key)}, focusLost: {sauerEnt(key)}, constraints: 'wrap, growx')
 				}
-				def f = frame(title: 'Plexus', windowClosing: {System.exit(0)}, layout: new MigLayout('fill'), pack: true, show: true) {
-					field('x: ', 'x')
-					field('y: ', 'y')
-					field('z: ', 'z')
-					field('vx: ', 'vx')
-					field('vy: ', 'vy')
-					field('vz: ', 'vz')
-					field('fx: ', 'fx')
-					field('fy: ', 'fy')
-					field('fz: ', 'fz')
-					field('roll: ', 'rol')
-					field('pitch: ', 'pit')
-					field('yaw: ', 'yaw')
-					field('strafe: ', 's')
-					field('edit: ', 'e')
-					field('move: ', 'm')
-					field('physics state: ', 'ps')
-					field('max speed: ', 'ms')
-					label(text: "Command: ")
-					fields.cmd = textField(actionPerformed: {cmd()}, constraints: 'wrap, growx')
+				def f = frame(title: 'Plexus: ' + LaunchPlexus.props.name, windowClosing: {System.exit(0)}, layout: new MigLayout('fill'), pack: true, show: true) {
 					label(text: "Node id: ")
 					label(text: LaunchPlexus.props.nodeId ?: "none", constraints: 'wrap, growx')
 					label(text: "Neighbors: ")
-					neighborField = label(text: 'none', constraints: 'wrap, growx')
-					button(text: "Launch 3D", actionPerformed: {launchSauer()})
-					button(text: "Generate Dungeon", actionPerformed: {generateDungeon()}, constraints: 'wrap')
-					button(text: "Update Neighbor List", actionPerformed: {updateNeighborList()})
-					button(text: "Load DF Map", actionPerformed: {loadDFMap()}, constraints: 'wrap')
+					panel(layout: new MigLayout('fill, ins 0'), constraints: 'spanx,wrap,growx') {
+						button(text: "Update Neighbor List", actionPerformed: {updateNeighborList()})
+						neighborField = label(text: 'none', constraints: 'wrap, growx')
+					}
+					label(text: "Command: ")
+					fields.cmd = textField(actionPerformed: {cmd()}, constraints: 'wrap, growx')
+					label(text: 'Generation')
+					panel(layout: new MigLayout('fill, ins 0'), constraints: 'growx,wrap') {
+						button(text: "Launch 3D", actionPerformed: {launchSauer()})
+						button(text: "Generate Dungeon", actionPerformed: {generateDungeon()})
+						button(text: "Load DF Map", actionPerformed: {loadDFMap()})
+						panel(constraints: 'growx,wrap')
+					}
+					tabbedPane(constraints: 'spanx,width 100%,growy,wrap') {
+						panel(name: 'Stats', layout: new MigLayout('fill')) {
+							field('x: ', 'x')
+							field('y: ', 'y')
+							field('z: ', 'z')
+							field('vx: ', 'vx')
+							field('vy: ', 'vy')
+							field('vz: ', 'vz')
+							field('fx: ', 'fx')
+							field('fy: ', 'fy')
+							field('fz: ', 'fz')
+							field('roll: ', 'rol')
+							field('pitch: ', 'pit')
+							field('yaw: ', 'yaw')
+							field('strafe: ', 's')
+							field('edit: ', 'e')
+							field('move: ', 'm')
+							field('physics state: ', 'ps')
+							field('max speed: ', 'ms')
+							panel(constraints: 'growy,wrap')
+						}
+						panel(name: 'Commands', layout: new MigLayout('fill')) {
+							
+						}
+					}
 				}
 				f.size = [500, (int)f.size.height] as Dimension
 			}
@@ -263,6 +277,7 @@ public class Plexus {
 println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		if (!LaunchPlexus.props.nodeId) {
 			LaunchPlexus.props.nodeId = peer.node.getId().toStringFull()
+			println "SAVING NEW NODE ID: $LaunchPlexus.props.nodeId"
 			LaunchPlexus.saveProps()
 		}
 	}
@@ -563,6 +578,9 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		cloudProperties.removeProperty(key)
 		peer.broadcastCmds(plexusTopic, ["removeCloudProperty $key"] as String[])
 		println "BROADCAST REMOVE PROPERTY: $key"
+	}
+	def removeCloudProperty(key) {
+		cloudProperties.removeProperty(key)
 	}
 	def receiveCloudProperties(props) {
 		cloudProperties.setProperties(props, true)
