@@ -26,16 +26,14 @@ public class Prep {
 		external_port: '9090',
 		headless: '0',
 		upnp: '1',
-		auto_sauer: '1',
-		node_interface: '',
+		sauer_mode: 'launch',
 		past_storage:'/tmp/storage-9090'
 	] as Properties
 	def static props = new Props()
 	def static fields = [:]
 	def static itemsCombo
 	def static nodeIdLabel
-	def static modeGroup
-	def static modeButtons = [:]
+	def static upnpButton, sauerButton
 	def static removeProfileButton
 	def static sauerDir
 	def static final MARKER = "\n//THIS LINE ADDED BY TEAM CTHULHU'S PLEXUS: PLEASE DO NOT EDIT THIS LINE OR THE NEXT ONE\n"
@@ -225,18 +223,15 @@ public class Prep {
 				fields['external_ip'] = textField(actionPerformed: {setprop('external_ip')}, focusLost: {setprop('external_ip')}, text: p['external_ip'], constraints: 'growx')
 				button(text: "Discover", actionPerformed: { discoverExternalIP() }, constraints: 'wrap')
 				field('External port: ', 'external_port')
-				field('Use UPnP: ', 'upnp')
+				label(text: 'Use UPnP:')
+				upnpButton = checkBox(text: 'If checked, make sure UPnP is enabled on your router', actionPerformed: { evt -> props.upnp = evt.source.selected ? '1' : '0' }, constraints: 'wrap' )
 				field('Pastry port: ', 'pastry_port')
 				field('Pastry boot host: ', 'pastry_boot_host')
 				field('Pastry boot port: ', 'pastry_boot_port')
 				field('Sauer cmd: ', 'sauer_cmd')
 				field('Sauer port: ', 'sauer_port')
 				label(text: 'Launch sauer: ')
-				modeGroup = buttonGroup();
-				panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
-		        	modeButtons.launch = radioButton(text:"Launch", buttonGroup:modeGroup, actionPerformed: {setMode(it.source)})
-		        	modeButtons.noLaunch = radioButton(text:"No Launch", buttonGroup:modeGroup, actionPerformed: {setMode(it.source)})
-				}
+				sauerButton = checkBox(text: 'If checked, it will auto start the Plexus custom Sauerbraten', actionPerformed: { evt -> props.sauer_mode = evt.source.selected ? 'launch' : 'noLaunch' }, constraints: 'wrap' )
 				label(text: "Node id: ")
 				nodeIdLabel = label(text: props.nodeId ?: "none", constraints: 'wrap, growx')
 				button(text: "Start", actionPerformed: {f.dispose(); finished(true)})
@@ -265,16 +260,19 @@ public class Prep {
 	    	if (f.isDirectory()) f.delete()
 		}
 	}
+	/*
 	def static setMode(button) {
 		modeButtons.each {
 			if (it.value == button) {
 				props.sauer_mode = it.key
 			}
 		}
-	}
+	} */
 	def static update() {
 		itemsCombo.model = new DefaultComboBoxModel(['', *props.profiles.sort()] as Object[])
-		modeGroup.setSelected(modeButtons[props.sauer_mode ?: 'launch'].model, true)
+		//modeGroup.setSelected(modeButtons[props.sauer_mode ?: 'launch'].model, true)
+		sauerButton.setSelected(props.sauer_mode == 'launch')
+		upnpButton.setSelected(props.upnp != '0')
 	}
 	def static addProfile(prof) {
 		if (prof) {
