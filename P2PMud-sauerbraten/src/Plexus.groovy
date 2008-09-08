@@ -256,8 +256,9 @@ println "NOW FOLLOWING: ${followingPlayer?.name}"
 								button(text: '...', actionPerformed: {
 									def file = chooseFile("Choose a model to upload", costumeUploadField, "Costumes", "")
 
-									costumeUploadField.text = file ? file.getAbsolutePath() : ''
-									pushCostumeDir(file)
+									if (file) {
+										pushCostumeDir(file)
+									}
 								})
 							}
 							panel(constraints: 'growy,wrap')
@@ -341,23 +342,34 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		ch.setDialogTitle(message);
 		ch.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES)
 		ch.setFileFilter(new GroovyFileFilter(filterName) {it.isDirectory() || it.name ==~ filterRegexp})
-		return ch.showOpenDialog(null) == JFileChooser.APPROVE_OPTION ? ch.getSelectedFile() : null
+		def result = ch.showOpenDialog(null) == JFileChooser.APPROVE_OPTION ? ch.getSelectedFile() : null
+		if (result) {
+			field.text = result.getAbsolutePath()
+		}
+		return result
 	}
 	def updateNeighborList() {
 		try {
 			neighborField.text = String.valueOf(peer.getNeighborCount())
 		} catch (Exception ex) {}
 	}
-	// launch sauer in its own thread
 	def launchSauer() {
-		println ("Going to exec $sauerExec")
-		Thread.start {
-			if (sauerExec) {
-				Runtime.getRuntime().exec(sauerExec)
+		if (sauerExec) {
+			def env = []
+			def winderz = System.getProperty('os.name').toLowerCase() ==~ /.*windows.*/
+
+			for (vars in System.getenv()) {
+				if (winderz && vars.key.equalsIgnoreCase('path')) {
+					env.add("$vars.key=$vars.value;$sauerDir\\bin")
+				} else {
+					env.add("$vars.key=$vars.value")
+				}
 			}
-		};
+			env = env as String[]
+			println ("Going to exec $sauerExec from $sauerDir with env: $env")
+			Runtime.getRuntime().exec(sauerExec,  env, sauerDir)
+		}
 	}
-	
 	def loadDFMap() {
 		def ch = new JFileChooser();
 		ch.setDialogTitle("Please choose the DF map to load");
