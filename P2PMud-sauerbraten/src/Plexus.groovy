@@ -289,6 +289,8 @@ println "NOW FOLLOWING: ${followingPlayer?.name}"
 			}
 			start(args[0])
 		}
+		P2PMudPeer.verboseLogging = LaunchPlexus.props.verbose_log == '1'
+		P2PMudPeer.logFile = new File(plexusDir, "cache/$name/plexus.log")
 		P2PMudPeer.main(
 			{id, topic, cmd ->
 				try {
