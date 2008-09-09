@@ -1181,7 +1181,6 @@ println "createPortal portal_$trigger = $name; portal $trigger"
 			def values = [:]
 			def format = []
 
-println "FOLLOW: $id"
 			for (def i = 0; i < update.length; i += 2) {
 				values[update[i]] = update[i + 1]
 			}

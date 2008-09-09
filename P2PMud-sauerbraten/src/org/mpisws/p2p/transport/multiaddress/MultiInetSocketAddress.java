@@ -68,6 +68,13 @@ public class MultiInetSocketAddress implements Serializable {
 
   public MultiInetSocketAddress(InetSocketAddress[] addressList) {
     this.address = addressList;
+//System.err.print("ADDR:");
+//for (InetSocketAddress addr: addressList) {
+//System.err.print(' ');
+//System.err.print(addr);
+//}
+//System.err.println();
+//System.err.flush();
   }
   
   public MultiInetSocketAddress(InetSocketAddress outer,
@@ -290,6 +297,13 @@ public class MultiInetSocketAddress implements Serializable {
     for (int ctr = 0; ctr < address.length; ctr++) {
       serializer.serialize(address[ctr], buf);
     }
+//System.err.print("ADDR:");
+//for (InetSocketAddress addr: address) {
+//System.err.print(' ');
+//System.err.print(addr);
+//}
+//System.err.println();
+//System.err.flush();
   }
 
   public short getSerializedLength() {

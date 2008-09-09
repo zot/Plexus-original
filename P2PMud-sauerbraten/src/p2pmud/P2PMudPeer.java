@@ -17,6 +17,7 @@ import javolution.util.FastTable;
 import rice.Continuation;
 import rice.Continuation.MultiContinuation;
 import rice.environment.Environment;
+import rice.environment.logging.Logger;
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
@@ -35,7 +36,6 @@ import rice.pastry.standard.RandomNodeIdFactory;
 import rice.persistence.LRUCache;
 import rice.persistence.MemoryStorage;
 import rice.persistence.PersistentStorage;
-import rice.persistence.Storage;
 import rice.persistence.StorageManagerImpl;
 
 
@@ -289,6 +289,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		env.getParameters().setInt("p2p_past_messageTimeout", Integer.parseInt(System.getProperty("past.timeout", "15000")));
 		env.getParameters().setString("nat_search_policy", "never");
 		env.getParameters().setString("probe_for_external_address", "true");
+		env.getParameters().setString("pastry_socket_writer_max_msg_size", "65536");
 		NodeIdFactory nidFactory = new RandomNodeIdFactory(env);
 		FastTable<InetSocketAddress> probes = new FastTable<InetSocketAddress>();
 		if (probeHost != null) {
@@ -302,6 +303,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		} else {
 			node = factory.newNode(nodeId, probes.get(0));
 		}
+		System.out.println("Using boot address: " + bootaddress);
 		node.boot(bootaddress);
 		idFactory = new PastryIdFactory(node.getEnvironment());
 		endpoint = node.buildEndpoint(this, "myinstance");
