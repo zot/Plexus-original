@@ -582,22 +582,22 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			id = Id.build(id)
 		}
 		P2PMudFile.fetchDir(id, cacheDir, dir, [
-			receiveResult: {
+			receiveResult: {result ->
 				executor.submit {
 					def mapPath = Tools.subpath(new File(sauerDir, "packages"), dir)
 
 					println "Retrieved map from PAST: $dir, executing: map [$mapPath/map]"
 					sauer('load', "echo loading new map: [$mapPath/map]; tc_loadmsg [$name]; map [$mapPath/map]")
 					dumpCommands()
-					if (cont) {cont.receiveResult(it)}
+					if (cont) {cont.receiveResult(result)}
 				}
 			},
-			receiveException: {
+			receiveException: {ex ->
 				executor.submit {
 					if (cont) {
-						cont.receiveException(it)
+						cont.receiveException(ex)
 					} else {
-						err("Couldn't load map: $id", it)
+						err("Couldn't load map: $id", ex)
 					}
 				}
 			}
@@ -638,10 +638,10 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 						dumpCommands()
 					}
 				},
-				receiveException: {
+				receiveException: {ex ->
 					executor.submit {
 						println "FAILED TO PUSH CACHE"
-						err("Error pushing cache in PAST", it)
+						err("Error pushing cache in PAST", ex)
 					}
 				}
 			] as Continuation, files.size())
@@ -919,15 +919,15 @@ println "PUSHING COSTUME: $name"
 		} else {
 println "STORING COSTUME"
 			P2PMudFile.storeDir(cacheDir, path, [
-				receiveResult: {
+				receiveResult: {result ->
 					executor.submit {
-						def fileId = it.file.getId().toStringFull()
+						def fileId = result.file.getId().toStringFull()
 						def type = 'png'
-						def thumb = it.properties['thumb.png']
+						def thumb = result.properties['thumb.png']
 
 						if (!thumb) {
 							type = 'jpg'
-							thumb = it.properties['thumb.jpg'] ?: 'none'
+							thumb = result.properties['thumb.jpg'] ?: 'none'
 						}
 						try {
 println "STORED COSTUME, adding"
@@ -937,7 +937,7 @@ println "STORED COSTUME, adding"
 						}
 					}
 				},
-				receiveException: {executor.submit {err("Couldn't store costume in cloud: $path", it)}}
+				receiveException: {ex -> executor.submit {err("Couldn't store costume in cloud: $path", ex)}}
 			] as Continuation)
 		}
 	}
@@ -976,7 +976,7 @@ println "STORED COSTUME, adding"
 						showTumes(tumes)
 					}
 				},
-				receiveException: {executor.submit {err("Error fetching thumbs for costumes", it)}}
+				receiveException: {ex -> executor.submit {err("Error fetching thumbs for costumes", ex)}}
 			] as Continuation, needed.size())
 
 			needed.each {
@@ -1045,7 +1045,7 @@ println "COSTUME SELS: $triples"
 					println "USE COSTUME $name ($costumeDir)"
 				}
 			},
-			receiveException: {executor.submit {err("Couldn't use costume: $name", it)}}
+			receiveException: {ex -> executor.submit {err("Couldn't use costume: $name", ex)}}
 		] as Continuation, false)
 	}
 	def connectWorld(id) {
@@ -1072,7 +1072,7 @@ println "COSTUME SELS: $triples"
 							receiveException: {exception -> executor.submit {err("Couldn't subscribe to topic: ", exception)}}
 						] as Continuation)
 					},
-					receiveException: {executor.submit {err("Trouble loading map", it)}}
+					receiveException: {ex -> executor.submit {err("Trouble loading map", ex)}}
 				] as Continuation)
 			}
 		} else {
@@ -1098,15 +1098,15 @@ println "pushMap: [$nameArgs]"
 			}
 			println "1"
 			def cont = [
-				receiveResult: {
+				receiveResult: {result ->
 					executor.submit {
 						def topic = newMap ? peer.randomId().toStringFull() : map.id
-						def id = it.file.getId().toStringFull()
+						def id = result.file.getId().toStringFull()
 
 						transmitSetCloudProperty("${privateMap == '1' ? 'privateMap' : 'map'}/$topic", "$id $name")
 					}
 				},
-				receiveException: {executor.submit {err("Error pushing map", it)}}
+				receiveException: {ex -> executor.submit {err("Error pushing map", ex)}}
 			] as Continuation
 
 			if (mapname ==~ 'plexus/.*/map') {
