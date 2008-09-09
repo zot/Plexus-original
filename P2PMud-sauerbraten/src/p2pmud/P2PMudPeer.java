@@ -55,6 +55,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	private static P2PMudCommandHandler cmdHandler;
 	private static String nodeIdString;
 	private static Runnable neighborChange;
+	public static int chunkBatch = 10;
 
 	private static final P2PMudPeer test = new P2PMudPeer();
 	private static final int NONE = -1;
@@ -285,11 +286,13 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	public void connect(String args[], int bindport, InetSocketAddress bootaddress) throws Exception {
 		env = new Environment();
 //		env.getParameters().setInt("loglevel", Logger.FINE);
+		env.getParameters().setInt("loglevel", Logger.WARNING);
 		// disable the UPnP setting (in case you are testing this on a NATted LAN)
-		env.getParameters().setInt("p2p_past_messageTimeout", Integer.parseInt(System.getProperty("past.timeout", "15000")));
+		env.getParameters().setInt("p2p_past_messageTimeout", Integer.parseInt(System.getProperty("past.timeout", "30000")));
 		env.getParameters().setString("nat_search_policy", "never");
 		env.getParameters().setString("probe_for_external_address", "true");
 		env.getParameters().setString("pastry_socket_writer_max_msg_size", "65536");
+		env.getParameters().setString("pastry_socket_writer_max_queue_length", "50");
 		NodeIdFactory nidFactory = new RandomNodeIdFactory(env);
 		FastTable<InetSocketAddress> probes = new FastTable<InetSocketAddress>();
 		if (probeHost != null) {
@@ -488,34 +491,44 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 					Tools.stackTrace(exception);
 					cont.receiveException(exception);
 				}
-			}, chunks, 5);
+			}, chunks, chunkBatch);
 		}
 	}
 	protected void storeChunks(final P2PMudFile mudFile, final Continuation<P2PMudFile, Exception> cont, final ArrayList<PastContent> chunks, final int attempts) {
-		final ArrayList<PastContent> failed = new ArrayList<PastContent>();
+		int contCount = 0;
+		int stored = Math.min(chunkBatch, chunks.size());
 		MultiContinuation multi = new MultiContinuation(new Continuation<Object[], Exception>() {
 			public void receiveResult(Object[] result) {
-				for (int i = 0; i < result.length; i++) {
+				int failureCount = 0;
+				
+				for (int i = result.length; i-- > 0; ) {
 					if (result[i] instanceof Exception) {
-						failed.add(chunks.get(i));
+						failureCount++;
+					} else {
+						chunks.remove(i);
 					}
 				}
-				if (failed.isEmpty()) {
+				if (chunks.isEmpty()) {
 					cont.receiveResult(mudFile);
 				} else if (attempts == 0) {
-					cont.receiveException(new RuntimeException("Failed to store chunks: " + failed));
+					cont.receiveException(new RuntimeException("Failed to store chunks: " + chunks));
 				} else {
-					storeChunks(mudFile, cont, failed, attempts - 1);
+					storeChunks(mudFile, cont, chunks, failureCount == result.length ? attempts - 1 : chunkBatch);
 				}
 			}
 			public void receiveException(Exception exception) {
 				cont.receiveException(exception);
 			}
-		}, chunks.size());
+		}, stored);
 
-		for (int i = 0; i < chunks.size(); i++) {
-			System.out.println("INSERTING CHUNK: " + chunks.get(i));
-			past.insert(chunks.get(i), multi.getSubContinuation(i));
+		for (PastContent content : chunks) {
+			if (content instanceof P2PMudFileChunk) {
+				System.out.println("INSERTING CHUNK: " + ((P2PMudFileChunk)content).offset);
+			}
+			past.insert(content, multi.getSubContinuation(contCount++));
+			if (contCount >= stored) {
+				break;
+			}
 		}
 	}
 	/**
@@ -545,13 +558,13 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		}
 	}
 	protected void getChunks(final File cacheDir, final Continuation handler, final P2PMudFile file, final ArrayList<Id> chunks, final String data[], final int attempt) {
-		if (attempt > 5) {
+		if (attempt > chunkBatch) {
 			//maybe pass the missing chunks in this exception
 			handler.receiveException(new RuntimeException("Made " + attempt + " attempts to get file without receiving any new data"));
 			return;
 		}
 		final ArrayList<Id> missing = new ArrayList<Id>();
-		int count = Math.min(chunks.size(), 5);
+		int count = Math.min(chunks.size(), chunkBatch);
 		
 		System.out.println("GETTING " + count + " CHUNKS...");
 		final MultiContinuation cont = new MultiContinuation(new Continuation<Object[], Exception>() {

@@ -573,15 +573,17 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		"$name-${TIME_STAMP.format(new Date())}"
 	}
 	def loadMap(name, id, cont = null) {
+		def dir = new File(mapDir, id)
+
 		println "Loading map: ${id}"
 		if (id instanceof String) {
 			id = Id.build(id)
 		}
-		P2PMudFile.fetchDir(id, cacheDir, mapDir, [
+		P2PMudFile.fetchDir(id, cacheDir, dir, [
 			receiveResult: {
-				def mapPath = Tools.subpath(new File(sauerDir, "packages"), mapDir)
+				def mapPath = Tools.subpath(new File(sauerDir, "packages"), dir)
 
-				println "Retrieved map from PAST: $mapDir, executing: map [$mapPath/map]"
+				println "Retrieved map from PAST: $dir, executing: map [$mapPath/map]"
 				sauer('load', "echo loading new map: [$mapPath/map]; tc_loadmsg [$name]; map [$mapPath/map]")
 				dumpCommands()
 				if (cont) {cont.receiveResult(it)}
