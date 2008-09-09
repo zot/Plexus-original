@@ -18,6 +18,10 @@ import rice.Continuation;
 import rice.Continuation.MultiContinuation;
 import rice.environment.Environment;
 import rice.environment.logging.Logger;
+import rice.environment.logging.file.RotatingLogManager;
+import rice.environment.params.Parameters;
+import rice.environment.params.simple.SimpleParameters;
+import rice.environment.time.simple.SimpleTimeSource;
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
@@ -37,6 +41,7 @@ import rice.persistence.LRUCache;
 import rice.persistence.MemoryStorage;
 import rice.persistence.PersistentStorage;
 import rice.persistence.StorageManagerImpl;
+import rice.selector.SelectorManager;
 
 
 public class P2PMudPeer implements Application, ScribeMultiClient {
@@ -69,6 +74,8 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	private static String probeHost;
 	private static int probePort;
 	public static String node_interface;
+	public static boolean verboseLogging = false;
+	public static File logFile = null;
 	
 	public static void main(P2PMudCommandHandler handler, Runnable neighborChangeBlock, String args[]) throws Exception {
 		cmdHandler = handler;
@@ -284,15 +291,28 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	 * @param bootaddress the IP:port of the node to boot from
 	 */
 	public void connect(String args[], int bindport, InetSocketAddress bootaddress) throws Exception {
-		env = new Environment();
-//		env.getParameters().setInt("loglevel", Logger.FINE);
-		env.getParameters().setInt("loglevel", Logger.WARNING);
+		Parameters params = new SimpleParameters(Environment.defaultParamFileArray, null);
+		SimpleTimeSource timeSrc = new SimpleTimeSource();
+		RotatingLogManager logMgr = null;
+		SelectorManager selectorMgr = null;
+
 		// disable the UPnP setting (in case you are testing this on a NATted LAN)
-		env.getParameters().setInt("p2p_past_messageTimeout", Integer.parseInt(System.getProperty("past.timeout", "30000")));
-		env.getParameters().setString("nat_search_policy", "never");
-		env.getParameters().setString("probe_for_external_address", "true");
-		env.getParameters().setString("pastry_socket_writer_max_msg_size", "65536");
-		env.getParameters().setString("pastry_socket_writer_max_queue_length", "50");
+		params.setInt("p2p_past_messageTimeout", Integer.parseInt(System.getProperty("past.timeout", "30000")));
+		params.setString("nat_search_policy", "never");
+		params.setString("probe_for_external_address", "true");
+		params.setString("pastry_socket_writer_max_msg_size", "65536");
+		params.setString("pastry_socket_writer_max_queue_length", "200");
+		if (verboseLogging) {
+			params.setInt("loglevel", Logger.FINE);
+			if (!logFile.getParentFile().exists()) {
+				logFile.getParentFile().mkdirs();
+			}
+			params.setString("log_rotate_filename", logFile.getAbsolutePath());
+			logMgr = new RotatingLogManager(timeSrc, params);
+			selectorMgr = Environment.generateDefaultSelectorManager(timeSrc, logMgr);
+			logMgr.startRotateTask(selectorMgr);
+		}
+		env = new Environment(selectorMgr, null, null, timeSrc, logMgr, params, null);
 		NodeIdFactory nidFactory = new RandomNodeIdFactory(env);
 		FastTable<InetSocketAddress> probes = new FastTable<InetSocketAddress>();
 		if (probeHost != null) {

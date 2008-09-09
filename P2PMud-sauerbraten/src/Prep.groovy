@@ -171,10 +171,10 @@ public class Prep {
 		props.store()
 	}
 	def static setprop(key) {
-		props[key] = fields[key].text
+		props[key] = fields[key].getText()
 	}
 	def static showprop(key) {
-		 fields[key].text = props[key]
+		 fields[key].setText(props[key])
 	}
 	def static readProps() {
 		props.load()
@@ -213,23 +213,39 @@ public class Prep {
 		new SwingBuilder().build {
 			def field = {lbl, key ->
 				label(text: lbl)
-				fields[key] = textField(actionPerformed: {setprop(key)}, focusLost: {setprop(key)}, text: p[key], constraints: 'span 2, wrap, growx')
+				def tf = textField(actionPerformed: {setprop(key)}, focusLost: {setprop(key)}, text: p[key], constraints: 'span 2, wrap, growx')
+				fields[key] = [
+					setText: {value -> tf.text = value},
+					getText: {tf.text}
+				]
+			}
+			def check = {lbl, key, description ->
+				label(text: lbl)
+				def cb = checkBox(text: description, actionPerformed: {evt -> props[key] = evt.source.selected ? '1' : '0' }, constraints: 'wrap' )
+				fields[key] = [
+					setText: {value -> cb.selected = value == '1'},
+					getText: {cb.selected ? '1' : '0'}
+				]
 			}
 			f = frame(title: 'Plexus Configuration', windowClosing: {System.exit(0)}, layout: new MigLayout('fillx'), pack: true, show: true) {
 				field('Your name: ', 'name')
 				field('Team/Guild: ', 'guild')
 				//field('External IP: ', 'external_ip')
 				label(text: 'External IP: ')
-				fields['external_ip'] = textField(actionPerformed: {setprop('external_ip')}, focusLost: {setprop('external_ip')}, text: p['external_ip'], constraints: 'growx')
+				def extIpField = textField(actionPerformed: {setprop('external_ip')}, focusLost: {setprop('external_ip')}, text: p['external_ip'], constraints: 'growx')
+				fields['external_ip'] = [
+					setText: {value -> extIpField.text = value},
+					getText: {extIpField.text}
+				]
 				button(text: "Discover", actionPerformed: { discoverExternalIP() }, constraints: 'wrap')
 				field('External port: ', 'external_port')
-				label(text: 'Use UPnP:')
-				upnpButton = checkBox(text: 'If checked, make sure UPnP is enabled on your router', actionPerformed: { evt -> props.upnp = evt.source.selected ? '1' : '0' }, constraints: 'wrap' )
+				check('Use UPnP', 'upnp', 'If checked, make sure UPnP is enabled on your router')
 				field('Pastry port: ', 'pastry_port')
 				field('Pastry boot host: ', 'pastry_boot_host')
 				field('Pastry boot port: ', 'pastry_boot_port')
 				field('Sauer cmd: ', 'sauer_cmd')
 				field('Sauer port: ', 'sauer_port')
+				check('Verbose Log', 'verbose_log', 'Turn on verbose logging')
 				label(text: 'Launch sauer: ')
 				sauerButton = checkBox(text: 'If checked, it will auto start the Plexus custom Sauerbraten', actionPerformed: { evt -> props.sauer_mode = evt.source.selected ? 'launch' : 'noLaunch' }, constraints: 'wrap' )
 				label(text: "Node id: ")
@@ -272,7 +288,6 @@ public class Prep {
 		itemsCombo.model = new DefaultComboBoxModel(['', *props.profiles.sort()] as Object[])
 		//modeGroup.setSelected(modeButtons[props.sauer_mode ?: 'launch'].model, true)
 		sauerButton.setSelected(props.sauer_mode == 'launch')
-		upnpButton.setSelected(props.upnp != '0')
 	}
 	def static addProfile(prof) {
 		if (prof) {
