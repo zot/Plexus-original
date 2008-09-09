@@ -583,18 +583,22 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		}
 		P2PMudFile.fetchDir(id, cacheDir, dir, [
 			receiveResult: {
-				def mapPath = Tools.subpath(new File(sauerDir, "packages"), dir)
+				executor.submit {
+					def mapPath = Tools.subpath(new File(sauerDir, "packages"), dir)
 
-				println "Retrieved map from PAST: $dir, executing: map [$mapPath/map]"
-				sauer('load', "echo loading new map: [$mapPath/map]; tc_loadmsg [$name]; map [$mapPath/map]")
-				dumpCommands()
-				if (cont) {cont.receiveResult(it)}
+					println "Retrieved map from PAST: $dir, executing: map [$mapPath/map]"
+					sauer('load', "echo loading new map: [$mapPath/map]; tc_loadmsg [$name]; map [$mapPath/map]")
+					dumpCommands()
+					if (cont) {cont.receiveResult(it)}
+				}
 			},
 			receiveException: {
-				if (cont) {
-					cont.receiveException(it)
-				} else {
-					err("Couldn't load map: $id", it)
+				executor.submit {
+					if (cont) {
+						cont.receiveException(it)
+					} else {
+						err("Couldn't load map: $id", it)
+					}
 				}
 			}
 		] as Continuation, false)
@@ -628,13 +632,17 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			}
 			def mcont = new MultiContinuation([
 				receiveResult: {
-					println "FINISHED PUSHING CACHE"
-//					sauer('msg', 'tc_msgbox Ready [Finished pushing cache in PAST]')
-					dumpCommands()
+					executor.submit {
+						println "FINISHED PUSHING CACHE"
+//						sauer('msg', 'tc_msgbox Ready [Finished pushing cache in PAST]')
+						dumpCommands()
+					}
 				},
 				receiveException: {
-					println "FAILED TO PUSH CACHE"
-					err("Error pushing cache in PAST", it)
+					executor.submit {
+						println "FAILED TO PUSH CACHE"
+						err("Error pushing cache in PAST", it)
+					}
 				}
 			] as Continuation, files.size())
 			for (file in files) {
@@ -888,8 +896,8 @@ println "loading costume: $who.costume"
 				clothe(who, costume.dir)
 			} else {
 				P2PMudFile.fetchDir(costume.dir, cacheDir, new File(plexusDir, "models/$costume.dir"), [
-					receiveResult: {r -> clothe(who, costume.dir)},
-					receiveException: {ex -> err("Could not fetch data for costume: $costume.dir", ex)}
+					receiveResult: {r -> executor.submit {clothe(who, costume.dir)}},
+					receiveException: {ex -> executor.submit {err("Could not fetch data for costume: $costume.dir", ex)}}
 				], false)
 			}
 		}
@@ -912,22 +920,24 @@ println "PUSHING COSTUME: $name"
 println "STORING COSTUME"
 			P2PMudFile.storeDir(cacheDir, path, [
 				receiveResult: {
-					def fileId = it.file.getId().toStringFull()
-					def type = 'png'
-					def thumb = it.properties['thumb.png']
+					executor.submit {
+						def fileId = it.file.getId().toStringFull()
+						def type = 'png'
+						def thumb = it.properties['thumb.png']
 
-					if (!thumb) {
-						type = 'jpg'
-						thumb = it.properties['thumb.jpg'] ?: 'none'
-					}
-					try {
+						if (!thumb) {
+							type = 'jpg'
+							thumb = it.properties['thumb.jpg'] ?: 'none'
+						}
+						try {
 println "STORED COSTUME, adding"
-						transmitSetCloudProperty("costume/$fileId", "$thumb ${thumb ? type : 'none'} $name")
-					} catch (Exception ex) {
-						err("Error pushing costume", ex)
+							transmitSetCloudProperty("costume/$fileId", "$thumb ${thumb ? type : 'none'} $name")
+						} catch (Exception ex) {
+							err("Error pushing costume", ex)
+						}
 					}
 				},
-				receiveException: {err("Couldn't store costume in cloud: $path", it)}
+				receiveException: {executor.submit {err("Couldn't store costume in cloud: $path", it)}}
 			] as Continuation)
 		}
 	}
@@ -949,22 +959,24 @@ println "STORED COSTUME, adding"
 			def contCount = 0
 			def mcont = new MultiContinuation([
 				receiveResult: {files ->
-					def i = 0
-
-					for (i = 0; i < needed.size(); i++) {
-						if (files[i] instanceof Exception) {
-							System.err.println "Error fetching thumb for costume: ${needed[i].name}..."
-							files[i].printStackTrace()
-						} else {
-							def thumbFile = new File(costumesDir, "thumbs/${needed[i].dir}.${needed[i].type}")
-
-							thumbFile.getParentFile().mkdirs()
-							Tools.copyFile(files[i][0], thumbFile)
+					executor.submit {
+						def i = 0
+	
+						for (i = 0; i < needed.size(); i++) {
+							if (files[i] instanceof Exception) {
+								System.err.println "Error fetching thumb for costume: ${needed[i].name}..."
+								files[i].printStackTrace()
+							} else {
+								def thumbFile = new File(costumesDir, "thumbs/${needed[i].dir}.${needed[i].type}")
+	
+								thumbFile.getParentFile().mkdirs()
+								Tools.copyFile(files[i][0], thumbFile)
+							}
 						}
+						showTumes(tumes)
 					}
-					showTumes(tumes)
 				},
-				receiveException: {err("Error fetching thumbs for costumes", it)}
+				receiveException: {executor.submit {err("Error fetching thumbs for costumes", it)}}
 			] as Continuation, needed.size())
 
 			needed.each {
@@ -1025,13 +1037,15 @@ println "COSTUME SELS: $triples"
 
 		P2PMudFile.fetchDir(dirId, cacheDir, costumeDir, [
 			receiveResult: {
-				costume = dirId
-				updateMyPlayerInfo()
-				sauer('cost', "playerinfo p0 [${LaunchPlexus.props.guild}] ${costumeDir.getName()}")
-				dumpCommands()
-				println "USE COSTUME $name ($costumeDir)"
+				executor.submit {
+					costume = dirId
+					updateMyPlayerInfo()
+					sauer('cost', "playerinfo p0 [${LaunchPlexus.props.guild}] ${costumeDir.getName()}")
+					dumpCommands()
+					println "USE COSTUME $name ($costumeDir)"
+				}
 			},
-			receiveException: {err("Couldn't use costume: $name", it)}
+			receiveException: {executor.submit {err("Couldn't use costume: $name", it)}}
 		] as Continuation, false)
 	}
 	def connectWorld(id) {
@@ -1049,14 +1063,16 @@ println "COSTUME SELS: $triples"
 					receiveResult: {
 						peer.subscribe(Id.build(id), [
 							receiveResult: {topic ->
-								mapTopic = topic
-								mapIsPrivate = map.privateMap
-								updateMyPlayerInfo()
+								executor.submit {
+									mapTopic = topic
+									mapIsPrivate = map.privateMap
+									updateMyPlayerInfo()
+								}
 							},
-							receiveException: {exception -> err("Couldn't subscribe to topic: ", exception)}
+							receiveException: {exception -> executor.submit {err("Couldn't subscribe to topic: ", exception)}}
 						] as Continuation)
 					},
-					receiveException: {err("Trouble loading map", it)}
+					receiveException: {executor.submit {err("Trouble loading map", it)}}
 				] as Continuation)
 			}
 		} else {
@@ -1083,12 +1099,14 @@ println "pushMap: [$nameArgs]"
 			println "1"
 			def cont = [
 				receiveResult: {
-					def topic = newMap ? peer.randomId().toStringFull() : map.id
-					def id = it.file.getId().toStringFull()
+					executor.submit {
+						def topic = newMap ? peer.randomId().toStringFull() : map.id
+						def id = it.file.getId().toStringFull()
 
-					transmitSetCloudProperty("${privateMap == '1' ? 'privateMap' : 'map'}/$topic", "$id $name")
+						transmitSetCloudProperty("${privateMap == '1' ? 'privateMap' : 'map'}/$topic", "$id $name")
+					}
 				},
-				receiveException: {err("Error pushing map", it)}
+				receiveException: {executor.submit {err("Error pushing map", it)}}
 			] as Continuation
 
 			if (mapname ==~ 'plexus/.*/map') {
