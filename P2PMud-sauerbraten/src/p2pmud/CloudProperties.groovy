@@ -46,19 +46,25 @@ public class CloudProperties {
 		def old = properties[key]
 
 		properties[key as String] = value as String
-		setPropertyHooks.each {key ==~ it.key && it.value(key, value, old)}
+		main.executor.submit {
+			setPropertyHooks.each {key ==~ it.key && it.value(key, value, old)}
+		}
 		propertiesChanged(key)
 	}
 	def removeProperty(key) {
 		properties.remove(key)
-		removePropertyHooks.each {key ==~ it.key && it.value(key, properties[key])}
+		main.executor.submit {
+			removePropertyHooks.each {key ==~ it.key && it.value(key, properties[key])}
+		}
 		propertiesChanged(key)
 	}
 	def propertiesChanged(key) {
 		if (!key || (persistentPropertyPattern && key ==~ persistentPropertyPattern)) {
 			save()
 		}
-		changedPropertyHooks.each {it()}
+		main.executor.submit {
+			changedPropertyHooks.each {it()}
+		}
 		println "NEW PROPERTIES"
 		properties.each {
 			println "$it.key: $it.value"
