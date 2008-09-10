@@ -39,7 +39,11 @@ public class LaunchPlexus {
 		    // we assume that localHostIP is something else than 127.0.0.1
 		    def mapped = testIGD.addPortMapping( "Plexus", null, port, port, localHostIP, 0, "TCP" );
 		    if ( mapped ) {
-		      System.out.println( "Port $port mapped to " + localHostIP );
+		      System.out.println( "TCP Port $port mapped to " + localHostIP );
+		    }
+		    mapped = testIGD.addPortMapping( "Plexus", null, port, port, localHostIP, 0, "UDP" );
+		    if ( mapped ) {
+		      System.out.println( "UDP Port $port mapped to " + localHostIP );
 		    }
 		  }
 		} catch ( IOException ex ) {
