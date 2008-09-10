@@ -12,7 +12,7 @@ public class P2PMudFile extends ContentHashPastContent {
 	public int size
 	public boolean mutable
 
-	public static chunkSize = 10000
+	public static chunkSize = 30000
 
 	private static final long serialVersionUID = 1L
 
@@ -155,7 +155,7 @@ println "STORE: $file.key -> $file.value"
 		
 				for (int i = 0; i < o.length; i++) {
 					if (o[i] instanceof Exception) {
-						System.err.println "Problem loading file '${files[i]}' while fetching directory..."
+						System.err.println "Problem loading file '${files[i]}' while fetching directory: ${id.toStringFull()}"
 						o[i].printStackTrace()
 						succeeded = false
 					} else if (o[i][1]) {
@@ -179,7 +179,7 @@ println "STORE: $file.key -> $file.value"
 				if (succeeded) {
 		    		cont.receiveResult(dir)
 				} else {
-					cont.receiveException(new Exception("Could not retrieve directory: " + id));
+					cont.receiveException(new Exception("Could not retrieve directory: " + id.toStringFull()));
 				}
 		    },
 		    receiveException: {e ->

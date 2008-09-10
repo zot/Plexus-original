@@ -17,6 +17,11 @@ import javolution.util.FastTable;
 import rice.Continuation;
 import rice.Continuation.MultiContinuation;
 import rice.environment.Environment;
+import rice.environment.logging.Logger;
+import rice.environment.logging.file.RotatingLogManager;
+import rice.environment.params.Parameters;
+import rice.environment.params.simple.SimpleParameters;
+import rice.environment.time.simple.SimpleTimeSource;
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
@@ -35,8 +40,8 @@ import rice.pastry.standard.RandomNodeIdFactory;
 import rice.persistence.LRUCache;
 import rice.persistence.MemoryStorage;
 import rice.persistence.PersistentStorage;
-import rice.persistence.Storage;
 import rice.persistence.StorageManagerImpl;
+import rice.selector.SelectorManager;
 
 
 public class P2PMudPeer implements Application, ScribeMultiClient {
@@ -55,6 +60,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	private static P2PMudCommandHandler cmdHandler;
 	private static String nodeIdString;
 	private static Runnable neighborChange;
+	public static int chunkBatch = 10;
 
 	private static final P2PMudPeer test = new P2PMudPeer();
 	private static final int NONE = -1;
@@ -68,6 +74,8 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	private static String probeHost;
 	private static int probePort;
 	public static String node_interface;
+	public static boolean verboseLogging = false;
+	public static File logFile = null;
 	
 	public static void main(P2PMudCommandHandler handler, Runnable neighborChangeBlock, String args[]) throws Exception {
 		cmdHandler = handler;
@@ -283,12 +291,28 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	 * @param bootaddress the IP:port of the node to boot from
 	 */
 	public void connect(String args[], int bindport, InetSocketAddress bootaddress) throws Exception {
-		env = new Environment();
-//		env.getParameters().setInt("loglevel", Logger.FINE);
+		Parameters params = new SimpleParameters(Environment.defaultParamFileArray, null);
+		SimpleTimeSource timeSrc = new SimpleTimeSource();
+		RotatingLogManager logMgr = null;
+		SelectorManager selectorMgr = null;
+
 		// disable the UPnP setting (in case you are testing this on a NATted LAN)
-		env.getParameters().setInt("p2p_past_messageTimeout", Integer.parseInt(System.getProperty("past.timeout", "15000")));
-		env.getParameters().setString("nat_search_policy", "never");
-		env.getParameters().setString("probe_for_external_address", "true");
+		params.setInt("p2p_past_messageTimeout", Integer.parseInt(System.getProperty("past.timeout", "30000")));
+		params.setString("nat_search_policy", "never");
+		params.setString("probe_for_external_address", "true");
+		params.setString("pastry_socket_writer_max_msg_size", "65536");
+		params.setString("pastry_socket_writer_max_queue_length", "200");
+		if (verboseLogging) {
+			params.setInt("loglevel", Logger.FINE);
+			if (!logFile.getParentFile().exists()) {
+				logFile.getParentFile().mkdirs();
+			}
+			params.setString("log_rotate_filename", logFile.getAbsolutePath());
+			logMgr = new RotatingLogManager(timeSrc, params);
+			selectorMgr = Environment.generateDefaultSelectorManager(timeSrc, logMgr);
+			logMgr.startRotateTask(selectorMgr);
+		}
+		env = new Environment(selectorMgr, null, null, timeSrc, logMgr, params, null);
 		NodeIdFactory nidFactory = new RandomNodeIdFactory(env);
 		FastTable<InetSocketAddress> probes = new FastTable<InetSocketAddress>();
 		if (probeHost != null) {
@@ -302,6 +326,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		} else {
 			node = factory.newNode(nodeId, probes.get(0));
 		}
+		System.out.println("Using boot address: " + bootaddress);
 		node.boot(bootaddress);
 		idFactory = new PastryIdFactory(node.getEnvironment());
 		endpoint = node.buildEndpoint(this, "myinstance");
@@ -486,34 +511,44 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 					Tools.stackTrace(exception);
 					cont.receiveException(exception);
 				}
-			}, chunks, 5);
+			}, chunks, chunkBatch);
 		}
 	}
 	protected void storeChunks(final P2PMudFile mudFile, final Continuation<P2PMudFile, Exception> cont, final ArrayList<PastContent> chunks, final int attempts) {
-		final ArrayList<PastContent> failed = new ArrayList<PastContent>();
+		int contCount = 0;
+		int stored = Math.min(chunkBatch, chunks.size());
 		MultiContinuation multi = new MultiContinuation(new Continuation<Object[], Exception>() {
 			public void receiveResult(Object[] result) {
-				for (int i = 0; i < result.length; i++) {
+				int failureCount = 0;
+				
+				for (int i = result.length; i-- > 0; ) {
 					if (result[i] instanceof Exception) {
-						failed.add(chunks.get(i));
+						failureCount++;
+					} else {
+						chunks.remove(i);
 					}
 				}
-				if (failed.isEmpty()) {
+				if (chunks.isEmpty()) {
 					cont.receiveResult(mudFile);
 				} else if (attempts == 0) {
-					cont.receiveException(new RuntimeException("Failed to store chunks: " + failed));
+					cont.receiveException(new RuntimeException("Failed to store chunks: " + chunks));
 				} else {
-					storeChunks(mudFile, cont, failed, attempts - 1);
+					storeChunks(mudFile, cont, chunks, failureCount == result.length ? attempts - 1 : chunkBatch);
 				}
 			}
 			public void receiveException(Exception exception) {
 				cont.receiveException(exception);
 			}
-		}, chunks.size());
+		}, stored);
 
-		for (int i = 0; i < chunks.size(); i++) {
-			System.out.println("INSERTING CHUNK: " + chunks.get(i));
-			past.insert(chunks.get(i), multi.getSubContinuation(i));
+		for (PastContent content : chunks) {
+			if (content instanceof P2PMudFileChunk) {
+				System.out.println("INSERTING CHUNK: " + ((P2PMudFileChunk)content).offset);
+			}
+			past.insert(content, multi.getSubContinuation(contCount++));
+			if (contCount >= stored) {
+				break;
+			}
 		}
 	}
 	/**
@@ -543,13 +578,13 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		}
 	}
 	protected void getChunks(final File cacheDir, final Continuation handler, final P2PMudFile file, final ArrayList<Id> chunks, final String data[], final int attempt) {
-		if (attempt > 5) {
+		if (attempt > chunkBatch) {
 			//maybe pass the missing chunks in this exception
 			handler.receiveException(new RuntimeException("Made " + attempt + " attempts to get file without receiving any new data"));
 			return;
 		}
 		final ArrayList<Id> missing = new ArrayList<Id>();
-		int count = Math.min(chunks.size(), 5);
+		int count = Math.min(chunks.size(), chunkBatch);
 		
 		System.out.println("GETTING " + count + " CHUNKS...");
 		final MultiContinuation cont = new MultiContinuation(new Continuation<Object[], Exception>() {

@@ -102,7 +102,7 @@ struct fpsrender
             case 2: mdlname = mdl.redteam; break;
         }
 #ifdef TC
-		cl.player1->renderplayer(cl, (void *) &mdl, team);
+		d->renderplayer(cl, (void *) &mdl, team);
 #else
         renderclient(d, mdlname, a[0].name ? a : NULL, attack, delay, lastaction, cl.intermission ? 0 : d->lastpain);
 #endif
@@ -140,7 +140,7 @@ struct fpsrender
             if(m_assassin) team = cl.asc.targets.find(d)>=0 ? 2 : (cl.asc.hunters.find(d)>=0 ? 0 : 1);
             else if(teamskins() || m_teammode) team = isteam(cl.player1->team, d->team) ? 1 : 2;
 #ifdef TC
-            d->renderplayer(cl, (void *) &mdl, team);
+			renderplayer(d, mdl, team);
 #else
             if(d->state!=CS_DEAD || d->superdamage<50) renderplayer(d, mdl, team);
             s_strcpy(d->info, cl.colorname(d, NULL, "@"));
@@ -149,7 +149,7 @@ struct fpsrender
 #endif
         }
 #ifdef TC
-        if(isthirdperson()) cl.player1->renderplayer(cl, (void *) &mdl, teamskins() || m_teamskins ? 1 : 0);
+        if(isthirdperson()) renderplayer(cl.player1, mdl, teamskins() || m_teamskins ? 1 : 0);
 #else
         if(isthirdperson() && !cl.followingplayer()) renderplayer(cl.player1, mdl, teamskins() || m_teamskins ? 1 : 0);
 #endif

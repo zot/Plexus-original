@@ -1,3 +1,4 @@
+import java.awt.event.ItemEvent
 import java.util.concurrent.Executors
 import com.jgoodies.looks.plastic.Plastic3DLookAndFeel
 import javax.swing.UIManager
@@ -54,6 +55,7 @@ public class Plexus {
 	def sauerDir
 	def plexusDir
 	def cacheDir
+	def mapDir
 	def mapPrefix = 'packages/dist/storage'
 	def peer
 	def mapname
@@ -76,6 +78,15 @@ public class Plexus {
 	]
 	def executor = Executors.newSingleThreadExecutor()
 	def neighborField
+	def playerListeners = [:]
+	def maps
+	def mapCombo
+	def mapPlayers
+	def mapPlayersCombo
+	def followingPlayer
+	def cotumeUploadField
+	def tumes
+	def tumesCombo
 
 	def static sauerExec
 	def static soleInstance
@@ -121,11 +132,12 @@ public class Plexus {
 		} else {
 			plexusDir = new File('plexus')
 		}
-		cloudProperties = new CloudProperties(this, new File(plexusDir, 'cloud.properties'))
+		cloudProperties = new CloudProperties(this, new File(plexusDir, "cache/$name/cloud.properties"))
 		cloudProperties.persistentPropertyPattern = ~'(map|privateMap|costume)/..*'
 		cloudProperties.privatePropertyPattern = ~'(privateMap)/..*'
-		cacheDir = new File(plexusDir, "cache")
-		def pastStor = new File(plexusDir, "PAST-storage")
+		cacheDir = new File(plexusDir, "cache/$name/files")
+		mapDir = new File(plexusDir, "cache/$name/maps")
+		def pastStor = new File(plexusDir, "cache/$name/PAST")
 		Tools.deleteAll(pastStor)
 		pastStor.mkdirs()
 		System.setProperty('past.storage', pastStor.getAbsolutePath())
@@ -179,7 +191,7 @@ public class Plexus {
 				updateCostumeGui()
 			}
 			new File(sauerDir, mapPrefix).mkdirs()
-			if (LaunchPlexus.props.auto_sauer != '0') launchSauer();
+			if ((LaunchPlexus.props.sauer_mode ?: 'launch') == 'launch') launchSauer();
 			//PlasticLookAndFeel.setPlasticTheme(new DesertBlue());
 			try {
 			   UIManager.setLookAndFeel(new Plastic3DLookAndFeel());
@@ -190,39 +202,95 @@ public class Plexus {
 					label(text: lbl)
 					fields[key] = textField(actionPerformed: {sauerEnt(key)}, focusLost: {sauerEnt(key)}, constraints: 'wrap, growx')
 				}
-				def f = frame(title: 'Plexus', windowClosing: {System.exit(0)}, layout: new MigLayout('fill'), pack: true, show: true) {
-					field('x: ', 'x')
-					field('y: ', 'y')
-					field('z: ', 'z')
-					field('vx: ', 'vx')
-					field('vy: ', 'vy')
-					field('vz: ', 'vz')
-					field('fx: ', 'fx')
-					field('fy: ', 'fy')
-					field('fz: ', 'fz')
-					field('roll: ', 'rol')
-					field('pitch: ', 'pit')
-					field('yaw: ', 'yaw')
-					field('strafe: ', 's')
-					field('edit: ', 'e')
-					field('move: ', 'm')
-					field('physics state: ', 'ps')
-					field('max speed: ', 'ms')
-					label(text: "Command: ")
-					fields.cmd = textField(actionPerformed: {cmd()}, constraints: 'wrap, growx')
+				def f = frame(title: 'Plexus: ' + LaunchPlexus.props.name, windowClosing: {System.exit(0)}, layout: new MigLayout('fill'), pack: true, show: true) {
 					label(text: "Node id: ")
 					label(text: LaunchPlexus.props.nodeId ?: "none", constraints: 'wrap, growx')
 					label(text: "Neighbors: ")
-					neighborField = label(text: 'none', constraints: 'wrap, growx')
-					button(text: "Launch 3D", actionPerformed: {launchSauer()})
-					button(text: "Generate Dungeon", actionPerformed: {generateDungeon()}, constraints: 'wrap')
-					button(text: "Update Neighbor List", actionPerformed: {updateNeighborList()})
-					button(text: "Load DF Map", actionPerformed: {loadDFMap()}, constraints: 'wrap')
+					panel(layout: new MigLayout('fill, ins 0'), constraints: 'spanx,wrap,growx') {
+						button(text: "Update Neighbor List", actionPerformed: {updateNeighborList()})
+						neighborField = label(text: 'none', constraints: 'wrap, growx')
+					}
+					label(text: "Command: ")
+					fields.cmd = textField(actionPerformed: {cmd()}, constraints: 'wrap, growx')
+					tabbedPane(constraints: 'spanx,width 100%,growy,wrap') {
+						panel(name: 'Commands', layout: new MigLayout('fill')) {
+							label(text: 'Generation')
+							panel(layout: new MigLayout('fill, ins 0'), constraints: 'growx,wrap') {
+								button(text: "Launch 3D", actionPerformed: {launchSauer()})
+								button(text: "Generate Dungeon", actionPerformed: {generateDungeon()})
+								button(text: "Load DF Map", actionPerformed: {loadDFMap()})
+								panel(constraints: 'growx,wrap')
+							}
+							label(text: "Current Map: ")
+							mapCombo = comboBox(editable: false, actionPerformed: {
+								if (mapCombo && mapCombo.selectedIndex > -1) {
+									connectWorld(mapCombo.selectedIndex == 0 ? null : maps[mapCombo.selectedIndex - 1].id)
+								}
+							}, constraints: 'wrap')
+							label(text: 'Choose Costume')
+							tumesCombo = comboBox(editable: false, actionPerformed: {
+								if (tumesCombo && tumesCombo.selectedIndex > -1) {
+									if (tumesCombo.selectedIndex) {
+										def tume = tumes[tumesCombo.selectedIndex - 1]
+
+										useCostume(tume.name, tume.dir)
+									}
+								}
+							}, constraints: 'wrap')
+							label(text: "Follow player: ")
+							mapPlayersCombo = comboBox(editable: false, actionPerformed: {
+								if (mapPlayersCombo && mapPlayersCombo.selectedIndex > -1) {
+									followingPlayer = mapPlayersCombo.selectedIndex == 0 ? null : mapPlayers[mapPlayersCombo.selectedIndex - 1]
+println "NOW FOLLOWING: ${followingPlayer?.name}"
+								}
+							}, constraints: 'wrap')
+							button(text: 'Upload Costume', actionPerformed: {
+								if (costumeUploadField.text) {
+									pushCostumeDir(costumeUploadField.text as File)
+								}
+							})
+							panel(constraints: 'growx,wrap', layout: new MigLayout('fill,ins 0')) {
+								costumeUploadField = textField(constraints: 'growx', actionPerformed: {
+									pushCostumeDir(costumeUploadField.text as File)
+								})
+								button(text: '...', actionPerformed: {
+									def file = chooseFile("Choose a model to upload", costumeUploadField, "Costumes", "")
+
+									if (file) {
+										pushCostumeDir(file)
+									}
+								})
+							}
+							panel(constraints: 'growy,wrap')
+						}
+						panel(name: 'Stats', layout: new MigLayout('fill,ins 0')) {
+							field('x: ', 'x')
+							field('y: ', 'y')
+							field('z: ', 'z')
+							field('vx: ', 'vx')
+							field('vy: ', 'vy')
+							field('vz: ', 'vz')
+							field('fx: ', 'fx')
+							field('fy: ', 'fy')
+							field('fz: ', 'fz')
+							field('roll: ', 'rol')
+							field('pitch: ', 'pit')
+							field('yaw: ', 'yaw')
+							field('strafe: ', 's')
+							field('edit: ', 'e')
+							field('move: ', 'm')
+							field('physics state: ', 'ps')
+							field('max speed: ', 'ms')
+							panel(constraints: 'growy,wrap')
+						}
+					}
 				}
 				f.size = [500, (int)f.size.height] as Dimension
 			}
 			start(args[0])
 		}
+		P2PMudPeer.verboseLogging = LaunchPlexus.props.verbose_log == '1'
+		P2PMudPeer.logFile = new File(plexusDir, "cache/$name/plexus.log")
 		P2PMudPeer.main(
 			{id, topic, cmd ->
 				try {
@@ -260,26 +328,50 @@ public class Plexus {
 			initJoin()
 		}
 //		println "Node ID: ${peer.node.getId().toStringFull()}"
+println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		if (!LaunchPlexus.props.nodeId) {
 			LaunchPlexus.props.nodeId = peer.node.getId().toStringFull()
+			println "SAVING NEW NODE ID: $LaunchPlexus.props.nodeId"
 			LaunchPlexus.saveProps()
 		}
+	}
+	def chooseFile(message, field, filterName, filterRegexp) {
+		def ch = new JFileChooser();
+
+		if (field.text) {
+			ch.setSelectedFile(field.text as File)
+		}
+		ch.setDialogTitle(message);
+		ch.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES)
+		ch.setFileFilter(new GroovyFileFilter(filterName) {it.isDirectory() || it.name ==~ filterRegexp})
+		def result = ch.showOpenDialog(null) == JFileChooser.APPROVE_OPTION ? ch.getSelectedFile() : null
+		if (result) {
+			field.text = result.getAbsolutePath()
+		}
+		return result
 	}
 	def updateNeighborList() {
 		try {
 			neighborField.text = String.valueOf(peer.getNeighborCount())
 		} catch (Exception ex) {}
 	}
-	// launch sauer in its own thread
 	def launchSauer() {
-		println ("Going to exec $sauerExec")
-		Thread.start {
-			if (sauerExec) {
-				Runtime.getRuntime().exec(sauerExec)
+		if (sauerExec) {
+			def env = []
+			def winderz = System.getProperty('os.name').toLowerCase() ==~ /.*windows.*/
+
+			for (vars in System.getenv()) {
+				if (winderz && vars.key.equalsIgnoreCase('path')) {
+					env.add("$vars.key=$vars.value;$sauerDir\\bin")
+				} else {
+					env.add("$vars.key=$vars.value")
+				}
 			}
-		};
+			env = env as String[]
+			println ("Going to exec $sauerExec from $sauerDir with env: $env")
+			Runtime.getRuntime().exec(sauerExec,  env, sauerDir)
+		}
 	}
-	
 	def loadDFMap() {
 		def ch = new JFileChooser();
 		ch.setDialogTitle("Please choose the DF map to load");
@@ -483,26 +575,30 @@ public class Plexus {
 		"$name-${TIME_STAMP.format(new Date())}"
 	}
 	def loadMap(name, id, cont = null) {
-		def mapDir = new File(plexusDir, "maps/$id")
+		def dir = new File(mapDir, id)
 
 		println "Loading map: ${id}"
 		if (id instanceof String) {
 			id = Id.build(id)
 		}
-		P2PMudFile.fetchDir(id, cacheDir, mapDir, [
-			receiveResult: {
-				def mapPath = Tools.subpath(new File(sauerDir, "packages"), mapDir)
+		P2PMudFile.fetchDir(id, cacheDir, dir, [
+			receiveResult: {result ->
+				executor.submit {
+					def mapPath = Tools.subpath(new File(sauerDir, "packages"), dir)
 
-				println "Retrieved map from PAST: $mapDir, executing: map [$mapPath/map]"
-				sauer('load', "echo loading new map: [$mapPath/map]; tc_loadmsg [$name]; map [$mapPath/map]")
-				dumpCommands()
-				if (cont) {cont.receiveResult(it)}
+					println "Retrieved map from PAST: $dir, executing: map [$mapPath/map]"
+					sauer('load', "echo loading new map: [$mapPath/map]; tc_loadmsg [$name]; map [$mapPath/map]")
+					dumpCommands()
+					if (cont) {cont.receiveResult(result)}
+				}
 			},
-			receiveException: {
-				if (cont) {
-					cont.receiveException(it)
-				} else {
-					err("Couldn't load map: $id", it)
+			receiveException: {ex ->
+				executor.submit {
+					if (cont) {
+						cont.receiveException(ex)
+					} else {
+						err("Couldn't load map: $id", ex)
+					}
 				}
 			}
 		] as Continuation, false)
@@ -513,7 +609,7 @@ public class Plexus {
 		Tools.stackTrace(err)
 	}
 	def initBoot() {
-		def docFile = new File(plexusDir, "cloud.properties")
+		def docFile = new File(plexusDir, "cache/$name/cloud.properties")
 
 		if (docFile.exists()) {
 			cloudProperties.load()
@@ -536,13 +632,17 @@ public class Plexus {
 			}
 			def mcont = new MultiContinuation([
 				receiveResult: {
-					println "FINISHED PUSHING CACHE"
-//					sauer('msg', 'tc_msgbox Ready [Finished pushing cache in PAST]')
-					dumpCommands()
+					executor.submit {
+						println "FINISHED PUSHING CACHE"
+//						sauer('msg', 'tc_msgbox Ready [Finished pushing cache in PAST]')
+						dumpCommands()
+					}
 				},
-				receiveException: {
-					println "FAILED TO PUSH CACHE"
-					err("Error pushing cache in PAST", it)
+				receiveException: {ex ->
+					executor.submit {
+						println "FAILED TO PUSH CACHE"
+						err("Error pushing cache in PAST", ex)
+					}
 				}
 			] as Continuation, files.size())
 			for (file in files) {
@@ -562,6 +662,9 @@ public class Plexus {
 		cloudProperties.removeProperty(key)
 		peer.broadcastCmds(plexusTopic, ["removeCloudProperty $key"] as String[])
 		println "BROADCAST REMOVE PROPERTY: $key"
+	}
+	def removeCloudProperty(key) {
+		cloudProperties.removeProperty(key)
 	}
 	def receiveCloudProperties(props) {
 		cloudProperties.setProperties(props, true)
@@ -671,6 +774,7 @@ public class Plexus {
 			def mname = "Limbo"
 			def myMap = mapTopic ? getMap(mapTopic.getId().toStringFull()) : null
 			def mapTab = ''
+			def newMapPlayers = []
 
 			updateMapGui()
 			mapCnt = 1
@@ -685,7 +789,19 @@ public class Plexus {
 					++cnt
 					if (myMap?.id == who.map) {
 						mapTab += "guibutton [$who.name] [echo $who.id]\n"
+						newMapPlayers.add(who)
 						++mapCnt
+					}
+				}
+			}
+			newMapPlayers.sort {a, b -> a.name.compareTo(b.name)}
+			if (newMapPlayers != mapPlayers) {
+				mapPlayers = newMapPlayers
+				swing.doLater {
+					mapPlayersCombo.removeAllItems()
+					mapPlayersCombo.addItem('')
+					for (player in mapPlayers) {
+						mapPlayersCombo.addItem(player.name)
 					}
 				}
 			}
@@ -727,14 +843,27 @@ public class Plexus {
 			}
 		}
 		def mapsGui = "newgui Worlds ["
+		def newMaps = []
 		cloudProperties.each('map/(.*)') {key, value, match ->
 			def map = getMap(match.group(1))
 
 			ents.add([map.name, map.id, playerCount[map.id]])
+			newMaps.add(map)
 		}
 		ents.sort {a, b -> a[0].compareTo(b[0])}
 		for (world in ents) {
 			mapsGui += "guibutton [${world[0]} (${world[2]})] [remotesend connectWorld ${world[1]}]\n"
+		}
+		newMaps.sort {a, b -> a.name.compareTo(b.name)}
+		if (newMaps != maps) {
+			maps = newMaps
+			swing.doLater {
+				mapCombo.removeAllItems()
+				mapCombo.addItem('')
+				for (map in maps) {
+					mapCombo.addItem(map.name)
+				}
+			}
 		}
 		cloudProperties.each('privateMap/(.*)') {key, value, match ->
 			def map = getMap(match.group(1))
@@ -767,8 +896,8 @@ println "loading costume: $who.costume"
 				clothe(who, costume.dir)
 			} else {
 				P2PMudFile.fetchDir(costume.dir, cacheDir, new File(plexusDir, "models/$costume.dir"), [
-					receiveResult: {r -> clothe(who, costume.dir)},
-					receiveException: {ex -> err("Could not fetch data for costume: $costume.dir", ex)}
+					receiveResult: {r -> executor.submit {clothe(who, costume.dir)}},
+					receiveException: {ex -> executor.submit {err("Could not fetch data for costume: $costume.dir", ex)}}
 				], false)
 			}
 		}
@@ -781,31 +910,34 @@ dumpCommands()
 	}
 	def pushCostume(name) {
 println "PUSHING COSTUME: $name"
-		def path = new File(plexusDir, "models/$name")
-
-		if (!path.exists()) {
+		pushCostumeDir(name, new File(plexusDir, "models/$name"))
+	}
+	def pushCostumeDir(name = path ? (path as File).getName() : null, path) {
+		if (!path?.exists()) {
 			sauer('err', "tc_msgbox [File costume not found] [Could not find costume in directory $path]")
 			dumpCommands()
 		} else {
 println "STORING COSTUME"
 			P2PMudFile.storeDir(cacheDir, path, [
-				receiveResult: {
-					def fileId = it.file.getId().toStringFull()
-					def type = 'png'
-					def thumb = it.properties['thumb.png']
+				receiveResult: {result ->
+					executor.submit {
+						def fileId = result.file.getId().toStringFull()
+						def type = 'png'
+						def thumb = result.properties['thumb.png']
 
-					if (!thumb) {
-						type = 'jpg'
-						thumb = it.properties['thumb.jpg'] ?: 'none'
-					}
-					try {
+						if (!thumb) {
+							type = 'jpg'
+							thumb = result.properties['thumb.jpg'] ?: 'none'
+						}
+						try {
 println "STORED COSTUME, adding"
-						transmitSetCloudProperty("costume/$fileId", "$thumb ${thumb ? type : 'none'} $name")
-					} catch (Exception ex) {
-						err("Error pushing costume", ex)
+							transmitSetCloudProperty("costume/$fileId", "$thumb ${thumb ? type : 'none'} $name")
+						} catch (Exception ex) {
+							err("Error pushing costume", ex)
+						}
 					}
 				},
-				receiveException: {err("Couldn't store costume in cloud: $path", it)}
+				receiveException: {ex -> executor.submit {err("Couldn't store costume in cloud: $path", ex)}}
 			] as Continuation)
 		}
 	}
@@ -827,22 +959,24 @@ println "STORED COSTUME, adding"
 			def contCount = 0
 			def mcont = new MultiContinuation([
 				receiveResult: {files ->
-					def i = 0
-
-					for (i = 0; i < needed.size(); i++) {
-						if (files[i] instanceof Exception) {
-							System.err.println "Error fetching thumb for costume: ${needed[i].name}..."
-							files[i].printStackTrace()
-						} else {
-							def thumbFile = new File(costumesDir, "thumbs/${needed[i].dir}.${needed[i].type}")
-
-							thumbFile.getParentFile().mkdirs()
-							Tools.copyFile(files[i][0], thumbFile)
+					executor.submit {
+						def i = 0
+	
+						for (i = 0; i < needed.size(); i++) {
+							if (files[i] instanceof Exception) {
+								System.err.println "Error fetching thumb for costume: ${needed[i].name}..."
+								files[i].printStackTrace()
+							} else {
+								def thumbFile = new File(costumesDir, "thumbs/${needed[i].dir}.${needed[i].type}")
+	
+								thumbFile.getParentFile().mkdirs()
+								Tools.copyFile(files[i][0], thumbFile)
+							}
 						}
+						showTumes(tumes)
 					}
-					showTumes(tumes)
 				},
-				receiveException: {err("Error fetching thumbs for costumes", it)}
+				receiveException: {ex -> executor.submit {err("Error fetching thumbs for costumes", ex)}}
 			] as Continuation, needed.size())
 
 			needed.each {
@@ -856,6 +990,17 @@ println "STORED COSTUME, adding"
 		println "CREATING EMPTY"
 		def trips = []
 
+		tumes.sort {a,b -> a.name.compareTo(b.name)}
+		if (tumes != this.tumes) {
+			this.tumes = tumes
+			swing.doLater {
+				tumesCombo.removeAllItems()
+				tumesCombo.addItem('')
+				tumes.each {
+					tumesCombo.addItem(it.name)
+				}
+			}
+		}
 		tumes.each {c-> trips.add([c.name, c.thumb ? "${c.dir}.$c.type" : '', c.dir])}
 		dumpCostumeSelections(trips)
 	}
@@ -892,37 +1037,52 @@ println "COSTUME SELS: $triples"
 
 		P2PMudFile.fetchDir(dirId, cacheDir, costumeDir, [
 			receiveResult: {
-				costume = dirId
-				updateMyPlayerInfo()
-				sauer('cost', "playerinfo p0 [${LaunchPlexus.props.guild}] ${costumeDir.getName()}")
-				dumpCommands()
-				println "USE COSTUME $name ($costumeDir)"
+				executor.submit {
+					costume = dirId
+					updateMyPlayerInfo()
+					sauer('cost', "playerinfo p0 [${LaunchPlexus.props.guild}] ${costumeDir.getName()}")
+					dumpCommands()
+					println "USE COSTUME $name ($costumeDir)"
+				}
 			},
-			receiveException: {err("Couldn't use costume: $name", it)}
+			receiveException: {ex -> executor.submit {err("Couldn't use costume: $name", ex)}}
 		] as Continuation, false)
 	}
 	def connectWorld(id) {
-		def map = getMap(id)
-		
-		if (!map) {
-			sauer('entry', "tc_msgbox [Couldn't find map] [Unknown map id: $id]")
-		} else if (map.id != mapTopic?.getId()?.toStringFull()) {
-			println "CONNECTING TO WORLD: $map.name ($map.id)"
+		if (id) {
+			def map = getMap(id)
+			
+			if (!map) {
+				sauer('entry', "tc_msgbox [Couldn't find map] [Unknown map id: $id]")
+			} else if (map.id != mapTopic?.getId()?.toStringFull()) {
+				println "CONNECTING TO WORLD: $map.name ($map.id)"
+				if (mapTopic) {
+					peer.unsubscribe(mapTopic)
+				}
+				loadMap(map.name, map.dir, [
+					receiveResult: {
+						peer.subscribe(Id.build(id), [
+							receiveResult: {topic ->
+								executor.submit {
+									mapTopic = topic
+									mapIsPrivate = map.privateMap
+									updateMyPlayerInfo()
+								}
+							},
+							receiveException: {exception -> executor.submit {err("Couldn't subscribe to topic: ", exception)}}
+						] as Continuation)
+					},
+					receiveException: {ex -> executor.submit {err("Trouble loading map", ex)}}
+				] as Continuation)
+			}
+		} else {
 			if (mapTopic) {
 				peer.unsubscribe(mapTopic)
+				mapTopic = null
+				sauer('limbo', "map plexus/dist/limbo/map")
+				dumpCommands()
+				updateMyPlayerInfo()
 			}
-			loadMap(map.name, map.dir, [
-				receiveResult: {
-					peer.subscribe(Id.build(id), [
-						receiveResult: {topic ->
-							mapTopic = topic
-							mapIsPrivate = map.privateMap
-						},
-						receiveException: {exception -> err("Couldn't subscribe to topic: ", exception)}
-					] as Continuation)
-				},
-				receiveException: {err("Trouble loading map", it)}
-			] as Continuation)
 		}
 	}
 	def pushMap(privateMap, String... nameArgs) {
@@ -938,13 +1098,15 @@ println "pushMap: [$nameArgs]"
 			}
 			println "1"
 			def cont = [
-				receiveResult: {
-					def topic = newMap ? peer.randomId().toStringFull() : map.id
-					def id = it.file.getId().toStringFull()
+				receiveResult: {result ->
+					executor.submit {
+						def topic = newMap ? peer.randomId().toStringFull() : map.id
+						def id = result.file.getId().toStringFull()
 
-					transmitSetCloudProperty("${privateMap == '1' ? 'privateMap' : 'map'}/$topic", "$id $name")
+						transmitSetCloudProperty("${privateMap == '1' ? 'privateMap' : 'map'}/$topic", "$id $name")
+					}
 				},
-				receiveException: {err("Error pushing map", it)}
+				receiveException: {ex -> executor.submit {err("Error pushing map", ex)}}
 			] as Continuation
 
 			if (mapname ==~ 'plexus/.*/map') {
@@ -1035,5 +1197,24 @@ println "createPortal portal_$trigger = $name; portal $trigger"
 			txt += "];findPortals"
 		}
 		cfg.write(txt)
+	}
+	def playerUpdate(id, update) {
+		if (id == followingPlayer?.id) {
+			def values = [:]
+			def format = []
+
+			for (def i = 0; i < update.length; i += 2) {
+				values[update[i]] = update[i + 1]
+			}
+			values.x = (Double.parseDouble(values.x) - 20) as String
+			values.y = (Double.parseDouble(values.y) - 20) as String
+			values.each {
+				format.add(it.key)
+				format.add(it.value)
+			}
+			sauer('follow', "tc_setinfo p0 ${format.join(' ')}")
+			dumpCommands()
+			broadcast(["update $name ${format.join(' ')}"])
+		}
 	}
 }
