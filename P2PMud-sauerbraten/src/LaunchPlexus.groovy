@@ -15,7 +15,6 @@ public class LaunchPlexus {
 		props = Prep.props
 		runCount = props.runCount ? Integer.parseInt(props.runCount) + 1 : 0;
 		props.runCount = String.valueOf(runCount)
-		saveProps()
 
 		System.setProperty('past_storage', props.past_storage)
 		if (props.upnp == '1') pokeHole("Plexus", Integer.parseInt(props.external_port))
