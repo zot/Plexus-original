@@ -197,12 +197,12 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 										File base = new File(new File(System.getProperty("sauerdir")), "/packages/p2pmud");
 
 										Thread.sleep(5000);
-										test.wimpyGetFile(rice.pastry.Id.build(savedCmds.get(i)), base, new Continuation<Object[], Exception>() {
-											public void receiveResult(Object[] result) {
-												if (((Collection)result[1]).isEmpty()) {
-													System.out.println("Loaded file: " + result[0]);
+										test.wimpyGetFile(rice.pastry.Id.build(savedCmds.get(i)), base, new Continuation<ArrayList<?>, Exception>() {
+											public void receiveResult(ArrayList<?> result) {
+												if (((Collection)result.get(1)).isEmpty()) {
+													System.out.println("Loaded file: " + result.get(0));
 												} else {
-													System.out.println("Could not load data for file: " + result[0] + ", missing ids: " + result[1]);
+													System.out.println("Could not load data for file: " + result.get(0) + ", missing ids: " + result.get(1));
 												}
 											}
 											public void receiveException(Exception exception) {
@@ -241,9 +241,9 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 										final String dstDir = savedCmds.get(++i);
 										String id = savedCmds.get(++i);
 
-										test.wimpyGetFile(rice.pastry.Id.build(id), new File(cacheDir), new Continuation<Object[], Exception>() {
-											public void receiveResult(Object result[]) {
-												P2PMudFile.fetchDirFromProperties(cacheDir, result[3], Tools.properties(result[0]), dstDir, new Continuation() {
+										test.wimpyGetFile(rice.pastry.Id.build(id), new File(cacheDir), new Continuation<ArrayList<?>, Exception>() {
+											public void receiveResult(ArrayList<?> result) {
+												P2PMudFile.fetchDirFromProperties(cacheDir, result.get(3), Tools.properties(result.get(0)), dstDir, new Continuation() {
 													public void receiveResult(Object result) {
 														System.out.println("STORED");
 													}
@@ -558,7 +558,13 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		System.out.println("LOOKING UP: " + id.toStringFull());
 		cacheDir.mkdirs();
 		if (P2PMudFile.filename(cacheDir, id).exists()) {
-			handler.receiveResult(new Object[]{P2PMudFile.filename(cacheDir, id), null, null, id});
+			ArrayList l = new ArrayList();
+			
+			l.add(P2PMudFile.filename(cacheDir, id));
+			l.add(null);
+			l.add(null);
+			l.add(id);
+			handler.receiveResult(l);
 		} else {
 			past.lookup(id, new Continuation<P2PMudFile, Exception>() {
 				public void receiveResult(final P2PMudFile file) {
@@ -606,8 +612,8 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 						File fn = file.filename(cacheDir);
 						fn.getParentFile().mkdirs();
 						FileOutputStream output = new FileOutputStream(fn);
-						Object value[] = {fn, missing.isEmpty() ? null : missing, file, file.getId()};
 						StringBuffer buf = new StringBuffer();
+						ArrayList value = new ArrayList();
 
 						for (int i = 0; i < data.length; i++) {
 							buf.append(data[i]);
@@ -617,6 +623,10 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 						output.flush();
 						output.getFD().sync();
 						output.close();
+						value.add(fn);
+						value.add(missing.isEmpty() ? null : missing);
+						value.add(file);
+						value.add(file.getId());
 						handler.receiveResult(value);
 					} else {
 						getChunks(cacheDir, handler, file, missing, data, !any ? attempt + 1 : 0);

@@ -3,9 +3,9 @@ package p2pmud
 import rice.p2p.past.ContentHashPastContent
 import rice.p2p.util.SecurityUtils
 import rice.p2p.past.PastContent
-import rice.Continuation.MultiContinuation
 import rice.Continuation
 import rice.p2p.commonapi.Id
+import static p2pmud.Tools.*
 
 public class P2PMudFile extends ContentHashPastContent {
 	public ArrayList<Id> chunks
@@ -16,6 +16,9 @@ public class P2PMudFile extends ContentHashPastContent {
 
 	private static final long serialVersionUID = 1L
 
+	def static continuation(cont, parent = null) {
+		Tools.continuation(cont, parent)
+	}
 	def static File filename(cacheDir, id) {
 		id = id instanceof Id ? id.toStringFull() : id
 		new File(cacheDir, "${id.substring(0, 2)}/${id.substring(2)}")
@@ -73,42 +76,30 @@ println "STORE: $file.key -> $file.value"
 			}
 		}
 		println "${files.size()} files"
-		mcont = new MultiContinuation([
-			receiveResult: {res ->
-				for (result in res) {
-					if (res instanceof Exception) {
-						cont.receiveException(res)
-						return
-					}
+		serialContinuations(continuation(cont, receiveResult: {res ->
+			for (result in res) {
+				if (res instanceof Exception) {
+					cont.receiveException(res)
+					return
 				}
-				def stream = new ByteArrayOutputStream()
+			}
+			def stream = new ByteArrayOutputStream()
 
-				println "--- STORING DIR: $props"
-				props.store(stream, "directory")
-				P2PMudPeer.test.wimpyStoreFile(cacheDir, stream.toByteArray(), [
-					receiveResult: {res2 -> cont.receiveResult([file: res2, properties: props])},
-					receiveException: {res2 -> cont.receiveException(res2)}
-				] as Continuation, false, false)
-			},
-			receiveException: {res -> cont.receiveException(res)}
-		] as Continuation, files.size())
-		for (file in files) {
+			println "--- STORING DIR: $props"
+			props.store(stream, "directory")
+			P2PMudPeer.test.wimpyStoreFile(cacheDir, stream.toByteArray(), continuation(cont, receiveResult: {res2 -> cont.receiveResult([file: res2, properties: props])}), false, false)
+		}), files) {file, chain ->
 			def c = count++
 
 			println "FILE $c: $file"
 			println "PROPS: $props"
-			P2PMudPeer.test.wimpyStoreFile(cacheDir, file[0], [
-				receiveResult: {res ->
-					println "c: $c"
-					println "relative file: ${file[1]} = ${res.id.toStringFull()}"
-					props[files[c][1]] = res.id.toStringFull()
-					println "added prop to props: $props"
-					mcont.getSubContinuation(c).receiveResult(res)
-				},
-				receiveException: {res ->
-					mcont.getSubContinuation(c).receiveException(res)
-				}
-			] as Continuation, false, false);
+			P2PMudPeer.test.wimpyStoreFile(cacheDir, file[0], continuation(chain, receiveResult: {res ->
+				println "c: $c"
+				println "relative file: ${file[1]} = ${res.id.toStringFull()}"
+				props[files[c][1]] = res.id.toStringFull()
+				println "added prop to props: $props"
+				chain.receiveResult(res)
+			}), false, false)
 		}
 	}
 	/**
@@ -116,30 +107,26 @@ println "STORE: $file.key -> $file.value"
 	 */
 	def static fetchDir(id, cacheDir, dir, cont, mutable) {
 		id = id instanceof String ? rice.pastry.Id.build(id) : id
-		P2PMudPeer.test.wimpyGetFile(id, cacheDir, [
-			receiveResult: {result ->
-				def filename = result[0]
-				def missing = result[1]
-				def file = result[2]
+		P2PMudPeer.test.wimpyGetFile(id, cacheDir, continuation(receiveResult: {result ->
+			def filename = result[0]
+			def missing = result[1]
+			def file = result[2]
 
-				if (!missing || missing.isEmpty()) {
-					def tmpDir = new File(cacheDir, "download/${id.toStringFull()}")
+			if (!missing || missing.isEmpty()) {
+				def tmpDir = new File(cacheDir, "download/${id.toStringFull()}")
 			
-					tmpDir.mkdirs()
-					P2PMudFile.fetchDirFromProperties(cacheDir, id, Tools.properties(P2PMudFile.filename(cacheDir, id)), tmpDir, [
-						receiveResult: {
-							dir.getAbsoluteFile().getParentFile().mkdirs()
-							tmpDir.renameTo(dir)
-							cont.receiveResult(it)
-						},
-						receiveException: {cont.receiveException(it)}
-					] as Continuation, mutable)
-				} else {
-					cont.receiveException(new Exception("Couldn't load file: $filename"));
-				}
-			},
-			receiveException: {cont.receiveException(new Exception("Error retrieving file: ${id.toStringFull()}", it))}
-		] as Continuation)
+				tmpDir.mkdirs()
+				P2PMudFile.fetchDirFromProperties(cacheDir, id, Tools.properties(P2PMudFile.filename(cacheDir, id)), tmpDir, continuation(receiveResult: {
+					dir.getAbsoluteFile().getParentFile().mkdirs()
+					tmpDir.renameTo(dir)
+					cont.receiveResult(it)
+				},
+				receiveException: {cont.receiveException(it)}), mutable)
+			} else {
+				cont.receiveException(new Exception("Couldn't load file: $filename"));
+			}
+		},
+		receiveException: {cont.receiveException(new Exception("Error retrieving file: ${id.toStringFull()}", it))}))
 	}
 	/**
 	 * cont receives dir as result
@@ -148,44 +135,6 @@ println "STORE: $file.key -> $file.value"
 		def fileNum = 0
 		def ids = [:]
 		def files = []
-		def mcont = new MultiContinuation([
-			receiveResult: {o ->
-				def succeeded = true
-				def temps = []
-		
-				for (int i = 0; i < o.length; i++) {
-					if (o[i] instanceof Exception) {
-						System.err.println "Problem loading file '${files[i]}' while fetching directory: ${id.toStringFull()}"
-						o[i].printStackTrace()
-						succeeded = false
-					} else if (o[i][1]) {
-		    			if (succeeded) {
-		    				cont.receiveException(new Exception("Could not retrieve file: " + o[i][0]));
-		    			}
-						succeeded = false
-		    		} else {
-		    			def cacheFile = o[i][0]
-		    			def destFile
-
-		    			synchronized (ids) {
-		    				destFile = new File(dir, ids[cacheFile])
-		    			}
-		    			Tools.copyFile(cacheFile, destFile)
-		    			if (o[i][2]?.isMutable()) {
-		    				cacheFile.delete()
-		    			}
-		    		}
-		    	}
-				if (succeeded) {
-		    		cont.receiveResult(dir)
-				} else {
-					cont.receiveException(new Exception("Could not retrieve directory: " + id.toStringFull()));
-				}
-		    },
-		    receiveException: {e ->
-		    	cont.receiveException(e)
-		    }
-		] as Continuation, props.size())
 
 		dir = dir as File
 		cacheDir = cacheDir as File
@@ -195,12 +144,44 @@ println "STORE: $file.key -> $file.value"
 		if (!dir.exists()) {
 			dir.mkdirs()
 		}
-		for (file in props) {
+		serialContinuations(continuation(cont, receiveResult: {o ->
+			def succeeded = true
+			def temps = []
+	
+			for (int i = 0; i < o.size(); i++) {
+				if (o[i] instanceof Exception) {
+					System.err.println "Problem loading file '${files[i]}' while fetching directory: ${id.toStringFull()}"
+					o[i].printStackTrace()
+					succeeded = false
+				} else if (o[i][1]) {
+	    			if (succeeded) {
+	    				cont.receiveException(new Exception("Could not retrieve file: " + o[i][0]));
+	    			}
+					succeeded = false
+	    		} else {
+	    			def cacheFile = o[i][0]
+	    			def destFile
+
+	    			synchronized (ids) {
+	    				destFile = new File(dir, ids[cacheFile])
+	    			}
+	    			Tools.copyFile(cacheFile, destFile)
+	    			if (o[i][2]?.isMutable()) {
+	    				cacheFile.delete()
+	    			}
+	    		}
+	    	}
+			if (succeeded) {
+	    		cont.receiveResult(dir)
+			} else {
+				cont.receiveException(new Exception("Could not retrieve directory: " + id.toStringFull()));
+			}
+		}), props.collect {it}) {file, chain ->
 			synchronized (ids) {
 				ids[filename(cacheDir, file.value)] = file.key
 			}
 			files.add(file.key)
-			P2PMudPeer.test.wimpyGetFile(rice.pastry.Id.build(file.value), cacheDir, mcont.getSubContinuation(fileNum++))
+			P2PMudPeer.test.wimpyGetFile(rice.pastry.Id.build(file.value), cacheDir, chain)
 		}
 	}
 
