@@ -61,24 +61,32 @@ public class DFMapBuilder {
 					// get chunks of identical letters to process them all the same
 					rle = getRLE(dfmapcolarray, j, cols)
 					def first = map[dfmapcolarray[j]]
-					exec {
-						if (first != '$') {
-							//println "i got an rle of $rle at index: $j  first is $first"
-							def x = j * cubesize;
-							def y = ir * cubesize;
-							if (first == 'f') {
-								def z1 = z + floorThick, len = Math.round(rle * cubesize / floorThick), floor = Math.round((cubesize  - floorThick) / floorThick), foo = Math.round(cubesize / floorThick)
-								//println  "selcube $x $y $z1 $len $foo $floor $floorThick 5; delcube"
+					if (first != '$') {
+						//println "i got an rle of $rle at index: $j  first is $first"
+						def x = j * cubesize;
+						def y = ir * cubesize;
+						if (first == 'f') {
+							def z1 = z + floorThick, len = Math.round(rle * cubesize / floorThick), floor = Math.round((cubesize  - floorThick) / floorThick), foo = Math.round(cubesize / floorThick)
+							//println  "selcube $x $y $z1 $len $foo $floor $floorThick 5; delcube"
+							exec {
 								sauer('delcube', "selcube $x $y $z1 $len $foo $floor $floorThick 5; delcube")
-								remipCount += rle
-							}else if (first == 'w') {
+							}
+							remipCount += rle
+						}else if (first == 'w') {
+							exec {
 								sauer('delcube', "selcube $x $y $z $rle 1 1 $cubesize 5; delcube; editmat water")
-							} else if(first == 'e'){
+							}
+						} else if(first == 'e'){
+							exec {
 								sauer('delcube', "selcube $x $y $z $rle 1 1 $cubesize 5; delcube")
-						 	} else if(first == 's') {
+							}
+					 	} else if(first == 's') {
+							exec {
 						 		sauer('delcube', "selcube $x $y $z $rle 1 1 $cubesize 5; delcube")
 							}
 						}
+					}
+					exec {
 						dumpCommands()
 					}
 				}
