@@ -263,7 +263,7 @@ public class Prep {
 				button(text: 'Clear P2P Cache', actionPerformed: { clearCache() } )
 			}
 			update()
-			if (props.last_profile) chooseProfile(props.last_profile)
+			chooseProfile(props.last_profile)
 			f.setLocation(200, 200)
 			f.size = [500, (int)f.size.height] as Dimension
 		}
