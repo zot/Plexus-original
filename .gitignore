@@ -17,7 +17,6 @@ cmd
 Debug
 Release
 CVS
-P2PMud-sauerbraten/launchers/Plexus.launch
 *.pdb
 *.ncb
 Thumbs.db
