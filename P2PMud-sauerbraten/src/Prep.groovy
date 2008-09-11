@@ -31,7 +31,7 @@ public class Prep {
 	] as Properties
 	def static props = new Props()
 	def static fields = [:]
-	def static itemsCombo
+	def static profilesCombo
 	def static nodeIdLabel
 	def static upnpButton, sauerButton
 	def static removeProfileButton
@@ -228,6 +228,11 @@ public class Prep {
 				]
 			}
 			f = frame(title: 'Plexus Configuration', windowClosing: {System.exit(0)}, layout: new MigLayout('fillx'), pack: true, show: true) {
+				label(text: 'Active Profile:')
+				panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
+					profilesCombo = comboBox(editable: true, actionPerformed: {if (profilesCombo) addProfile(profilesCombo?.editor?.item)})
+					removeProfileButton = button(text: 'Remove Profile', actionPerformed: {removeProfile()}, enabled: false)
+				}
 				field('Your name: ', 'name')
 				field('Team/Guild: ', 'guild')
 				//field('External IP: ', 'external_ip')
@@ -250,15 +255,16 @@ public class Prep {
 				sauerButton = checkBox(text: 'If checked, it will auto start the Plexus custom Sauerbraten', actionPerformed: { evt -> props.sauer_mode = evt.source.selected ? 'launch' : 'noLaunch' }, constraints: 'wrap' )
 				label(text: "Node id: ")
 				nodeIdLabel = label(text: props.nodeId ?: "none", constraints: 'wrap, growx')
-				button(text: "Start", actionPerformed: {f.dispose(); finished(true)})
-				button(text: "Exit", actionPerformed: {f.dispose(); finished(false)}, constraints: 'wrap')
 				panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
-					itemsCombo = comboBox(editable: true, actionPerformed: {if (itemsCombo) addProfile(itemsCombo?.editor?.item)})
-					removeProfileButton = button(text: 'Remove Profile', actionPerformed: {removeProfile()}, enabled: false)
-					button(text: 'Clear P2P Cache', actionPerformed: { clearCache() } )
+					button(text: "Start", actionPerformed: {f.dispose(); finished(true)})
+					button(text: "Save and Exit", actionPerformed: {f.dispose(); finished(false)} )
+					button(text: "Exit", actionPerformed: { System.exit(0) } )
 				}
+				button(text: 'Clear P2P Cache', actionPerformed: { clearCache() } )
 			}
 			update()
+			if (props.last_profile) chooseProfile(props.last_profile)
+			f.setLocation(200, 200)
 			f.size = [500, (int)f.size.height] as Dimension
 		}
 	}
@@ -273,19 +279,11 @@ public class Prep {
 		Tools.deleteAll(new File(plexusdir, "models/thumbs"))
 		
 		new File(plexusdir, "models").eachFileMatch(~/^[A-F0-9]+$/){ f->
-	    	if (f.isDirectory()) f.delete()
+	    	if (f.isDirectory()) Tools.deleteAll(f)
 		}
 	}
-	/*
-	def static setMode(button) {
-		modeButtons.each {
-			if (it.value == button) {
-				props.sauer_mode = it.key
-			}
-		}
-	} */
 	def static update() {
-		itemsCombo.model = new DefaultComboBoxModel(['', *props.profiles.sort()] as Object[])
+		profilesCombo.model = new DefaultComboBoxModel(['', *props.profiles.sort()] as Object[])
 		//modeGroup.setSelected(modeButtons[props.sauer_mode ?: 'launch'].model, true)
 		sauerButton.setSelected(props.sauer_mode == 'launch')
 	}
@@ -298,39 +296,9 @@ public class Prep {
 		}
 		chooseProfile(prof)
 	}
-	def static profileSelected(evt) {
-		Thread.start {
-			def d
-			def name
-			def ok = {
-				d.visible = false
-				addProfile(name.text)
-			}
-
-			switch (evt.source.selectedIndex) {
-			case 0:
-				println "new profile"
-				new SwingBuilder().build {
-					d = dialog(modal: true, layout: new MigLayout('fillx'), pack: true) {
-						label(text: 'Profile Name: ')
-						name = textField(actionPerformed: ok, constraints: 'wrap, growx')
-						button(text: 'OK', actionPerformed: ok)
-						button(text: 'Cancel', actionPerformed: {d.visible = false})
-					}
-					d.visible = true
-				}
-				evt.source.selectedIndex = -1
-				break
-			case -1:
-				println "no selection"
-				break
-			default:
-				chooseProfile(evt.source.selectedItem)
-				break
-			}
-		}
-	}
 	def static chooseProfile(item) {
+		props.setLastProfile(item)
+		println ("setting last_profile to $props.last_profile")
 		props.setProfile(item)
 		removeProfileButton.enabled = !!props.profile
 		fields.each {
@@ -338,7 +306,7 @@ public class Prep {
 		}
 		nodeIdLabel.text = props.nodeId
 		update()
-		itemsCombo.selectedItem = item
+		profilesCombo.selectedItem = item
 	}
 	def static removeProfile() {
 		props.removeProfile()
