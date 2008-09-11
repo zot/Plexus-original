@@ -84,8 +84,10 @@ public class DFMapBuilder {
 				}
 				
 				if (remipCount > 25000) {
-					sauer('remip', 'remip')
-					dumpCommands()
+					exec {
+						sauer('remip', 'remip')
+						dumpCommands()
+					}
 					remipCount = 0
 				}
 			}
