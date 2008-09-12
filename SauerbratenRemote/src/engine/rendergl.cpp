@@ -623,20 +623,53 @@ void tc_adjustcamera(physent *camera, int dx, int dy)
     camera->pitch -= dy*cursens*(invmouse ? -1 : 1);
 }
 
-void copyVec(vec &dst, vec &src)
+// this translates a screen coordinate into a set of angles represented as a normalized vector
+void vecfromcursor(float x, float y, float z, vec &dir)
 {
-	dst.x = src.x;
-	dst.y = src.y;
-	dst.z = src.z;
+    GLdouble cmvm[16], cpjm[16];
+    GLint view[4];
+    GLdouble dx, dy, dz;
+
+    glGetDoublev(GL_MODELVIEW_MATRIX, cmvm);
+    glGetDoublev(GL_PROJECTION_MATRIX, cpjm);
+    glGetIntegerv(GL_VIEWPORT, view);
+
+    gluUnProject(x*float(view[2]), (1.f-y)*float(view[3]), z, cmvm, cpjm, view, &dx, &dy, &dz);
+    dir = vec((float)dx, (float)dy, (float)dz);
+    gluUnProject(x*float(view[2]), (1.f-y)*float(view[3]), 0.0f, cmvm, cpjm, view, &dx, &dy, &dz);
+    dir.sub(vec((float)dx, (float)dy, (float)dz));
+    dir.normalize();
 }
 
+// this translates the aiming position to a screen coordinate
+void vectocursor(vec &v, float &x, float &y, float &z)
+{
+    GLdouble cmvm[16], cpjm[16];
+    GLint view[4];
+    GLdouble dx, dy, dz;
+
+	glGetDoublev(GL_MODELVIEW_MATRIX, cmvm);
+    glGetDoublev(GL_PROJECTION_MATRIX, cpjm);
+    glGetIntegerv(GL_VIEWPORT, view);
+
+    gluProject(v.x, v.y, v.z, cmvm, cpjm, view, &dx, &dy, &dz);
+    x = (float)dx;
+    y = (float)view[3]-dy;
+    z = (float)dz;
+} 
+
 // take the current camera, copy it over to the mouse and use that instead
-void tc_copycamera(int dx, int dy)
+void tc_copycamera(float dx, float dy)
 {
 	if (NULL == mousecamera) mousecamera = new physent();
 
 	memcpy(mousecamera, camera1, sizeof(struct physent));
-	
+
+	float aimyaw, aimpitch;
+	vec cursordir;
+    vecfromcursor((float) dx, (float) dy, 1.f, cursordir); 
+    vectoyawpitch(cursordir, aimyaw, aimpitch);
+/*
 	double pi = 3.1415926535;
 	double fovhalf = (fov / 2.0) * pi / 180.0;
 	double dist = (screen->w / 2.0) / tan(fovhalf);
@@ -648,6 +681,9 @@ void tc_copycamera(int dx, int dy)
 	//fprintf(stderr, "w/2 is %lf, h/2 is %lf, yaw %lf, pitch %lf\n", (double) screen->w / 2.0, (double) screen->h / 2.0, yaw, pitch);
 	mousecamera->yaw += yaw;
 	mousecamera->pitch -= pitch;
+*/
+	mousecamera->yaw = aimyaw;
+	mousecamera->pitch = aimpitch;
 
 	//tc_adjustcamera(mousecamera, dx, dy);
 	fixcamerarange(mousecamera);

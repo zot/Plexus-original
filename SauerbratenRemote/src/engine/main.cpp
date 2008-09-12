@@ -686,9 +686,10 @@ void checkinput()
 							g3d_resetcursor();
                 		} else {
 							// not grabbing? freely move the cursor, but not the player/camera
-							extern void tc_copycamera(int dx, int dy);
-							int dx = event.motion.x - (screen->w/2), dy = event.motion.y - (screen->h/2); 
-							tc_copycamera(dx, dy);
+							extern void tc_copycamera(float dx, float dy);
+							//int dx = event.motion.x - (screen->w/2), dy = event.motion.y - (screen->h/2); 
+							//tc_copycamera(dx, dy);
+							tc_copycamera(event.motion.x / (float)screen->w, event.motion.y/ (float) screen->h);
                 			tc_movecursor(event.motion.x, event.motion.y, false);
                 		}
                 	} else {
