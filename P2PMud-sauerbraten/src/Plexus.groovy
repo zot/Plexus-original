@@ -691,6 +691,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		if (cacheDir.exists()) {
 			def files = []
 
+			deleteAll(new File(cacheDir, 'download'))
 			cacheDir.eachFile {subDir ->
 				subDir.eachFile {file ->
 					files.add(file)
@@ -921,11 +922,14 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		if (newMaps != maps) {
 			maps = newMaps
 			swing.doLater {
+				def sel = mapCombo.selectedItem
+
 				mapCombo.removeAllItems()
 				mapCombo.addItem('')
 				for (map in maps) {
 					mapCombo.addItem(map.name)
 				}
+				mapCombo.selectedItem = sel
 			}
 		}
 		cloudProperties.each('privateMap/(.*)') {key, value, match ->

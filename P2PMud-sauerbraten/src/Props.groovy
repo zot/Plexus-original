@@ -42,7 +42,9 @@ class Props {
 		}
 	}
 	def setLastProfile(prof) {
-		last_profile = properties.last_profile = prof
+		if (prof) {
+			last_profile = properties.last_profile = prof
+		}
 	}
 	def addProfile(prof) {
 		if (!profiles.contains(prof)) {
