@@ -192,8 +192,8 @@ public class Prep {
 		  if ( IGDs != null ) {
 		    // let's the the first device found
 		    def testIGD = IGDs[0];
-		    System.out.println( "Found device " + testIGD.getIGDRootDevice().getModelName() );
-		    fields['external_ip'].text = testIGD.getExternalIPAddress()
+		    System.out.println("Found device ${testIGD.getIGDRootDevice().getModelName()}, ip: ${testIGD.getExternalIPAddress()}");
+		    fields['external_ip'].setText(testIGD.getExternalIPAddress())
 		    setprop('external_ip')
 		    
 		    return
@@ -211,13 +211,14 @@ public class Prep {
 		   UIManager.setLookAndFeel(new Plastic3DLookAndFeel());
 		} catch (Exception e) {}
 		new SwingBuilder().build {
-			def field = {lbl, key ->
+			def field = {lbl, key, constraints = 'span 2, wrap, growx' ->
 				label(text: lbl)
-				def tf = textField(actionPerformed: {setprop(key)}, focusLost: {setprop(key)}, text: p[key], constraints: 'span 2, wrap, growx')
+				def tf = textField(actionPerformed: {setprop(key)}, focusLost: {setprop(key)}, text: p[key], constraints: constraints)
 				fields[key] = [
 					setText: {value -> tf.text = value},
 					getText: {tf.text}
 				]
+				tf
 			}
 			def check = {lbl, key, description ->
 				label(text: lbl)
@@ -235,13 +236,7 @@ public class Prep {
 				}
 				field('Your name: ', 'name')
 				field('Team/Guild: ', 'guild')
-				//field('External IP: ', 'external_ip')
-				label(text: 'External IP: ')
-				def extIpField = textField(actionPerformed: {setprop('external_ip')}, focusLost: {setprop('external_ip')}, text: p['external_ip'], constraints: 'growx')
-				fields['external_ip'] = [
-					setText: {value -> extIpField.text = value},
-					getText: {extIpField.text}
-				]
+				field('External IP: ', 'external_ip', 'growx')
 				button(text: "Discover", actionPerformed: { discoverExternalIP() }, constraints: 'wrap')
 				field('External port: ', 'external_port')
 				check('Use UPnP', 'upnp', 'If checked, make sure UPnP is enabled on your router')
@@ -265,7 +260,7 @@ public class Prep {
 			update()
 			chooseProfile(props.last_profile)
 			f.setLocation(200, 200)
-			f.size = [500, (int)f.size.height] as Dimension
+			f.size = [600, (int)f.size.height] as Dimension
 		}
 	}
 	def static clearCache() {
