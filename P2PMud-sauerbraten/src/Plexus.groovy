@@ -35,6 +35,7 @@ import DFMapBuilder
 import GroovyFileFilter
 
 public class Plexus {
+	def socket = null
 	def output = null
 	def name
 	def id_index = 1
@@ -519,7 +520,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 
 			println "READY"
 			while (true) {
-				Socket client = sock.accept {
+				socket = sock.accept {
 					println("Got connection from sauerbraten...")
 					output = it.getOutputStream()
 					exec {init()}
@@ -545,16 +546,14 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	}
 	def dumpCommands() {
 		checkExec()
-		if (output) {
-			synchronized (pendingCommands) {
-				if (!pendingCommands.isEmpty()) {
-					def out = pendingCommands.collect{it.value}.join(";") + '\n'
-//					println out
-					output << out
-					pendingCommands = [:]
-				}
-				output.flush()
+		if (!pendingCommands.isEmpty()) {
+			if (socket?.isConnected()) {
+				def out = pendingCommands.collect{it.value}.join(";") + '\n'
+//				println out
+				output << out
 			}
+			output.flush()
+			pendingCommands = [:]
 		}
 	}
 	def sauerEnt(label) {
