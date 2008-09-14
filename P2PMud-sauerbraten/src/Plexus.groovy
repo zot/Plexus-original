@@ -139,17 +139,17 @@ public class Plexus {
 		soleInstance = this
 		if (LaunchPlexus.props.headless == '0') {
 			sauerDir = System.getProperty("sauerdir");
-			name = args[1]
 			if (!verifySauerdir(sauerDir)) {
 				usage("sauerdir must be provided")
 			} else if (!name) {
 				usage("name must be provided")
 			}
 			sauerDir = new File(sauerDir)
-			plexusDir = new File(sauerDir, "packages/plexus")
 		} else {
-			plexusDir = new File('plexus')
+			sauerDir = new File('.')
 		}
+		name = args[1]
+		plexusDir = new File(sauerDir, "packages/plexus")
 		cloudProperties = new CloudProperties(this, new File(plexusDir, "cache/$name/cloud.properties"))
 		cloudProperties.persistentPropertyPattern = ~'(map|privateMap|costume)/..*'
 		cloudProperties.privatePropertyPattern = ~'(privateMap)/..*'
@@ -551,8 +551,8 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 				def out = pendingCommands.collect{it.value}.join(";") + '\n'
 //				println out
 				output << out
+				output.flush()
 			}
-			output.flush()
 			pendingCommands = [:]
 		}
 	}
@@ -646,6 +646,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	}
 	def initJoin() {
 		checkExec()
+		deleteAll(cacheDir)
 		peer.anycastCmds(plexusTopic, "sendCloudProperties")
 	}
 	def storeFile(cont, file, mutable = false, cacheOverride = false) {
