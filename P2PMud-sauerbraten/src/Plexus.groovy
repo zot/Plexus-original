@@ -554,15 +554,17 @@ println "NOW FOLLOWING: ${followingPlayer?.name}"
 					println("Got connection from sauerbraten...")
 					output = it.getOutputStream()
 					exec {init()}
-					it.getInputStream().eachLine {line ->
-						exec {
-							try {
-								exec {sauerCmds.invoke(line)}
-							} catch (Exception ex) {
-								err("Problem executing sauer command: " + it, ex)
+					try {
+						it.getInputStream().eachLine {line ->
+							exec {
+								try {
+									exec {sauerCmds.invoke(line)}
+								} catch (Exception ex) {
+									err("Problem executing sauer command: " + it, ex)
+								}
 							}
 						}
-					}
+					} catch (Exception ex) {}
 					try {it.shutdownInput()} catch (Exception ex) {}
 					try {it.shutdownOutput()} catch (Exception ex) {}
 					println "Disconnect"
@@ -580,8 +582,14 @@ println "NOW FOLLOWING: ${followingPlayer?.name}"
 			if (socket?.isConnected()) {
 				def out = pendingCommands.collect{it.value}.join(";") + '\n'
 //				println out
-				output << out
-				output.flush()
+				try {
+					output << out
+					output.flush()
+				} catch (SocketException ex) {
+					try {socket.shutdownInput()}catch(Exception ex2){}
+					try {socket.shutdownOutput()}catch(Exception ex2){}
+					socket = null
+				}
 			}
 			pendingCommands = [:]
 		}
