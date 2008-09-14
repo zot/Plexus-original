@@ -90,6 +90,7 @@ public class Plexus {
 	def tumesCombo
 	def fileQ = []
 	def executorThread
+	def pendingDownloads = [] as Set
 
 	def static sauerExec
 	def static soleInstance
@@ -146,7 +147,7 @@ public class Plexus {
 			}
 			sauerDir = new File(sauerDir)
 		} else {
-			sauerDir = new File('.')
+			sauerDir = new File('duh').getAbsoluteFile().getParentFile()
 		}
 		name = args[1]
 		plexusDir = new File(sauerDir, "packages/plexus")
@@ -155,11 +156,12 @@ public class Plexus {
 		cloudProperties.privatePropertyPattern = ~'(privateMap)/..*'
 		cacheDir = new File(plexusDir, "cache/$name/files")
 		mapDir = new File(plexusDir, "cache/$name/maps")
+		mapDir.mkdirs()
 		def pastStor = new File(plexusDir, "cache/$name/PAST")
 		deleteAll(pastStor)
 		pastStor.mkdirs()
 		System.setProperty('past.storage', pastStor.getAbsolutePath())
-		if (LaunchPlexus.props.headless == '0') {
+		if (LaunchPlexus.props.headless != '1') {
 			cloudProperties.setPropertyHooks[~'player/..*'] = {key, value, oldValue ->
 				if (mapTopic) {
 					def pid = key.substring('player/'.length())
@@ -208,112 +210,27 @@ public class Plexus {
 				updateMapGui()
 				updateCostumeGui()
 			}
-			new File(sauerDir, mapPrefix).mkdirs()
 			if ((LaunchPlexus.props.sauer_mode ?: 'launch') == 'launch') launchSauer();
 			//PlasticLookAndFeel.setPlasticTheme(new DesertBlue());
 			try {
 			   UIManager.setLookAndFeel(new Plastic3DLookAndFeel());
 			} catch (Exception e) {}
-			swing = new SwingBuilder()
-			swing.build {
-				def field = {lbl, key ->
-					label(text: lbl)
-					fields[key] = textField(actionPerformed: {sauerEnt(key)}, focusLost: {sauerEnt(key)}, constraints: 'wrap, growx')
-				}
-				def f = frame(title: 'Plexus: ' + LaunchPlexus.props.name, windowClosing: {System.exit(0)}, layout: new MigLayout('fill'), pack: true, show: true) {
-					label(text: "Node id: ")
-					label(text: LaunchPlexus.props.nodeId ?: "none", constraints: 'wrap, growx')
-					label(text: "Neighbors: ")
-					panel(layout: new MigLayout('fill, ins 0'), constraints: 'spanx,wrap,growx') {
-						button(text: "Update Neighbor List", actionPerformed: {updateNeighborList()})
-						neighborField = label(text: 'none', constraints: 'wrap, growx')
-					}
-					label(text: "Command: ")
-					fields.cmd = textField(actionPerformed: {cmd()}, constraints: 'wrap, growx')
-					tabbedPane(constraints: 'spanx,width 100%,growy,wrap') {
-						panel(name: 'Commands', layout: new MigLayout('fill')) {
-							label(text: 'Generation')
-							panel(layout: new MigLayout('fill, ins 0'), constraints: 'growx,wrap') {
-								button(text: "Launch 3D", actionPerformed: {launchSauer()})
-								button(text: "Generate Dungeon", actionPerformed: {generateDungeon()})
-								button(text: "Load DF Map", actionPerformed: {loadDFMap()})
-								panel(constraints: 'growx,wrap')
-							}
-							label(text: "Current Map: ")
-							mapCombo = comboBox(editable: false, actionPerformed: {
-								exec {
-									if (mapCombo && mapCombo.selectedIndex > -1) {
-										connectWorld(mapCombo.selectedIndex == 0 ? null : maps[mapCombo.selectedIndex - 1].id)
-									}
-								}
-							}, constraints: 'wrap')
-							label(text: 'Choose Costume')
-							tumesCombo = comboBox(editable: false, actionPerformed: {
-								exec {
-									if (tumesCombo && tumesCombo.selectedIndex > -1) {
-										if (tumesCombo.selectedIndex) {
-											def tume = tumes[tumesCombo.selectedIndex - 1]
-
-											useCostume(tume.name, tume.dir)
-										}
-									}
-								}
-							}, constraints: 'wrap')
-							label(text: "Follow player: ")
-							mapPlayersCombo = comboBox(editable: false, actionPerformed: {
-								if (mapPlayersCombo && mapPlayersCombo.selectedIndex > -1) {
-									followingPlayer = mapPlayersCombo.selectedIndex == 0 ? null : mapPlayers[mapPlayersCombo.selectedIndex - 1]
-println "NOW FOLLOWING: ${followingPlayer?.name}"
-								}
-							}, constraints: 'wrap')
-							button(text: 'Upload Costume', actionPerformed: {
-								exec {
-									if (costumeUploadField.text) {
-										pushCostumeDir(costumeUploadField.text as File)
-									}
-								}
-							})
-							panel(constraints: 'growx,wrap', layout: new MigLayout('fill,ins 0')) {
-								costumeUploadField = textField(constraints: 'growx', actionPerformed: {
-									exec {pushCostumeDir(costumeUploadField.text as File)}
-								})
-								button(text: '...', actionPerformed: {
-									exec {
-										def file = chooseFile("Choose a model to upload", costumeUploadField, "Costumes", "")
-
-										if (file) {
-											pushCostumeDir(file)
-										}
-									}
-								})
-							}
-							panel(constraints: 'growy,wrap')
-						}
-						panel(name: 'Stats', layout: new MigLayout('fill,ins 0')) {
-							field('x: ', 'x')
-							field('y: ', 'y')
-							field('z: ', 'z')
-							field('vx: ', 'vx')
-							field('vy: ', 'vy')
-							field('vz: ', 'vz')
-							field('fx: ', 'fx')
-							field('fy: ', 'fy')
-							field('fz: ', 'fz')
-							field('roll: ', 'rol')
-							field('pitch: ', 'pit')
-							field('yaw: ', 'yaw')
-							field('strafe: ', 's')
-							field('edit: ', 'e')
-							field('move: ', 'm')
-							field('physics state: ', 'ps')
-							field('max speed: ', 'ms')
-							panel(constraints: 'growy,wrap')
-						}
-					}
-				}
-				f.size = [500, (int)f.size.height] as Dimension
-			}
+			buildPlexusGui()
 			start(args[0])
+		} else {
+			cloudProperties.saveFilter = {prop -> !pendingDownloads.contains(prop)}
+			cloudProperties.setPropertyHooks[~'map/..*'] = {key, value, oldValue ->
+				def map = getMap(key.substring('map/'.length()))
+
+				println "RECEIVED MAP NOTIFICATION, DOWNLODING..."
+				fetchAndSave("map $map.name", key, map.dir, "maps/$map.dir")
+			}
+			cloudProperties.setPropertyHooks[~'costume/..*'] = {key, value, oldValue ->
+				def costume = getCostume(key.substring('costume/'.length()))
+
+				println "RECEIVED MAP NOTIFICATION, DOWNLODING..."
+				fetchAndSave("costume", key, costume.dir, "costumes/$costume.dir")
+			}
 		}
 		P2PMudPeer.verboseLogging = LaunchPlexus.props.verbose_log == '1'
 		P2PMudPeer.logFile = new File(plexusDir, "cache/$name/plexus.log")
@@ -353,12 +270,125 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		names = [p0: peerId]
 		ids[peerId] = 'p0'
 		plexusTopic = peer.subscribe(peer.buildId(PLEXUS_KEY), null)
+		println "execing init..."
 		exec {
 			if (peer.node.getLeafSet().getUniqueCount() == 1) {
+				println "initBoot"
 				initBoot()
 			} else {
+				println "initJoin"
 				initJoin()
 			}
+		}
+	}
+	def fetchAndSave(type, prop, id, location) {
+		fetchDir(id, new File(plexusDir, "cache/$name/$location"), receiveResult: {r ->
+			exec {
+				println "RECEVED ${type.toUpperCase()}, CHECKPOINTING CLOUD PROPS"
+				pendingDownloads.remove(prop)
+				cloudProperties.save()
+			}
+		}, receiveException: {ex -> err("Could not fetch data for $type: $id -> ${new File(plexusDir, "cache/$name/$location")}", ex)})
+	}
+	def buildPlexusGui() {
+		swing = new SwingBuilder()
+		swing.build {
+			def field = {lbl, key ->
+				label(text: lbl)
+				fields[key] = textField(actionPerformed: {sauerEnt(key)}, focusLost: {sauerEnt(key)}, constraints: 'wrap, growx')
+			}
+			def f = frame(title: 'Plexus: ' + LaunchPlexus.props.name, windowClosing: {System.exit(0)}, layout: new MigLayout('fill'), pack: true, show: true) {
+				label(text: "Node id: ")
+				label(text: LaunchPlexus.props.nodeId ?: "none", constraints: 'wrap, growx')
+				label(text: "Neighbors: ")
+				panel(layout: new MigLayout('fill, ins 0'), constraints: 'spanx,wrap,growx') {
+					button(text: "Update Neighbor List", actionPerformed: {updateNeighborList()})
+					neighborField = label(text: 'none', constraints: 'wrap, growx')
+				}
+				label(text: "Command: ")
+				fields.cmd = textField(actionPerformed: {cmd()}, constraints: 'wrap, growx')
+				tabbedPane(constraints: 'spanx,width 100%,growy,wrap') {
+					panel(name: 'Commands', layout: new MigLayout('fill')) {
+						label(text: 'Generation')
+						panel(layout: new MigLayout('fill, ins 0'), constraints: 'growx,wrap') {
+							button(text: "Launch 3D", actionPerformed: {launchSauer()})
+							button(text: "Generate Dungeon", actionPerformed: {generateDungeon()})
+							button(text: "Load DF Map", actionPerformed: {loadDFMap()})
+							panel(constraints: 'growx,wrap')
+						}
+						label(text: "Current Map: ")
+						mapCombo = comboBox(editable: false, actionPerformed: {
+							exec {
+								if (mapCombo && mapCombo.selectedIndex > -1) {
+									connectWorld(mapCombo.selectedIndex == 0 ? null : maps[mapCombo.selectedIndex - 1].id)
+								}
+							}
+						}, constraints: 'wrap')
+						label(text: 'Choose Costume')
+						tumesCombo = comboBox(editable: false, actionPerformed: {
+							exec {
+								if (tumesCombo && tumesCombo.selectedIndex > -1) {
+									if (tumesCombo.selectedIndex) {
+										def tume = tumes[tumesCombo.selectedIndex - 1]
+
+										useCostume(tume.name, tume.dir)
+									}
+								}
+							}
+						}, constraints: 'wrap')
+						label(text: "Follow player: ")
+						mapPlayersCombo = comboBox(editable: false, actionPerformed: {
+							if (mapPlayersCombo && mapPlayersCombo.selectedIndex > -1) {
+								followingPlayer = mapPlayersCombo.selectedIndex == 0 ? null : mapPlayers[mapPlayersCombo.selectedIndex - 1]
+println "NOW FOLLOWING: ${followingPlayer?.name}"
+							}
+						}, constraints: 'wrap')
+						button(text: 'Upload Costume', actionPerformed: {
+							exec {
+								if (costumeUploadField.text) {
+									pushCostumeDir(costumeUploadField.text as File)
+								}
+							}
+						})
+						panel(constraints: 'growx,wrap', layout: new MigLayout('fill,ins 0')) {
+							costumeUploadField = textField(constraints: 'growx', actionPerformed: {
+								exec {pushCostumeDir(costumeUploadField.text as File)}
+							})
+							button(text: '...', actionPerformed: {
+								exec {
+									def file = chooseFile("Choose a model to upload", costumeUploadField, "Costumes", "")
+
+									if (file) {
+										pushCostumeDir(file)
+									}
+								}
+							})
+						}
+						panel(constraints: 'growy,wrap')
+					}
+					panel(name: 'Stats', layout: new MigLayout('fill,ins 0')) {
+						field('x: ', 'x')
+						field('y: ', 'y')
+						field('z: ', 'z')
+						field('vx: ', 'vx')
+						field('vy: ', 'vy')
+						field('vz: ', 'vz')
+						field('fx: ', 'fx')
+						field('fy: ', 'fy')
+						field('fz: ', 'fz')
+						field('roll: ', 'rol')
+						field('pitch: ', 'pit')
+						field('yaw: ', 'yaw')
+						field('strafe: ', 's')
+						field('edit: ', 'e')
+						field('move: ', 'm')
+						field('physics state: ', 'ps')
+						field('max speed: ', 'ms')
+						panel(constraints: 'growy,wrap')
+					}
+				}
+			}
+			f.size = [500, (int)f.size.height] as Dimension
 		}
 	}
 	def chooseFile(message, field, filterName, filterRegexp) {
@@ -664,19 +694,23 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	def queueIo(cont, block) {
 		checkExec()
 		if (fileQ.empty) {
+			println "EXECUTING"
 			block(ioContinuation(cont))
 		} else {
-			fileQ.add({block(ioContinuation(cont))})
+			println "QUEUING"
+			fileQ.add({println "EXECUTING QUEUED"; block(ioContinuation(cont))})
 		}
 	}
 	def ioContinuation(cont) {
 		continuation(receiveResult: {r ->
 			exec {
+				println "DONE"
 				cont.receiveResult(r)
 				chainIo()
 			}
 		}, receiveException: {e ->
 			exec {
+				println "ERROR"
 				cont.receiveException(e)
 				chainIo()
 			}
@@ -691,6 +725,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		if (cacheDir.exists()) {
 			def files = []
 
+			println "STORING CACHE"
 			deleteAll(new File(cacheDir, 'download'))
 			cacheDir.eachFile {subDir ->
 				subDir.eachFile {file ->
@@ -705,8 +740,11 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 				println "FAILED TO PUSH CACHE"
 				err("Error pushing cache in PAST", ex)
 			}) {file, chain ->
+				println "STORING FILE: $file"
 				storeFile(chain, file, false, true)
 			}
+		} else {
+			println "NO CACHE TO STORE"
 		}
 	}
 	def setCloudProperty(key, value) {

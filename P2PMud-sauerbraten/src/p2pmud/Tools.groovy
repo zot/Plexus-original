@@ -1,13 +1,15 @@
 package p2pmud
 
-import org.bouncycastle.crypto.digests.SHA1Digest
 import rice.p2p.util.SecurityUtils
 import rice.pastry.Id
 import org.codehaus.groovy.runtime.StackTraceUtils
 import java.util.zip.ZipFile
-import rice.Continuationimport rice.Continuation.MultiContinuation
+import rice.Continuation
+import rice.Continuation.MultiContinuation
+import java.security.MessageDigest
+
 public class Tools {
-	def static digest = new SHA1Digest()
+	def static digest = MessageDigest.getInstance("SHA-1")
 
 	def static stackTrace(ex) {
 		ex.printStackTrace()
@@ -123,7 +125,8 @@ public class Tools {
 		bytes.encodeBase64()
 	}
 	def static contentId(byte[] bytes) {
-		Id.build(SecurityUtils.hash(bytes))
+//		Id.build(SecurityUtils.hash(bytes))
+		Id.build(digest.digest(bytes))
 	}
 	def static guard(block) {
 		return {r->

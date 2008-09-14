@@ -17,15 +17,21 @@ cd $build
 
 for i in $peer/lib/*.jar ; do
 	if [ ! $version -nt $i ] ; then
-		echo extracting $i
-		unzip -o $i
-		if [ -d META-INF ] ; then
-			mv META-INF META-INF-$(basename $i .jar)
+		if [ `basename $i` = bouncycastle.jar ] ; then
+			echo skipping bouncycastle jar
+		else
+			echo extracting $i
+			unzip -o $i
+#			if [ -d META-INF ] ; then
+#				mv META-INF META-INF-$(basename $i .jar)
+#			fi
 		fi
 	else
 		echo not extracting $i because it is already there
 	fi
 done
+
+#rm -f META-INF/*.SF
 cp -r $peer/bin/* .
 cp -r $plx/bin/* .
 cp $sauer/src/sauer_client dist/sauerbraten_plexus_linux
