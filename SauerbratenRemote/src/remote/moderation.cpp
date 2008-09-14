@@ -811,8 +811,8 @@ ICOMMAND(deleteplayer, "s", (char *ent), {
 });
 
 ICOMMAND(deleteallplayers, "", (), {
-		while(watchers.length()) {
-			watcher &w = watchers[0];
+		while(watchers.length() > 1) {
+			watcher &w = watchers[1];
 			extern void deleteplayer(fpsent *p);
 			deleteplayer((fpsent *) w.entity);
 			watchers.remove(0);
