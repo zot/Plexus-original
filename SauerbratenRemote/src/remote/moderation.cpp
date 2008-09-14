@@ -810,6 +810,17 @@ ICOMMAND(deleteplayer, "s", (char *ent), {
 	}
 });
 
+ICOMMAND(deleteallplayers, "", (), {
+		while(watchers.length()) {
+			watcher &w = watchers[0];
+			extern void deleteplayer(fpsent *p);
+			deleteplayer((fpsent *) w.entity);
+			watchers.remove(0);
+			w.dispose();
+		}
+});
+
+
 ICOMMAND(maxspeed, "ss", (char *ent, char *speed), {
 	if (ent && ent[0]) {
 		dynent *d = getdynent(ent);
