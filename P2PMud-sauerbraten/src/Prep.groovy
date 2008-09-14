@@ -8,6 +8,7 @@ import p2pmud.Tools
 import javax.swing.JFileChooser
 import net.sbbi.upnp.Discovery.*;
 import net.sbbi.upnp.impls.InternetGatewayDevice;
+import p2pmud.MessageBox
 
 public class Prep {
 	def static success = false
@@ -232,7 +233,7 @@ public class Prep {
 				label(text: 'Active Profile:')
 				panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
 					profilesCombo = comboBox(editable: true, actionPerformed: {if (profilesCombo) addProfile(profilesCombo?.editor?.item)})
-					removeProfileButton = button(text: 'Remove Profile', actionPerformed: {removeProfile()}, enabled: false)
+					removeProfileButton = button(text: 'Remove Profile', actionPerformed: { if (MessageBox.AreYouSure("Remove Profile", "Are you sure you want to remove the $props.profile profile?")) removeProfile()}, enabled: false)
 				}
 				field('Your name: ', 'name')
 				field('Team/Guild: ', 'guild')
