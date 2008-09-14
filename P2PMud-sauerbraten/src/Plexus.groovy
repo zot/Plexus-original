@@ -660,6 +660,9 @@ println "NOW FOLLOWING: ${followingPlayer?.name}"
 			}
 		})
 	}
+	def selectMap() {
+		mapCombo.selectedItem = mapTopic ? getMap(mapTopic.getId().toStringFull()).name : ''
+	}
 	def err(msg, err) {
 		println(msg)
 		err.printStackTrace()
@@ -1124,15 +1127,21 @@ println "COSTUME SELS: $triples"
 		dumpCommands()
 	}
 	def useCostume(name, dirId) {
-		def costumeDir = new File(plexusDir, "models/$dirId")
+		if (costume != dirId) {
+			def costumeDir = new File(plexusDir, "models/$dirId")
 
-		fetchDir(dirId, costumeDir, receiveResult: {
-			costume = dirId
-			updateMyPlayerInfo()
-			sauer('cost', "playerinfo p0 [${LaunchPlexus.props.guild}] ${costumeDir.getName()}")
-			dumpCommands()
-			println "USE COSTUME $name ($costumeDir)"
-		}, receiveException: {ex -> err("Couldn't use costume: $name", ex)})
+			fetchDir(dirId, costumeDir, receiveResult: {
+				costume = dirId
+				updateMyPlayerInfo()
+				sauer('cost', "playerinfo p0 [${LaunchPlexus.props.guild}] ${costumeDir.getName()}")
+				dumpCommands()
+				println "USE COSTUME $name ($costumeDir)"
+				selectCostume()
+			}, receiveException: {ex -> err("Couldn't use costume: $name", ex)})
+		}
+	}
+	def selectCostume() {
+		tumesCombo.selectedItem = costume ? getCostume(costume)?.name ?: '' : ''
 	}
 	def connectWorld(id) {
 		if (id) {
@@ -1151,6 +1160,7 @@ println "COSTUME SELS: $triples"
 							mapTopic = topic
 							mapIsPrivate = map.privateMap
 							updateMyPlayerInfo()
+							selectMap()
 						}
 					},
 					receiveException: {exception -> exec {err("Couldn't subscribe to topic: ", exception)}}))
