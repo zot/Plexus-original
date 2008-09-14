@@ -40,6 +40,8 @@ public class SauerCmds extends Cmds {
 	}
 	def tc_newmap(String name) {
 		println "newmap: $name"
+		main.sauer("delp", "deleteallplayers")
+		main.dumpCommands()
 		main.mapname = name
 		main.updateMyPlayerInfo()
 	}
