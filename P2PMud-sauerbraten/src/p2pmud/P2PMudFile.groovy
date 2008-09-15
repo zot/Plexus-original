@@ -57,6 +57,7 @@ public class P2PMudFile extends ContentHashPastContent {
 		def files = []
 		def count = 0
 		def mcont
+		def chunkTotal = 0
 
 		cacheDir = cacheDir as File
 		if (dir instanceof Map) {
@@ -72,6 +73,7 @@ println "STORE: $file.key -> $file.value"
 				} else {
 					println "adding file: $it"
 					files.add([it, Tools.subpath(dir, it)])
+					chunkTotal += (int)Math.ceil(it.length() / (float)chunkSize)
 				}
 			}
 		}
@@ -86,8 +88,10 @@ println "STORE: $file.key -> $file.value"
 			def stream = new ByteArrayOutputStream()
 
 			println "--- STORING DIR: $props"
-			props.store(stream, "directory")
-			P2PMudPeer.test.wimpyStoreFile(cacheDir, stream.toByteArray(), continuation(cont, receiveResult: {res2 -> cont.receiveResult([file: res2, properties: props])}), false, false)
+			props.store(stream, "$chunkTotal")
+			P2PMudPeer.test.wimpyStoreFile(cacheDir, stream.toByteArray(), continuation(cont, receiveResult: {res2 ->
+				cont.receiveResult([file: res2, properties: props])
+			}), false, false)
 		}), files) {file, chain ->
 			def c = count++
 

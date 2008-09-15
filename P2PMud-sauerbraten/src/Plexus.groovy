@@ -84,6 +84,11 @@ public class Plexus {
 	def mapCombo
 	def mapPlayers
 	def mapPlayersCombo
+	def downloadPanel
+	def downloadProgressBar
+	def uploadCountField
+	def downloadCountField
+	def loadTypeField
 	def followingPlayer
 	def cotumeUploadField
 	def tumes
@@ -91,6 +96,8 @@ public class Plexus {
 	def fileQ = []
 	def executorThread
 	def pendingDownloads = [] as Set
+	def uploads = 0
+	def downloads = 0
 
 	def static sauerExec
 	def static soleInstance
@@ -282,11 +289,13 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		}
 	}
 	def fetchAndSave(type, prop, id, location) {
+		pendingDownloads.add(prop)
 		fetchDir(id, new File(plexusDir, "cache/$name/$location"), receiveResult: {r ->
 			exec {
 				println "RECEVED ${type.toUpperCase()}, CHECKPOINTING CLOUD PROPS"
 				pendingDownloads.remove(prop)
 				cloudProperties.save()
+				updateDownloads()
 			}
 		}, receiveException: {ex -> err("Could not fetch data for $type: $id -> ${new File(plexusDir, "cache/$name/$location")}", ex)})
 	}
@@ -365,6 +374,15 @@ println "NOW FOLLOWING: ${followingPlayer?.name}"
 							})
 						}
 						panel(constraints: 'growy,wrap')
+						downloadPanel = panel(constraints: 'growx,spanx,wrap', layout: new MigLayout('fill,ins 0'), enabled: false) {
+							label(text: ' Pending Uploads: ')
+							uploadCountField = label(text: '0')
+							label(text: ' Pending Downloads: ')
+							downloadCountField = label(text: '0')
+							label(text: 'Current ')
+							loadTypeField = label(text: 'Upload')
+							downloadProgressBar = progressBar(constraints: 'growx')
+						}
 					}
 					panel(name: 'Stats', layout: new MigLayout('fill,ins 0')) {
 						field('x: ', 'x')
@@ -390,6 +408,10 @@ println "NOW FOLLOWING: ${followingPlayer?.name}"
 			}
 			f.size = [500, (int)f.size.height] as Dimension
 		}
+	}
+	def updateDownloads() {
+		downloadCountField.text = downloads as String
+		uploadCountField.text = uploads as String
 	}
 	def chooseFile(message, field, filterName, filterRegexp) {
 		def ch = new JFileChooser();
@@ -691,37 +713,47 @@ println "NOW FOLLOWING: ${followingPlayer?.name}"
 		peer.anycastCmds(plexusTopic, "sendCloudProperties")
 	}
 	def storeFile(cont, file, mutable = false, cacheOverride = false) {
-		queueIo(cont) {chain -> peer.wimpyStoreFile(cacheDir, file, chain, mutable, cacheOverride)}
+		uploads++
+		updateDownloads()
+		queueIo(cont, {uploads--; updateDownloads()}) {chain -> peer.wimpyStoreFile(cacheDir, file, chain, mutable, cacheOverride)}
 	}
 	def storeDir(cont, dir) {
-		queueIo(cont) {chain -> P2PMudFile.storeDir(cacheDir, dir, chain)}
+		uploads++
+		updateDownloads()
+		queueIo(cont, {uploads--; updateDownloads()}) {chain -> P2PMudFile.storeDir(cacheDir, dir, chain)}
 	}
 	def fetchFile(cont, id) {
-		queueIo(cont) {chain -> peer.wimpyGetFile(id, cacheDir, chain)}
+		downloads++
+		updateDownloads()
+		queueIo(cont, {downloads--; updateDownloads()}) {chain -> peer.wimpyGetFile(id, cacheDir, chain)}
 	}
 	def fetchDir(cont, id, dir, mutable = false) {
-		queueIo(cont) {chain -> P2PMudFile.fetchDir(id, cacheDir, dir, chain, mutable)}
+		downloads++
+		updateDownloads()
+		queueIo(cont, {downloads--; updateDownloads()}) {chain -> P2PMudFile.fetchDir(id, cacheDir, dir, chain, mutable)}
 	}
-	def queueIo(cont, block) {
+	def queueIo(cont, completedBlock, block) {
 		checkExec()
 		if (fileQ.empty) {
 			println "EXECUTING"
-			block(ioContinuation(cont))
+			block(ioContinuation(cont, completedBlock))
 		} else {
 			println "QUEUING"
-			fileQ.add({println "EXECUTING QUEUED"; block(ioContinuation(cont))})
+			fileQ.add({println "EXECUTING QUEUED"; block(ioContinuation(cont, completedBlock))})
 		}
 	}
-	def ioContinuation(cont) {
+	def ioContinuation(cont, completedBlock) {
 		continuation(receiveResult: {r ->
 			exec {
 				println "DONE"
+				completedBlock()
 				cont.receiveResult(r)
 				chainIo()
 			}
 		}, receiveException: {e ->
 			exec {
 				println "ERROR"
+				completedBlock()
 				cont.receiveException(e)
 				chainIo()
 			}
