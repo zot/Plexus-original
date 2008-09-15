@@ -395,6 +395,19 @@ ICOMMAND(createplayer, "ss", (char *ent, char *name), {
     }
 });
 
+ICOMMAND(deleteallplayers, "", (), {
+		for (int i = fpscl->players.length() - 1; i >= 0; --i)
+		{
+			fpsent *p = fpscl->players[i];
+			if (p) {
+				extern void deleteplayer(fpsent *p);
+				deleteplayer(p);
+				extern void unlinkWatcher(fpsent *p);
+				unlinkWatcher(p);
+			}
+		}
+});
+
 ICOMMAND(tc_respawn, "s", (char *ent), {
 	if (ent && ent[0] == 'p') {
 		fpsent *p = (fpsent *) getdynent(ent);

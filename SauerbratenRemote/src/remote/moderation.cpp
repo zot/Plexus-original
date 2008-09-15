@@ -783,6 +783,17 @@ ICOMMAND(watch, "sss", (char *entName, char *code, char *resolution), {
 		}
 });
 
+void unlinkWatcher(fpsent *p) {
+	loopi(watchers.length()) {
+		watcher &w = watchers[i];
+		if (w.entity == p) {
+			watchers.remove(i);
+			w.dispose();
+			return;
+		}
+	}
+}
+
 ICOMMAND(deleteplayer, "s", (char *ent), {
 	if (ent && ent[0] == 'p') {
 		// if we try to recreate a new player of the same id, just reuse the existing one
@@ -798,26 +809,8 @@ ICOMMAND(deleteplayer, "s", (char *ent), {
 
 		extern void deleteplayer(fpsent *p);
 		deleteplayer(p);
-
-		loopi(watchers.length()) {
-			watcher &w = watchers[i];
-			if (w.entity == p) {
-				watchers.remove(i);
-				w.dispose();
-				return;
-			}
-		}
+		unlinkWatcher(p);
 	}
-});
-
-ICOMMAND(deleteallplayers, "", (), {
-		while(watchers.length() > 1) {
-			watcher &w = watchers[1];
-			extern void deleteplayer(fpsent *p);
-			deleteplayer((fpsent *) w.entity);
-			watchers.remove(0);
-			w.dispose();
-		}
 });
 
 
