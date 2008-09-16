@@ -469,6 +469,8 @@ println "NOW FOLLOWING: ${followingPlayer?.name}"
 
 	// generate a random dungeon
 	def generateDungeon() {
+		showUploadProgress(32, 75)
+		return
 		println ("Going to generate dungeon")
 		Thread.start {
 			exec {
@@ -1343,6 +1345,32 @@ println "createPortal portal_$trigger = $name; portal $trigger"
 			sauer('follow', "tc_setinfo p0 ${format.join(' ')}")
 			dumpCommands()
 			broadcast(["update $name ${format.join(' ')}"])
+		}
+	}
+	def clearUploadProgress() {
+		exec {
+			sauer('up', 'tc_piechart_image = ""')
+			dumpCommands()
+		}
+	}
+	def showUploadProgress(cur, total) {
+		exec {
+			def x = total > 0 ? Math.round(cur/total*16.0) : 0
+			sauer('up', 'tc_piechart_image = "packages/plexus/dist/ul_' + x + '.png"')
+			dumpCommands()
+		}
+	}
+	def clearDownloadProgress() {
+		exec {
+			sauer('up', 'tc_piechart_image = ""')
+			dumpCommands()
+		}
+	}
+	def showDownloadProgress(cur, total) {
+		exec {
+			def x = total > 0 ? Math.round(cur/total*16.0) : 0
+			sauer('up', 'tc_piechart_image = "packages/plexus/dist/dl_' + x + '.png"')
+			dumpCommands()
 		}
 	}
 }
