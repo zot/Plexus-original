@@ -535,6 +535,22 @@ UseCases
 <pre>7/18/08 Roy: Upgrade to latest code base (2008 6/19)
 </pre>
 </div>
+<div title="FeatureList" modifier="TAG" created="200809161520" tags="features list ]" changecount="1">
+<pre>Dev Features (copied from Roy's post on the cubedevblog)
+
+P2P Networking – All information is stored in a cloud. Models, maps, everything. No central server means that there’s no downtime, and no need to worry about which server your friends are on. Uses Free Pastry for communication. Although this is all independent of our Sauer mods, it's a big deal, so I had to mention it!
+
+Socket level control of Sauerbraten - We've spliced in a socket to communicate with Sauer so you can control the engine from any outside application that uses this protocol. We're writing our stuff in Groovy but you could make your own game using Python or what have you. This allows developers to use whatever language they wish.
+
+World of Warcraft style mouse handling - Sauers mouse handling is frightening for anything other than an FPS, so we've reworked it to be exactly like WoW's. You can even orbit the camera around your toon for screenshots. There are still some bugs/quirks with this in edit mode, but in general it makes editing Sauer maps so much easier.
+
+Randomly generated maze maps - Nothing too fancy, but we don't have many artists helping on the project yet so anything that up the appearance of content is good. Our sauer socket protocol has additional functions to allow external creation of maps.
+Importing of Dwarf Fortress maps - There's a popular indie game called Dwarf Fortress which uses old school ASCII style maps. We have an importer that can load these maps into Sauer using the same interface as the random maze generation.
+
+Custom models/costumes – I wrote a model importer that imports md2 and md3 models and creates the md3.cfg so you can load them into Sauer. We modded the engine to allow changing player models on the fly.
+
+Glass Pane Image Layer. Add in images and text to the hud on the fly.</pre>
+</div>
 <div title="Flow" modifier="Zot" created="200806191220" modified="200806191220" changecount="2">
 <pre>~PCs can only perform limited actions without approval
 * talking
@@ -597,12 +613,13 @@ freely, subject to the following restrictions:
     3. This notice may not be removed or altered from any source
     distribution.</pre>
 </div>
-<div title="MainMenu" modifier="BillBurdick" created="200806171608" modified="200807300611" changecount="12">
+<div title="MainMenu" modifier="TAG" created="200806171608" modified="200809161516" changecount="13">
 <pre>[img[TEAM CTHULHU|docs/images/cthulhu.jpg][http://teamcthulhu.com]]
 ToDo
 UseCases
 PotentialIssues
 CompilingInLinux
+FeatureList
 [[Commands|docs/COMMANDS.txt]]
 PeerToPeer
 MudLingua
