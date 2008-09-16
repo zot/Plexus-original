@@ -22,6 +22,7 @@ static vector<char> input;
 static vector<char> output;
 
 static char *remotedisconnect(char *msg) {
+	executeret("mysocket = -1");
 	if (mysocket != -1) {
 		enet_socket_destroy(mysocket); //close(mysocket);
 		mysocket = -1;
@@ -138,8 +139,12 @@ static char *remoteconnect() {
 		}
 		enet_socket_set_option(mysocket, ENET_SOCKOPT_NONBLOCK, 1);
 		conoutf("Connected to %s:%d", remoteHost, remotePort);
+		char buf [32];
+		sprintf(buf, "mysocket = %d", mysocket);
+		executeret(buf);
 		break;
 	}
+	executeret("mysocket = -1");
 	return NULL;
 }
 ICOMMAND(remoteconnect, "", (), remoteconnect(););
