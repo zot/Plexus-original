@@ -49,6 +49,9 @@ public class P2PMudFile extends ContentHashPastContent {
 			return null;
 		}
 	}
+	def static estimateChunks(size) {
+		(int)Math.ceil(size / (float)chunkSize * 4 / 3) + 1
+	}
 	/**
 	 * sends [P2PMudFile, dirProps] to cont
 	 */
@@ -74,7 +77,7 @@ println "STORE: $file.key -> $file.value"
 				} else {
 					println "adding file: $it"
 					files.add([it, Tools.subpath(dir, it)])
-					chunkTotal += (int)Math.ceil(it.length() / (float)chunkSize * 4 / 3) + 1
+					chunkTotal += estimateChunks(it.length())
 				}
 			}
 		}
@@ -112,7 +115,7 @@ println "STORE: $file.key -> $file.value"
 	 */
 	def static fetchDir(id, cacheDir, dir, callback = {chunk, total -> }, cont, mutable) {
 		id = id instanceof String ? rice.pastry.Id.build(id) : id
-		P2PMudPeer.test.wimpyGetFile(id, cacheDir, {}, continuation(receiveResult: {result ->
+		P2PMudPeer.test.wimpyGetFile(id, cacheDir, {size -> }, continuation(receiveResult: {result ->
 			def filename = result[0]
 			def missing = result[1]
 			def file = result[2]
@@ -121,7 +124,7 @@ println "STORE: $file.key -> $file.value"
 				def tmpDir = new File(cacheDir, "download/${id.toStringFull()}")
 				def propsFile = P2PMudFile.filename(cacheDir, id)
 				def input = propsFile.newInputStream()
-				def chunkTotal = Integer.parseInt(input.readLine().substring(1))
+				def chunkTotal = Integer.parseInt(new BufferedReader(new InputStreamReader(input)).readLine().substring(1))
 
 				input.close()
 				tmpDir.mkdirs()
@@ -191,7 +194,7 @@ println "STORE: $file.key -> $file.value"
 				ids[filename(cacheDir, file.value)] = file.key
 			}
 			files.add(file.key)
-			P2PMudPeer.test.wimpyGetFile(rice.pastry.Id.build(file.value), cacheDir, {callback(chunk++, chunkTotal)}, chain)
+			P2PMudPeer.test.wimpyGetFile(rice.pastry.Id.build(file.value), cacheDir, {tmpSize -> callback(chunk++, chunkTotal)}, chain)
 		}
 	}
 

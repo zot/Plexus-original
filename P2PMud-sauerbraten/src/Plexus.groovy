@@ -715,10 +715,13 @@ println "NOW FOLLOWING: ${followingPlayer?.name}"
 		peer.anycastCmds(plexusTopic, "sendCloudProperties")
 	}
 	def storeFile(cont, file, mutable = false, cacheOverride = false) {
+		def total = P2PMudFile.estimateChunks(file.length)
+		def chunk = 0
+
 		uploads++
 		showUploadProgress(0, 16)
 		updateDownloads()
-		queueIo(cont, {uploads--; updateDownloads(); clearUploadProgress()}) {chain -> peer.wimpyStoreFile(cacheDir, file, {chunk, total-> showUploadProgress(chunk, total)}, chain, mutable, cacheOverride)}
+		queueIo(cont, {uploads--; updateDownloads(); clearUploadProgress()}) {chain -> peer.wimpyStoreFile(cacheDir, file, {showUploadProgress(chunk++, total)}, chain, mutable, cacheOverride)}
 	}
 	def storeDir(cont, dir) {
 		uploads++
@@ -727,10 +730,12 @@ println "NOW FOLLOWING: ${followingPlayer?.name}"
 		queueIo(cont, {uploads--; updateDownloads(); clearUploadProgress()}) {chain -> P2PMudFile.storeDir(cacheDir, dir, {chunk, total -> showUploadProgress(chunk, total)}, chain)}
 	}
 	def fetchFile(cont, id) {
+		def chunk = 0
+
 		downloads++
 		showDownloadProgress(0, 16)
 		updateDownloads()
-		queueIo(cont, {downloads--; updateDownloads(); clearDownloadProgress()}) {chain -> peer.wimpyGetFile(id, cacheDir, {chunk, total -> showDownloadProgress(chunk, total)}, chain)}
+		queueIo(cont, {downloads--; updateDownloads(); clearDownloadProgress()}) {chain -> peer.wimpyGetFile(id, cacheDir, {total -> showDownloadProgress(chunk++, total)}, chain)}
 	}
 	def fetchDir(cont, id, dir, mutable = false) {
 		downloads++

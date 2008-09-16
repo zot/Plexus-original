@@ -663,7 +663,7 @@ final int c = count++;
 				System.out.println("LOOKING UP CHUNK: " + chunks.get(i).toStringFull());
 				past.lookup(chunks.get(i), new Continuation.StandardContinuation(sub) {
 					public void receiveResult(Object result) {
-						callback.call();
+						callback.call(file.chunks.size());
 						sub.receiveResult(result);
 					}
 				});
