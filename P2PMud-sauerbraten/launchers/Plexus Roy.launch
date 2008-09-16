@@ -28,5 +28,6 @@
 </listAttribute>
 <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="LaunchPlexus"/>
 <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="P2PMud-sauerbraten"/>
-<stringAttribute key="org.eclipse.jdt.launching.WORKING_DIRECTORY" value=""/>
+<stringAttribute key="org.eclipse.jdt.launching.WORKING_DIRECTORY" value="C:\Program Files\SauerCTF"/>
 </launchConfiguration>
+
