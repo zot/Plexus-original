@@ -12,6 +12,7 @@ public class CloudProperties {
 	def privatePropertyPattern = ''
 	def main
 	def file
+	def saveFilter = {prop -> true}
 
 	def CloudProperties(main, file) {
 		this.main = main
@@ -79,7 +80,7 @@ public class CloudProperties {
 		def output = file.newOutputStream()
 
 		properties.each {prop ->
-			if (persistentPropertyPattern && prop.key ==~ persistentPropertyPattern) {
+			if (persistentPropertyPattern && prop.key ==~ persistentPropertyPattern && saveFilter(prop.key)) {
 				saving.add("$prop.key=$prop.value")
 			}
 		}

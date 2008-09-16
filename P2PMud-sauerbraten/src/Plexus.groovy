@@ -1,9 +1,9 @@
+import p2pmud.Tools
+import static p2pmud.Tools.*
 import java.awt.event.ItemEvent
 import java.util.concurrent.Executors
 import com.jgoodies.looks.plastic.Plastic3DLookAndFeel
 import javax.swing.UIManager
-import rice.Continuation.MultiContinuation
-import p2pmud.Tools
 import p2pmud.CloudProperties
 import java.text.SimpleDateFormat
 import rice.p2p.commonapi.IdFactory
@@ -35,6 +35,7 @@ import DFMapBuilder
 import GroovyFileFilter
 
 public class Plexus {
+	def socket = null
 	def output = null
 	def name
 	def id_index = 1
@@ -83,7 +84,20 @@ public class Plexus {
 	def mapCombo
 	def mapPlayers
 	def mapPlayersCombo
+	def downloadPanel
+	def downloadProgressBar
+	def uploadCountField
+	def downloadCountField
+	def loadTypeField
 	def followingPlayer
+	def cotumeUploadField
+	def tumes
+	def tumesCombo
+	def fileQ = []
+	def executorThread
+	def pendingDownloads = [] as Set
+	def uploads = 0
+	def downloads = 0
 
 	def static sauerExec
 	def static soleInstance
@@ -92,6 +106,9 @@ public class Plexus {
 	def static final WORLDS_KEY = "Plexus: worlds"
 	def static final SPHINX_KEY = "Plexus: sphinx"
 
+	public static continuation(args, parent = null) {
+		Tools.continuation(args, parent)
+	}
 	public static void main(String[] a) {
 		if (a.length < 2) {
 			println "Usage: Plexus port name pastryArgs"
@@ -114,31 +131,44 @@ public class Plexus {
 	def tst(a, b) {
 		println "TST: $a, $b"
 	}
+	def checkExec() {
+		if (executorThread != Thread.currentThread()) {
+			new Exception("Not running in executor thread").printStackTrace()
+		}
+		assert executorThread == Thread.currentThread()
+	}
+	def exec(block) {
+		executor.submit(block)
+	}
 	def _main(args) {
+		exec {
+			executorThread = Thread.currentThread()
+		}
 		soleInstance = this
 		if (LaunchPlexus.props.headless == '0') {
 			sauerDir = System.getProperty("sauerdir");
-			name = args[1]
 			if (!verifySauerdir(sauerDir)) {
 				usage("sauerdir must be provided")
 			} else if (!name) {
 				usage("name must be provided")
 			}
 			sauerDir = new File(sauerDir)
-			plexusDir = new File(sauerDir, "packages/plexus")
 		} else {
-			plexusDir = new File('plexus')
+			sauerDir = new File('duh').getAbsoluteFile().getParentFile()
 		}
+		name = args[1]
+		plexusDir = new File(sauerDir, "packages/plexus")
 		cloudProperties = new CloudProperties(this, new File(plexusDir, "cache/$name/cloud.properties"))
 		cloudProperties.persistentPropertyPattern = ~'(map|privateMap|costume)/..*'
 		cloudProperties.privatePropertyPattern = ~'(privateMap)/..*'
 		cacheDir = new File(plexusDir, "cache/$name/files")
 		mapDir = new File(plexusDir, "cache/$name/maps")
+		mapDir.mkdirs()
 		def pastStor = new File(plexusDir, "cache/$name/PAST")
-		Tools.deleteAll(pastStor)
+		deleteAll(pastStor)
 		pastStor.mkdirs()
 		System.setProperty('past.storage', pastStor.getAbsolutePath())
-		if (LaunchPlexus.props.headless == '0') {
+		if (LaunchPlexus.props.headless != '1') {
 			cloudProperties.setPropertyHooks[~'player/..*'] = {key, value, oldValue ->
 				if (mapTopic) {
 					def pid = key.substring('player/'.length())
@@ -187,91 +217,41 @@ public class Plexus {
 				updateMapGui()
 				updateCostumeGui()
 			}
-			new File(sauerDir, mapPrefix).mkdirs()
 			if ((LaunchPlexus.props.sauer_mode ?: 'launch') == 'launch') launchSauer();
 			//PlasticLookAndFeel.setPlasticTheme(new DesertBlue());
 			try {
 			   UIManager.setLookAndFeel(new Plastic3DLookAndFeel());
 			} catch (Exception e) {}
-			swing = new SwingBuilder()
-			swing.build {
-				def field = {lbl, key ->
-					label(text: lbl)
-					fields[key] = textField(actionPerformed: {sauerEnt(key)}, focusLost: {sauerEnt(key)}, constraints: 'wrap, growx')
-				}
-				def f = frame(title: 'Plexus: ' + LaunchPlexus.props.name, windowClosing: {System.exit(0)}, layout: new MigLayout('fill'), pack: true, show: true) {
-					label(text: "Node id: ")
-					label(text: LaunchPlexus.props.nodeId ?: "none", constraints: 'wrap, growx')
-					label(text: "Neighbors: ")
-					panel(layout: new MigLayout('fill, ins 0'), constraints: 'spanx,wrap,growx') {
-						button(text: "Update Neighbor List", actionPerformed: {updateNeighborList()})
-						neighborField = label(text: 'none', constraints: 'wrap, growx')
-					}
-					label(text: "Command: ")
-					fields.cmd = textField(actionPerformed: {cmd()}, constraints: 'wrap, growx')
-					tabbedPane(constraints: 'spanx,width 100%,growy,wrap') {
-						panel(name: 'Commands', layout: new MigLayout('fill')) {
-							label(text: 'Generation')
-							panel(layout: new MigLayout('fill, ins 0'), constraints: 'growx,wrap') {
-								button(text: "Launch 3D", actionPerformed: {launchSauer()})
-								button(text: "Generate Dungeon", actionPerformed: {generateDungeon()})
-								button(text: "Load DF Map", actionPerformed: {loadDFMap()})
-								panel(constraints: 'growx,wrap')
-							}
-							label(text: "Current Map: ")
-							mapCombo = comboBox(editable: false, itemStateChanged: {
-								if (it.stateChange == ItemEvent.SELECTED && mapCombo && mapCombo.selectedIndex > -1) {
-									connectWorld(mapCombo.selectedIndex == 0 ? null : maps[mapCombo.selectedIndex - 1].id)
-								}
-							}, constraints: 'wrap')
-							label(text: "Follow player: ")
-							mapPlayersCombo = comboBox(editable: false, itemStateChanged: {
-								if (it.stateChange == ItemEvent.SELECTED && mapPlayersCombo && mapPlayersCombo.selectedIndex > -1) {
-									followingPlayer = mapPlayersCombo.selectedIndex == 0 ? null : mapPlayers[mapPlayersCombo.selectedIndex - 1]
-println "NOW FOLLOWING: ${followingPlayer?.name}"
-								}
-							}, constraints: 'wrap')
-							panel(constraints: 'growy,wrap')
-						}
-						panel(name: 'Stats', layout: new MigLayout('fill')) {
-							field('x: ', 'x')
-							field('y: ', 'y')
-							field('z: ', 'z')
-							field('vx: ', 'vx')
-							field('vy: ', 'vy')
-							field('vz: ', 'vz')
-							field('fx: ', 'fx')
-							field('fy: ', 'fy')
-							field('fz: ', 'fz')
-							field('roll: ', 'rol')
-							field('pitch: ', 'pit')
-							field('yaw: ', 'yaw')
-							field('strafe: ', 's')
-							field('edit: ', 'e')
-							field('move: ', 'm')
-							field('physics state: ', 'ps')
-							field('max speed: ', 'ms')
-							panel(constraints: 'growy,wrap')
-						}
-					}
-				}
-				f.size = [500, (int)f.size.height] as Dimension
-			}
+			buildPlexusGui()
 			start(args[0])
+		} else {
+			cloudProperties.saveFilter = {prop -> !pendingDownloads.contains(prop)}
+			cloudProperties.setPropertyHooks[~'map/..*'] = {key, value, oldValue ->
+				def map = getMap(key.substring('map/'.length()))
+
+				println "RECEIVED MAP NOTIFICATION, DOWNLODING..."
+				fetchAndSave("map $map.name", key, map.dir, "maps/$map.dir")
+			}
+			cloudProperties.setPropertyHooks[~'costume/..*'] = {key, value, oldValue ->
+				def costume = getCostume(key.substring('costume/'.length()))
+
+				println "RECEIVED MAP NOTIFICATION, DOWNLODING..."
+				fetchAndSave("costume", key, costume.dir, "costumes/$costume.dir")
+			}
 		}
+		P2PMudPeer.verboseLogging = LaunchPlexus.props.verbose_log == '1'
+		P2PMudPeer.logFile = new File(plexusDir, "cache/$name/plexus.log")
 		P2PMudPeer.main(
 			{id, topic, cmd ->
 				try {
-					executor.submit {
+					exec {
 						if (topic == null && cmd == null) {
 							id = id.toStringFull()
 							transmitRemoveCloudProperty("player/$id")
 						} else {
 							pastryCmd = cmd
 							cmd.msgs.each {line ->
-								synchronized (presenceLock) {
-									pastryCmds.invoke(line)
-								}
+								pastryCmds.invoke(line)
 							}
 							pastryCmd = null
 						}
@@ -287,37 +267,191 @@ println "NOW FOLLOWING: ${followingPlayer?.name}"
 			args[2..-1] as String[])
 		peer = P2PMudPeer.test
 		peerId = peer.nodeId.toStringFull()
-		names = [p0: peerId]
-		ids[peerId] = 'p0'
-		plexusTopic = peer.subscribe(peer.buildId(PLEXUS_KEY), null)
-		if (peer.node.getLeafSet().getUniqueCount() == 1) {
-			initBoot()
-		} else {
-			initJoin()
-		}
-//		println "Node ID: ${peer.node.getId().toStringFull()}"
+//		println "Node ID: $peerId}"
 println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		if (!LaunchPlexus.props.nodeId) {
-			LaunchPlexus.props.nodeId = peer.node.getId().toStringFull()
+			LaunchPlexus.props.nodeId = peerId
 			println "SAVING NEW NODE ID: $LaunchPlexus.props.nodeId"
 			LaunchPlexus.saveProps()
 		}
+		names = [p0: peerId]
+		ids[peerId] = 'p0'
+		plexusTopic = peer.subscribe(peer.buildId(PLEXUS_KEY), null)
+		println "execing init..."
+		exec {
+			if (peer.node.getLeafSet().getUniqueCount() == 1) {
+				println "initBoot"
+				initBoot()
+			} else {
+				println "initJoin"
+				initJoin()
+			}
+		}
+	}
+	def fetchAndSave(type, prop, id, location) {
+		pendingDownloads.add(prop)
+		showDownloadProgress(0, 16)
+		fetchDir(id, new File(plexusDir, "cache/$name/$location"), receiveResult: {r ->
+			exec {
+				println "RECEVED ${type.toUpperCase()}, CHECKPOINTING CLOUD PROPS"
+				pendingDownloads.remove(prop)
+				cloudProperties.save()
+				updateDownloads()
+				clearDownloadProgress()
+			}
+		}, receiveException: {ex -> err("Could not fetch data for $type: $id -> ${new File(plexusDir, "cache/$name/$location")}", ex)})
+	}
+	def buildPlexusGui() {
+		swing = new SwingBuilder()
+		swing.build {
+			def field = {lbl, key ->
+				label(text: lbl)
+				fields[key] = textField(actionPerformed: {sauerEnt(key)}, focusLost: {sauerEnt(key)}, constraints: 'wrap, growx')
+			}
+			def f = frame(title: 'Plexus: ' + LaunchPlexus.props.name, windowClosing: {System.exit(0)}, layout: new MigLayout('fill'), pack: true, show: true) {
+				label(text: "Node id: ")
+				label(text: LaunchPlexus.props.nodeId ?: "none", constraints: 'wrap, growx')
+				label(text: "Neighbors: ")
+				panel(layout: new MigLayout('fill, ins 0'), constraints: 'spanx,wrap,growx') {
+					button(text: "Update Neighbor List", actionPerformed: {updateNeighborList()})
+					neighborField = label(text: 'none', constraints: 'wrap, growx')
+				}
+				label(text: "Command: ")
+				fields.cmd = textField(actionPerformed: {cmd()}, constraints: 'wrap, growx')
+				tabbedPane(constraints: 'spanx,width 100%,growy,wrap') {
+					panel(name: 'Commands', layout: new MigLayout('fill')) {
+						label(text: 'Generation')
+						panel(layout: new MigLayout('fill, ins 0'), constraints: 'growx,wrap') {
+							button(text: "Launch 3D", actionPerformed: {launchSauer()})
+							button(text: "Generate Dungeon", actionPerformed: {generateDungeon()})
+							button(text: "Load DF Map", actionPerformed: {loadDFMap()})
+							panel(constraints: 'growx,wrap')
+						}
+						label(text: "Current Map: ")
+						mapCombo = comboBox(editable: false, actionPerformed: {
+							exec {
+								if (mapCombo && mapCombo.selectedIndex > -1) {
+									connectWorld(mapCombo.selectedIndex == 0 ? null : maps[mapCombo.selectedIndex - 1].id)
+								}
+							}
+						}, constraints: 'wrap')
+						label(text: 'Choose Costume')
+						tumesCombo = comboBox(editable: false, actionPerformed: {
+							exec {
+								if (tumesCombo && tumesCombo.selectedIndex > -1) {
+									if (tumesCombo.selectedIndex) {
+										def tume = tumes[tumesCombo.selectedIndex - 1]
+
+										useCostume(tume.name, tume.dir)
+									}
+								}
+							}
+						}, constraints: 'wrap')
+						label(text: "Follow player: ")
+						mapPlayersCombo = comboBox(editable: false, actionPerformed: {
+							if (mapPlayersCombo && mapPlayersCombo.selectedIndex > -1) {
+								followingPlayer = mapPlayersCombo.selectedIndex == 0 ? null : mapPlayers[mapPlayersCombo.selectedIndex - 1]
+println "NOW FOLLOWING: ${followingPlayer?.name}"
+							}
+						}, constraints: 'wrap')
+						button(text: 'Upload Costume', actionPerformed: {
+							exec {
+								if (costumeUploadField.text) {
+									pushCostumeDir(costumeUploadField.text as File)
+								}
+							}
+						})
+						panel(constraints: 'growx,wrap', layout: new MigLayout('fill,ins 0')) {
+							costumeUploadField = textField(constraints: 'growx', actionPerformed: {
+								exec {pushCostumeDir(costumeUploadField.text as File)}
+							})
+							button(text: '...', actionPerformed: {
+								exec {
+									def file = chooseFile("Choose a model to upload", costumeUploadField, "Costumes", "")
+
+									if (file) {
+										pushCostumeDir(file)
+									}
+								}
+							})
+						}
+						panel(constraints: 'growy,wrap')
+						downloadPanel = panel(constraints: 'growx,spanx,wrap', layout: new MigLayout('fill,ins 0'), enabled: false) {
+							label(text: ' Pending Uploads: ')
+							uploadCountField = label(text: '0')
+							label(text: ' Pending Downloads: ')
+							downloadCountField = label(text: '0')
+							label(text: 'Current ')
+							loadTypeField = label(text: 'Upload')
+							downloadProgressBar = progressBar(constraints: 'growx', minimum: 0, maximum: 100)
+						}
+					}
+					panel(name: 'Stats', layout: new MigLayout('fill,ins 0')) {
+						field('x: ', 'x')
+						field('y: ', 'y')
+						field('z: ', 'z')
+						field('vx: ', 'vx')
+						field('vy: ', 'vy')
+						field('vz: ', 'vz')
+						field('fx: ', 'fx')
+						field('fy: ', 'fy')
+						field('fz: ', 'fz')
+						field('roll: ', 'rol')
+						field('pitch: ', 'pit')
+						field('yaw: ', 'yaw')
+						field('strafe: ', 's')
+						field('edit: ', 'e')
+						field('move: ', 'm')
+						field('physics state: ', 'ps')
+						field('max speed: ', 'ms')
+						panel(constraints: 'growy,wrap')
+					}
+				}
+			}
+			f.size = [500, (int)f.size.height] as Dimension
+		}
+	}
+	def updateDownloads() {
+		downloadCountField.text = downloads as String
+		uploadCountField.text = uploads as String
+	}
+	def chooseFile(message, field, filterName, filterRegexp) {
+		def ch = new JFileChooser();
+
+		if (field.text) {
+			ch.setSelectedFile(field.text as File)
+		}
+		ch.setDialogTitle(message);
+		ch.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES)
+		ch.setFileFilter(new GroovyFileFilter(filterName) {it.isDirectory() || it.name ==~ filterRegexp})
+		def result = ch.showOpenDialog(null) == JFileChooser.APPROVE_OPTION ? ch.getSelectedFile() : null
+		if (result) {
+			field.text = result.getAbsolutePath()
+		}
+		return result
 	}
 	def updateNeighborList() {
 		try {
 			neighborField.text = String.valueOf(peer.getNeighborCount())
 		} catch (Exception ex) {}
 	}
-	// launch sauer in its own thread
 	def launchSauer() {
-		println ("Going to exec $sauerExec")
-		Thread.start {
-			if (sauerExec) {
-				Runtime.getRuntime().exec(sauerExec)
+		if (sauerExec) {
+			def env = []
+			def winderz = System.getProperty('os.name').toLowerCase() ==~ /.*windows.*/
+
+			for (vars in System.getenv()) {
+				if (winderz && vars.key.equalsIgnoreCase('path')) {
+					env.add("$vars.key=$vars.value;$sauerDir\\bin")
+				} else {
+					env.add("$vars.key=$vars.value")
+				}
 			}
-		};
+			env = env as String[]
+			println ("Going to exec $sauerExec from $sauerDir with env: $env")
+			Runtime.getRuntime().exec(sauerExec,  env, sauerDir)
+		}
 	}
-	
 	def loadDFMap() {
 		def ch = new JFileChooser();
 		ch.setDialogTitle("Please choose the DF map to load");
@@ -339,9 +473,11 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	def generateDungeon() {
 		println ("Going to generate dungeon")
 		Thread.start {
-			sauer('newmap', 'if (= 1 $editing) [ edittoggle ]; tc_allowedit 1; thirdperson 0; newmap; musicvol 0')
-			sauer('models', 'mapmodelreset ; mmodel tc_door ')
-			dumpCommands()
+			exec {
+				sauer('newmap', 'if (= 1 $editing) [ edittoggle ]; tc_allowedit 1; thirdperson 0; newmap; musicvol 0')
+				sauer('models', 'mapmodelreset ; mmodel tc_door ')
+				dumpCommands()
+			}
 			def dungeon = new Dungeon(6, 6, 3, 1)
 
 		    dungeon.generate_maze();
@@ -357,30 +493,33 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 						def wx = x - 32, wy = y - 32
 						//println "x: $x y: $y"
 						def h = (b == ' ' || b == 'l') ? 2 : 1
-						if (b == 'z') {
-							sauer('secret', "selcube $x $y 430 1 1 $h 32 5; editmat noclip")
-						} else {
-							sauer('delcube', "selcube $x $y 430 1 1 $h 32 5; delcube")
+						exec {
+							if (b == 'z') {
+								sauer('secret', "selcube $x $y 430 1 1 $h 32 5; editmat noclip")
+							} else {
+								sauer('delcube', "selcube $x $y 430 1 1 $h 32 5; delcube")
+							}
+							if (b == 'e') {
+								sauer('door', "selcube $x $y 430 1 1 1 32 4; ent.yaw p0 180;  entdrop 3; newent mapmodel 0 6")
+							}
+							else if (b == 's') {
+								sauer('door', "selcube $x $y 430 1 1 1 32 4; ent.yaw p0 90;  entdrop 3; newent mapmodel 0 6")
+							}
+							else if (b == 'l') {
+								sauer('light', "selcube $x $y 450 1 1 1 32 4;  entdrop 2; newent light 128 255 255 255")
+							}
+							dumpCommands()
 						}
-						if (b == 'e') {
-							sauer('door', "selcube $x $y 430 1 1 1 32 4; ent.yaw p0 180;  entdrop 3; newent mapmodel 0 6")
-						}
-						else if (b == 's') {
-							sauer('door', "selcube $x $y 430 1 1 1 32 4; ent.yaw p0 90;  entdrop 3; newent mapmodel 0 6")
-						}
-						else if (b == 'l') {
-							sauer('light', "selcube $x $y 450 1 1 1 32 4;  entdrop 2; newent light 128 255 255 255")
-						}
-						dumpCommands()
-						
 					}
 				}
 			}
 			
-			sauer('tex', 'texturereset; setshader stdworld; exec packages/egyptsoc/package.cfg ')
-			sauer("texture", "selcube 0 0 480 2 2 2 512 4; tc_settex 35 1")
-			sauer("texture2", "tc_settex 37 0; selcube 0 0 480 2 2 2 512 5; tc_settex 51 0")
-			sauer("texture3", "selcube 0 0 470 512 512 1 16 5; tc_settex 7 1")
+			exec {
+				sauer('tex', 'texturereset; setshader stdworld; exec packages/egyptsoc/package.cfg ')
+				sauer("texture", "selcube 0 0 480 2 2 2 512 4; tc_settex 35 1")
+				sauer("texture2", "tc_settex 37 0; selcube 0 0 480 2 2 2 512 5; tc_settex 51 0")
+				sauer("texture3", "selcube 0 0 470 512 512 1 16 5; tc_settex 7 1")
+			}
 			
 			for (def i = 0; i < dungeon.blockRows; ++i) {
 				for (def j = 0; j < dungeon.blockCols; ++j) {
@@ -389,22 +528,26 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 						def x = i * 32
 						def y = j * 32
 						def wx = x - 32, wy = y - 32
-						if (b == 'e') {
-							sauer('wall1', "selcube $wx $wy 430 3 3 1 32 0; tc_settex 56 0")
-							sauer('wall2', "selcube $wx $wy 430 3 3 1 32 1; tc_settex 56 0")
+						exec {
+							if (b == 'e') {
+								sauer('wall1', "selcube $wx $wy 430 3 3 1 32 0; tc_settex 56 0")
+								sauer('wall2', "selcube $wx $wy 430 3 3 1 32 1; tc_settex 56 0")
+							}
+							else if (b == 's') {
+								sauer('wall1', "selcube $wx $wy 430 3 3 1 32 2; tc_settex 56 0")
+								sauer('wall2', "selcube $wx $wy 430 3 3 1 32 3; tc_settex 56 0")
+							}
+							dumpCommands()
 						}
-						else if (b == 's') {
-							sauer('wall1', "selcube $wx $wy 430 3 3 1 32 2; tc_settex 56 0")
-							sauer('wall2', "selcube $wx $wy 430 3 3 1 32 3; tc_settex 56 0")
-						}
-						dumpCommands()
 					}
 				}
 			}
 			
-			sauer("spawn", "selcube 32 32 416 1 1 1 32 5; ent.yaw p0 135; newent playerstart; tc_respawn p0")
-			sauer('finished', 'remip; calclight 3; tc_allowedit 0; thirdperson 1')
-			dumpCommands()
+			exec {
+				sauer("spawn", "selcube 32 32 416 1 1 1 32 5; ent.yaw p0 135; newent playerstart; tc_respawn p0")
+				sauer('finished', 'remip; calclight 3; tc_allowedit 0; thirdperson 1')
+				dumpCommands()
+			}
 		};
 	}
 	//Plexus.bindLevelTrigger(35, 'remotesend levelTrigger 35 $more $data') {println "duh"} remotesend levelTrigger 35
@@ -431,21 +574,21 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 
 			println "READY"
 			while (true) {
-				Socket client = sock.accept {
+				socket = sock.accept {
 					println("Got connection from sauerbraten...")
 					output = it.getOutputStream()
-					init()
-					it.getInputStream().eachLine {line ->
-						executor.submit {
-							try {
-								synchronized (presenceLock) {
-									sauerCmds.invoke(line)
+					exec {init()}
+					try {
+						it.getInputStream().eachLine {line ->
+							exec {
+								try {
+									exec {sauerCmds.invoke(line)}
+								} catch (Exception ex) {
+									err("Problem executing sauer command: " + it, ex)
 								}
-							} catch (Exception ex) {
-								err("Problem executing sauer command: " + it, ex)
 							}
 						}
-					}
+					} catch (Exception ex) {}
 					try {it.shutdownInput()} catch (Exception ex) {}
 					try {it.shutdownOutput()} catch (Exception ex) {}
 					println "Disconnect"
@@ -454,27 +597,31 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		}
 	}
 	def sauer(key, value) {
-		synchronized (pendingCommands) {
-			pendingCommands[key] = value
-		}
+		checkExec()
+		pendingCommands[key] = value
 	}
 	def dumpCommands() {
-		if (output) {
-			synchronized (pendingCommands) {
-				if (!pendingCommands.isEmpty()) {
-					def out = pendingCommands.collect{it.value}.join(";") + '\n'
-//					println out
+		checkExec()
+		if (!pendingCommands.isEmpty()) {
+			if (socket?.isConnected()) {
+				def out = pendingCommands.collect{it.value}.join(";") + '\n'
+//				println out
+				try {
 					output << out
-					pendingCommands = [:]
+					output.flush()
+				} catch (SocketException ex) {
+					try {socket.shutdownInput()}catch(Exception ex2){}
+					try {socket.shutdownOutput()}catch(Exception ex2){}
+					socket = null
 				}
-				output.flush()
 			}
+			pendingCommands = [:]
 		}
 	}
 	def sauerEnt(label) {
 		if (fields[label]?.text && fields[label].text[0]) {
 			def cmd = "ent.$label ${ids[peerId]} ${fields[label].text}"
-			executor.submit {
+			exec {
 				sauer(label, cmd)
 				dumpCommands()
 			}
@@ -485,7 +632,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			def txt = fields.cmd.text
 
 			fields.cmd.text = ""
-			executor.submit {
+			exec {
 				sauer('cmd', fields.cmd.text)
 				dumpCommands()
 			}
@@ -502,12 +649,15 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 //	 	updateFriendList()
 	}
 	def broadcast(cmds) {
+		checkExec()
 		if (peer) peer.broadcastCmds(mapTopic, cmds as String[])
 	}
 	def anycast(cmds) {
+		checkExec()
 		if (peer) peer.anycastCmds(mapTopic, cmds as String[])
 	}
 	def send(id, cmds) {
+		checkExec()
 		if (id instanceof String) {
 			id = Id.build(id)
 		}
@@ -521,35 +671,37 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		"$name-${TIME_STAMP.format(new Date())}"
 	}
 	def loadMap(name, id, cont = null) {
+		def dir = new File(mapDir, id)
+
 		println "Loading map: ${id}"
 		if (id instanceof String) {
 			id = Id.build(id)
 		}
-		P2PMudFile.fetchDir(id, cacheDir, mapDir, [
-			receiveResult: {
-				def mapPath = Tools.subpath(new File(sauerDir, "packages"), mapDir)
+		fetchDir(id, dir, receiveResult: {result ->
+			def mapPath = subpath(new File(sauerDir, "packages"), dir)
 
-				println "Retrieved map from PAST: $mapDir, executing: map [$mapPath/map]"
-				sauer('load', "echo loading new map: [$mapPath/map]; tc_loadmsg [$name]; map [$mapPath/map]")
-				dumpCommands()
-				if (cont) {cont.receiveResult(it)}
-			},
-			receiveException: {
-				if (cont) {
-					cont.receiveException(it)
-				} else {
-					err("Couldn't load map: $id", it)
-				}
+			println "Retrieved map from PAST: $dir, executing: map [$mapPath/map]"
+			sauer('load', "echo loading new map: [$mapPath/map]; tc_loadmsg [$name]; map [$mapPath/map]")
+			dumpCommands()
+			if (cont) {cont.receiveResult(result)}
+		}, receiveException: {ex ->
+			if (cont) {
+				cont.receiveException(ex)
+			} else {
+				err("Couldn't load map: $id", ex)
 			}
-		] as Continuation, false)
+		})
+	}
+	def selectMap() {
+		mapCombo.selectedItem = mapTopic ? getMap(mapTopic.getId().toStringFull()).name : ''
 	}
 	def err(msg, err) {
 		println(msg)
 		err.printStackTrace()
-		Tools.stackTrace(err)
+		stackTrace(err)
 	}
 	def initBoot() {
-		def docFile = new File(plexusDir, "cloud.properties")
+		def docFile = new File(plexusDir, "cache/$name/cloud.properties")
 
 		if (docFile.exists()) {
 			cloudProperties.load()
@@ -558,55 +710,123 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		storeCache()
 	}
 	def initJoin() {
+		checkExec()
+		deleteAll(cacheDir)
 		peer.anycastCmds(plexusTopic, "sendCloudProperties")
+	}
+	def storeFile(cont, file, mutable = false, cacheOverride = false) {
+		def total = P2PMudFile.estimateChunks(file.length)
+		def chunk = 0
+
+		uploads++
+		showUploadProgress(0, 16)
+		updateDownloads()
+		queueIo(cont, {uploads--; updateDownloads(); clearUploadProgress()}) {chain -> peer.wimpyStoreFile(cacheDir, file, {showUploadProgress(chunk++, total)}, chain, mutable, cacheOverride)}
+	}
+	def storeDir(cont, dir) {
+		uploads++
+		showUploadProgress(0, 16)
+		updateDownloads()
+		queueIo(cont, {uploads--; updateDownloads(); clearUploadProgress()}) {chain -> P2PMudFile.storeDir(cacheDir, dir, {chunk, total -> showUploadProgress(chunk, total)}, chain)}
+	}
+	def fetchFile(cont, id) {
+		def chunk = 0
+
+		downloads++
+		showDownloadProgress(0, 16)
+		updateDownloads()
+		queueIo(cont, {downloads--; updateDownloads(); clearDownloadProgress()}) {chain -> peer.wimpyGetFile(id, cacheDir, {total -> showDownloadProgress(chunk++, total)}, chain)}
+	}
+	def fetchDir(cont, id, dir, mutable = false) {
+		downloads++
+		showDownloadProgress(0, 16)
+		updateDownloads()
+		queueIo(cont, {downloads--; updateDownloads(); clearDownloadProgress()}) {chain -> P2PMudFile.fetchDir(id, cacheDir, dir, {chunk, total -> showDownloadProgress(chunk, total)}, chain, mutable)}
+	}
+	def queueIo(cont, completedBlock, block) {
+		checkExec()
+		if (fileQ.empty) {
+			println "EXECUTING"
+			block(ioContinuation(cont, completedBlock))
+		} else {
+			println "QUEUING"
+			fileQ.add({println "EXECUTING QUEUED"; block(ioContinuation(cont, completedBlock))})
+		}
+	}
+	def ioContinuation(cont, completedBlock) {
+		continuation(receiveResult: {r ->
+			exec {
+				println "DONE"
+				completedBlock()
+				cont.receiveResult(r)
+				chainIo()
+			}
+		}, receiveException: {e ->
+			exec {
+				println "ERROR"
+				completedBlock()
+				cont.receiveException(e)
+				chainIo()
+			}
+		})
+	}
+	def chainIo() {
+		if (!fileQ.empty) {
+			fileQ.remove(0)()
+		}
 	}
 	def storeCache() {
 		if (cacheDir.exists()) {
 			def files = []
-			def count = 0
-	
-			cacheDir.eachFile {
-				it.eachFile {
-					files.add(it)
+
+			println "STORING CACHE"
+			deleteAll(new File(cacheDir, 'download'))
+			cacheDir.eachFile {subDir ->
+				subDir.eachFile {file ->
+					files.add(file)
 				}
 			}
-			def mcont = new MultiContinuation([
-				receiveResult: {
-					println "FINISHED PUSHING CACHE"
-//					sauer('msg', 'tc_msgbox Ready [Finished pushing cache in PAST]')
-					dumpCommands()
-				},
-				receiveException: {
-					println "FAILED TO PUSH CACHE"
-					err("Error pushing cache in PAST", it)
-				}
-			] as Continuation, files.size())
-			for (file in files) {
-				peer.wimpyStoreFile(cacheDir, file, mcont.getSubContinuation(count++), false, true)
+			serialContinuations(files, receiveResult: {
+				println "FINISHED PUSHING CACHE"
+//				sauer('msg', 'tc_msgbox Ready [Finished pushing cache in PAST]')
+//				dumpCommands()
+			}, receiveException: {
+				println "FAILED TO PUSH CACHE"
+				err("Error pushing cache in PAST", ex)
+			}) {file, chain ->
+				println "STORING FILE: $file"
+				storeFile(chain, file, false, true)
 			}
+		} else {
+			println "NO CACHE TO STORE"
 		}
 	}
 	def setCloudProperty(key, value) {
 		cloudProperties[key] = value
 	}
 	def transmitSetCloudProperty(key, value) {
+		checkExec()
 		cloudProperties[key] = value
 		peer.broadcastCmds(plexusTopic, ["setCloudProperty $key $value"] as String[])
 		println "BROADCAST PROPERTY: $key=$value"
 	}
 	def transmitRemoveCloudProperty(key) {
+		checkExec()
 		cloudProperties.removeProperty(key)
 		peer.broadcastCmds(plexusTopic, ["removeCloudProperty $key"] as String[])
 		println "BROADCAST REMOVE PROPERTY: $key"
 	}
 	def removeCloudProperty(key) {
+		checkExec()
 		cloudProperties.removeProperty(key)
 	}
 	def receiveCloudProperties(props) {
+		checkExec()
 		cloudProperties.setProperties(props, true)
 		receivedCloudPropertiesHooks.each {it()}
 	}
 	def getMap(id, entry = null) {
+		checkExec()
 		def privateMap = false
 		
 		if (!entry) {
@@ -794,11 +1014,14 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		if (newMaps != maps) {
 			maps = newMaps
 			swing.doLater {
+				def sel = mapCombo.selectedItem
+
 				mapCombo.removeAllItems()
 				mapCombo.addItem('')
 				for (map in maps) {
 					mapCombo.addItem(map.name)
 				}
+				mapCombo.selectedItem = sel
 			}
 		}
 		cloudProperties.each('privateMap/(.*)') {key, value, match ->
@@ -831,10 +1054,9 @@ println "loading costume: $who.costume"
 			if (costumeFile.exists()) {
 				clothe(who, costume.dir)
 			} else {
-				P2PMudFile.fetchDir(costume.dir, cacheDir, new File(plexusDir, "models/$costume.dir"), [
-					receiveResult: {r -> clothe(who, costume.dir)},
-					receiveException: {ex -> err("Could not fetch data for costume: $costume.dir", ex)}
-				], false)
+				fetchDir(costume.dir, new File(plexusDir, "models/$costume.dir"), receiveResult: {r ->
+					clothe(who, costume.dir)
+				}, receiveException: {ex -> err("Could not fetch data for costume: $costume.dir", ex)})
 			}
 		}
 	}
@@ -846,32 +1068,30 @@ dumpCommands()
 	}
 	def pushCostume(name) {
 println "PUSHING COSTUME: $name"
-		def path = new File(plexusDir, "models/$name")
-
-		if (!path.exists()) {
+		pushCostumeDir(name, new File(plexusDir, "models/$name"))
+	}
+	def pushCostumeDir(name = path ? (path as File).getName() : null, path) {
+		if (!path?.exists()) {
 			sauer('err', "tc_msgbox [File costume not found] [Could not find costume in directory $path]")
 			dumpCommands()
 		} else {
 println "STORING COSTUME"
-			P2PMudFile.storeDir(cacheDir, path, [
-				receiveResult: {
-					def fileId = it.file.getId().toStringFull()
-					def type = 'png'
-					def thumb = it.properties['thumb.png']
+			storeDir(path, receiveResult: {result ->
+				def fileId = result.file.getId().toStringFull()
+				def type = 'png'
+				def thumb = result.properties['thumb.png']
 
-					if (!thumb) {
-						type = 'jpg'
-						thumb = it.properties['thumb.jpg'] ?: 'none'
-					}
-					try {
+				if (!thumb) {
+					type = 'jpg'
+					thumb = result.properties['thumb.jpg'] ?: 'none'
+				}
+				try {
 println "STORED COSTUME, adding"
-						transmitSetCloudProperty("costume/$fileId", "$thumb ${thumb ? type : 'none'} $name")
-					} catch (Exception ex) {
-						err("Error pushing costume", ex)
-					}
-				},
-				receiveException: {err("Couldn't store costume in cloud: $path", it)}
-			] as Continuation)
+					transmitSetCloudProperty("costume/$fileId", "$thumb ${thumb ? type : 'none'} $name")
+				} catch (Exception ex) {
+					err("Error pushing costume", ex)
+				}
+			}, receiveException: {ex -> err("Couldn't store costume in cloud: $path", ex)})
 		}
 	}
 	def updateCostumeGui() {
@@ -889,29 +1109,23 @@ println "STORED COSTUME, adding"
 		}
 		println "Tumes: $tumes, Needed: $needed"
 		if (needed) {
-			def contCount = 0
-			def mcont = new MultiContinuation([
-				receiveResult: {files ->
-					def i = 0
+			serialContinuations(needed, receiveResult: {files ->
+				def i = 0
+	
+				for (i = 0; i < needed.size(); i++) {
+					if (files[i] instanceof Exception) {
+						System.err.println "Error fetching thumb for costume: ${needed[i].name}..."
+						files[i].printStackTrace()
+					} else {
+						def thumbFile = new File(costumesDir, "thumbs/${needed[i].dir}.${needed[i].type}")
 
-					for (i = 0; i < needed.size(); i++) {
-						if (files[i] instanceof Exception) {
-							System.err.println "Error fetching thumb for costume: ${needed[i].name}..."
-							files[i].printStackTrace()
-						} else {
-							def thumbFile = new File(costumesDir, "thumbs/${needed[i].dir}.${needed[i].type}")
-
-							thumbFile.getParentFile().mkdirs()
-							Tools.copyFile(files[i][0], thumbFile)
-						}
+						thumbFile.getParentFile().mkdirs()
+						copyFile(files[i][0], thumbFile)
 					}
-					showTumes(tumes)
-				},
-				receiveException: {err("Error fetching thumbs for costumes", it)}
-			] as Continuation, needed.size())
-
-			needed.each {
-				peer.wimpyGetFile(Id.build(it.thumb), cacheDir, mcont.getSubContinuation(contCount++))
+				}
+				showTumes(tumes)
+			}, receiveException: {ex -> err("Error fetching thumbs for costumes", ex)}) {tume, chain ->
+				fetchFile(chain, Id.build(tume.thumb))
 			}
 		} else {
 			showTumes(tumes)
@@ -921,6 +1135,17 @@ println "STORED COSTUME, adding"
 		println "CREATING EMPTY"
 		def trips = []
 
+		tumes.sort {a,b -> a.name.compareTo(b.name)}
+		if (tumes != this.tumes) {
+			this.tumes = tumes
+			swing.doLater {
+				tumesCombo.removeAllItems()
+				tumesCombo.addItem('')
+				tumes.each {
+					tumesCombo.addItem(it.name)
+				}
+			}
+		}
 		tumes.each {c-> trips.add([c.name, c.thumb ? "${c.dir}.$c.type" : '', c.dir])}
 		dumpCostumeSelections(trips)
 	}
@@ -953,18 +1178,21 @@ println "COSTUME SELS: $triples"
 		dumpCommands()
 	}
 	def useCostume(name, dirId) {
-		def costumeDir = new File(plexusDir, "models/$dirId")
+		if (costume != dirId) {
+			def costumeDir = new File(plexusDir, "models/$dirId")
 
-		P2PMudFile.fetchDir(dirId, cacheDir, costumeDir, [
-			receiveResult: {
+			fetchDir(dirId, costumeDir, receiveResult: {
 				costume = dirId
 				updateMyPlayerInfo()
 				sauer('cost', "playerinfo p0 [${LaunchPlexus.props.guild}] ${costumeDir.getName()}")
 				dumpCommands()
 				println "USE COSTUME $name ($costumeDir)"
-			},
-			receiveException: {err("Couldn't use costume: $name", it)}
-		] as Continuation, false)
+				selectCostume()
+			}, receiveException: {ex -> err("Couldn't use costume: $name", ex)})
+		}
+	}
+	def selectCostume() {
+		tumesCombo.selectedItem = costume ? getCostume(costume)?.name ?: '' : ''
 	}
 	def connectWorld(id) {
 		if (id) {
@@ -977,19 +1205,18 @@ println "COSTUME SELS: $triples"
 				if (mapTopic) {
 					peer.unsubscribe(mapTopic)
 				}
-				loadMap(map.name, map.dir, [
-					receiveResult: {
-						peer.subscribe(Id.build(id), [
-							receiveResult: {topic ->
-								mapTopic = topic
-								mapIsPrivate = map.privateMap
-								updateMyPlayerInfo()
-							},
-							receiveException: {exception -> err("Couldn't subscribe to topic: ", exception)}
-						] as Continuation)
+				loadMap(map.name, map.dir, continuation(receiveResult: {
+					peer.subscribe(Id.build(id), continuation(receiveResult: {topic ->
+						exec {
+							mapTopic = topic
+							mapIsPrivate = map.privateMap
+							updateMyPlayerInfo()
+							selectMap()
+						}
 					},
-					receiveException: {err("Trouble loading map", it)}
-				] as Continuation)
+					receiveException: {exception -> exec {err("Couldn't subscribe to topic: ", exception)}}))
+				},
+				receiveException: {ex -> exec {err("Trouble loading map", ex)}}))
 			}
 		} else {
 			if (mapTopic) {
@@ -1013,22 +1240,20 @@ println "pushMap: [$nameArgs]"
 				name = map.name
 			}
 			println "1"
-			def cont = [
-				receiveResult: {
-					def topic = newMap ? peer.randomId().toStringFull() : map.id
-					def id = it.file.getId().toStringFull()
+			def cont = continuation(receiveResult: {result ->
+				def topic = newMap ? peer.randomId().toStringFull() : map.id
+				def id = result.file.getId().toStringFull()
 
-					transmitSetCloudProperty("${privateMap == '1' ? 'privateMap' : 'map'}/$topic", "$id $name")
-				},
-				receiveException: {err("Error pushing map", it)}
-			] as Continuation
+				transmitSetCloudProperty("${privateMap == '1' ? 'privateMap' : 'map'}/$topic", "$id $name")
+			},
+			receiveException: {ex -> exec {err("Error pushing map", ex)}})
 
 			if (mapname ==~ 'plexus/.*/map') {
 				println "plexus"
 				def mapdir = new File(sauerDir, "packages/$mapname").getParentFile()
 
 				println "store"
-				P2PMudFile.storeDir(cacheDir, mapdir, cont)
+				storeDir(cont, mapdir)
 			} else {
 				println "sauer"
 				def prefix = (new File(mapname).getParent() ? new File(sauerDir, "packages/$mapname") : new File(sauerDir, "packages/base/$mapname")).getAbsolutePath()
@@ -1047,7 +1272,7 @@ println "pushMap: [$nameArgs]"
 					dirmap['map.cfg'] = cfg
 				}
 				println "store"
-				P2PMudFile.storeDir(cacheDir, dirmap, cont)
+				storeDir(cont, dirmap)
 			}
 		} else {
 			sauer('msg', "tc_msgbox [Error] [No current map]")
@@ -1117,7 +1342,6 @@ println "createPortal portal_$trigger = $name; portal $trigger"
 			def values = [:]
 			def format = []
 
-println "FOLLOW: $id"
 			for (def i = 0; i < update.length; i += 2) {
 				values[update[i]] = update[i + 1]
 			}
@@ -1130,6 +1354,54 @@ println "FOLLOW: $id"
 			sauer('follow', "tc_setinfo p0 ${format.join(' ')}")
 			dumpCommands()
 			broadcast(["update $name ${format.join(' ')}"])
+		}
+	}
+	def clearUploadProgress() {
+		if (swing) {
+			swing.edt {
+				downloadProgressBar.setValue(0)
+			}
+		}
+		exec {
+			sauer('up', 'tc_piechart_image = ""')
+			dumpCommands()
+		}
+	}
+	def showUploadProgress(cur, total) {
+		if (swing) {
+			swing.edt {
+				downloadProgressBar.setMaximum(total)
+				downloadProgressBar.setValue(cur)
+			}
+		}
+		exec {
+			def x = total > 0 ? Math.round(cur/total*16.0) : 0
+			sauer('up', 'tc_piechart_image = "packages/plexus/dist/ul_' + x + '.png"')
+			dumpCommands()
+		}
+	}
+	def clearDownloadProgress() {
+		if (swing) {
+			swing.edt {
+				downloadProgressBar.setValue(0)
+			}
+		}
+		exec {
+			sauer('up', 'tc_piechart_image = ""')
+			dumpCommands()
+		}
+	}
+	def showDownloadProgress(cur, total) {
+		if (swing) {
+			swing.edt {
+				downloadProgressBar.setMaximum(total)
+				downloadProgressBar.setValue(cur)
+			}
+		}
+		exec {
+			def x = total > 0 ? Math.round(cur/total*16.0) : 0
+			sauer('up', 'tc_piechart_image = "packages/plexus/dist/dl_' + x + '.png"')
+			dumpCommands()
 		}
 	}
 }

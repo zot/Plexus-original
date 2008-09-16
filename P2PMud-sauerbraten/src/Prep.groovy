@@ -8,6 +8,7 @@ import p2pmud.Tools
 import javax.swing.JFileChooser
 import net.sbbi.upnp.Discovery.*;
 import net.sbbi.upnp.impls.InternetGatewayDevice;
+import p2pmud.MessageBox
 
 public class Prep {
 	def static success = false
@@ -31,7 +32,7 @@ public class Prep {
 	] as Properties
 	def static props = new Props()
 	def static fields = [:]
-	def static itemsCombo
+	def static profilesCombo
 	def static nodeIdLabel
 	def static upnpButton, sauerButton
 	def static removeProfileButton
@@ -171,10 +172,10 @@ public class Prep {
 		props.store()
 	}
 	def static setprop(key) {
-		props[key] = fields[key].text
+		props[key] = fields[key].getText()
 	}
 	def static showprop(key) {
-		 fields[key].text = props[key]
+		 fields[key].setText(props[key])
 	}
 	def static readProps() {
 		props.load()
@@ -192,8 +193,8 @@ public class Prep {
 		  if ( IGDs != null ) {
 		    // let's the the first device found
 		    def testIGD = IGDs[0];
-		    System.out.println( "Found device " + testIGD.getIGDRootDevice().getModelName() );
-		    fields['external_ip'].text = testIGD.getExternalIPAddress()
+		    System.out.println("Found device ${testIGD.getIGDRootDevice().getModelName()}, ip: ${testIGD.getExternalIPAddress()}");
+		    fields['external_ip'].setText(testIGD.getExternalIPAddress())
 		    setprop('external_ip')
 		    
 		    return
@@ -211,39 +212,56 @@ public class Prep {
 		   UIManager.setLookAndFeel(new Plastic3DLookAndFeel());
 		} catch (Exception e) {}
 		new SwingBuilder().build {
-			def field = {lbl, key ->
+			def field = {lbl, key, constraints = 'span 2, wrap, growx' ->
 				label(text: lbl)
-				fields[key] = textField(actionPerformed: {setprop(key)}, focusLost: {setprop(key)}, text: p[key], constraints: 'span 2, wrap, growx')
+				def tf = textField(actionPerformed: {setprop(key)}, focusLost: {setprop(key)}, text: p[key], constraints: constraints)
+				fields[key] = [
+					setText: {value -> tf.text = value},
+					getText: {tf.text}
+				]
+				tf
+			}
+			def check = {lbl, key, description ->
+				label(text: lbl)
+				def cb = checkBox(text: description, actionPerformed: {evt -> props[key] = evt.source.selected ? '1' : '0' }, constraints: 'wrap' )
+				fields[key] = [
+					setText: {value -> cb.selected = value == '1'},
+					getText: {cb.selected ? '1' : '0'}
+				]
 			}
 			f = frame(title: 'Plexus Configuration', windowClosing: {System.exit(0)}, layout: new MigLayout('fillx'), pack: true, show: true) {
+				label(text: 'Active Profile:')
+				panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
+					profilesCombo = comboBox(editable: true, actionPerformed: {if (profilesCombo) addProfile(profilesCombo?.editor?.item)})
+					removeProfileButton = button(text: 'Remove Profile', actionPerformed: { if (MessageBox.AreYouSure("Remove Profile", "Are you sure you want to remove the $props.profile profile?")) removeProfile()}, enabled: false)
+				}
 				field('Your name: ', 'name')
 				field('Team/Guild: ', 'guild')
-				//field('External IP: ', 'external_ip')
-				label(text: 'External IP: ')
-				fields['external_ip'] = textField(actionPerformed: {setprop('external_ip')}, focusLost: {setprop('external_ip')}, text: p['external_ip'], constraints: 'growx')
+				field('External IP: ', 'external_ip', 'growx')
 				button(text: "Discover", actionPerformed: { discoverExternalIP() }, constraints: 'wrap')
 				field('External port: ', 'external_port')
-				label(text: 'Use UPnP:')
-				upnpButton = checkBox(text: 'If checked, make sure UPnP is enabled on your router', actionPerformed: { evt -> props.upnp = evt.source.selected ? '1' : '0' }, constraints: 'wrap' )
+				check('Use UPnP', 'upnp', 'If checked, make sure UPnP is enabled on your router')
 				field('Pastry port: ', 'pastry_port')
 				field('Pastry boot host: ', 'pastry_boot_host')
 				field('Pastry boot port: ', 'pastry_boot_port')
 				field('Sauer cmd: ', 'sauer_cmd')
 				field('Sauer port: ', 'sauer_port')
+				check('Verbose Log', 'verbose_log', 'Turn on verbose logging')
 				label(text: 'Launch sauer: ')
 				sauerButton = checkBox(text: 'If checked, it will auto start the Plexus custom Sauerbraten', actionPerformed: { evt -> props.sauer_mode = evt.source.selected ? 'launch' : 'noLaunch' }, constraints: 'wrap' )
 				label(text: "Node id: ")
 				nodeIdLabel = label(text: props.nodeId ?: "none", constraints: 'wrap, growx')
-				button(text: "Start", actionPerformed: {f.dispose(); finished(true)})
-				button(text: "Exit", actionPerformed: {f.dispose(); finished(false)}, constraints: 'wrap')
 				panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
-					itemsCombo = comboBox(editable: true, actionPerformed: {if (itemsCombo) addProfile(itemsCombo?.editor?.item)})
-					removeProfileButton = button(text: 'Remove Profile', actionPerformed: {removeProfile()}, enabled: false)
-					button(text: 'Clear P2P Cache', actionPerformed: { clearCache() } )
+					button(text: "Start", actionPerformed: {f.dispose(); finished(true)})
+					button(text: "Save and Exit", actionPerformed: {f.dispose(); finished(false)} )
+					button(text: "Exit", actionPerformed: { System.exit(0) } )
 				}
+				button(text: 'Clear P2P Cache', actionPerformed: { clearCache() } )
 			}
 			update()
-			f.size = [500, (int)f.size.height] as Dimension
+			chooseProfile(props.last_profile)
+			f.setLocation(200, 200)
+			f.size = [600, (int)f.size.height] as Dimension
 		}
 	}
 	def static clearCache() {
@@ -257,22 +275,13 @@ public class Prep {
 		Tools.deleteAll(new File(plexusdir, "models/thumbs"))
 		
 		new File(plexusdir, "models").eachFileMatch(~/^[A-F0-9]+$/){ f->
-	    	if (f.isDirectory()) f.delete()
+	    	if (f.isDirectory()) Tools.deleteAll(f)
 		}
 	}
-	/*
-	def static setMode(button) {
-		modeButtons.each {
-			if (it.value == button) {
-				props.sauer_mode = it.key
-			}
-		}
-	} */
 	def static update() {
-		itemsCombo.model = new DefaultComboBoxModel(['', *props.profiles.sort()] as Object[])
+		profilesCombo.model = new DefaultComboBoxModel(['', *props.profiles.sort()] as Object[])
 		//modeGroup.setSelected(modeButtons[props.sauer_mode ?: 'launch'].model, true)
 		sauerButton.setSelected(props.sauer_mode == 'launch')
-		upnpButton.setSelected(props.upnp != '0')
 	}
 	def static addProfile(prof) {
 		if (prof) {
@@ -283,39 +292,9 @@ public class Prep {
 		}
 		chooseProfile(prof)
 	}
-	def static profileSelected(evt) {
-		Thread.start {
-			def d
-			def name
-			def ok = {
-				d.visible = false
-				addProfile(name.text)
-			}
-
-			switch (evt.source.selectedIndex) {
-			case 0:
-				println "new profile"
-				new SwingBuilder().build {
-					d = dialog(modal: true, layout: new MigLayout('fillx'), pack: true) {
-						label(text: 'Profile Name: ')
-						name = textField(actionPerformed: ok, constraints: 'wrap, growx')
-						button(text: 'OK', actionPerformed: ok)
-						button(text: 'Cancel', actionPerformed: {d.visible = false})
-					}
-					d.visible = true
-				}
-				evt.source.selectedIndex = -1
-				break
-			case -1:
-				println "no selection"
-				break
-			default:
-				chooseProfile(evt.source.selectedItem)
-				break
-			}
-		}
-	}
 	def static chooseProfile(item) {
+		props.setLastProfile(item)
+		println ("setting last_profile to $props.last_profile")
 		props.setProfile(item)
 		removeProfileButton.enabled = !!props.profile
 		fields.each {
@@ -323,7 +302,7 @@ public class Prep {
 		}
 		nodeIdLabel.text = props.nodeId
 		update()
-		itemsCombo.selectedItem = item
+		profilesCombo.selectedItem = item
 	}
 	def static removeProfile() {
 		props.removeProfile()

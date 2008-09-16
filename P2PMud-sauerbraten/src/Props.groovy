@@ -2,6 +2,7 @@ class Props {
 	def properties = [:] as Properties
 	def profile = ""
 	def profiles = [] as Set
+	def last_profile
 	def file
 
 	def setProfile(prof) {
@@ -37,7 +38,11 @@ class Props {
 			properties.load(input)
 			input.close()
 			profiles = [*(properties?.profiles ? properties.profiles.split(',') : [])] as Set
+			last_profile = properties?.last_profile
 		}
+	}
+	def setLastProfile(prof) {
+		last_profile = properties.last_profile = prof
 	}
 	def addProfile(prof) {
 		if (!profiles.contains(prof)) {

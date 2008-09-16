@@ -9,7 +9,7 @@
 <booleanAttribute key="org.eclipse.debug.core.appendEnvironmentVariables" value="true"/>
 <stringAttribute key="org.eclipse.debug.core.source_locator_id" value="org.codehaus.groovy.eclipse.editor.groovySourceLocator"/>
 <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="p2pmud.P2PMudPeer"/>
-<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="9090 - 9090 -external 70.243.254.75:9090 -clean"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="9090 - 9090 -external 70.245.112.170:9090 -clean"/>
 <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="P2PMud-sauerbraten"/>
 <stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Dpast.storage=/tmp/storage-9090&#10;-Dpast.timeout=999999&#10;-Dsauerdir=${SAUERDIR}"/>
 </launchConfiguration>

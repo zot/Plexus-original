@@ -783,6 +783,17 @@ ICOMMAND(watch, "sss", (char *entName, char *code, char *resolution), {
 		}
 });
 
+void unlinkWatcher(fpsent *p) {
+	loopi(watchers.length()) {
+		watcher &w = watchers[i];
+		if (w.entity == p) {
+			watchers.remove(i);
+			w.dispose();
+			return;
+		}
+	}
+}
+
 ICOMMAND(deleteplayer, "s", (char *ent), {
 	if (ent && ent[0] == 'p') {
 		// if we try to recreate a new player of the same id, just reuse the existing one
@@ -798,17 +809,10 @@ ICOMMAND(deleteplayer, "s", (char *ent), {
 
 		extern void deleteplayer(fpsent *p);
 		deleteplayer(p);
-
-		loopi(watchers.length()) {
-			watcher &w = watchers[i];
-			if (w.entity == p) {
-				watchers.remove(i);
-				w.dispose();
-				return;
-			}
-		}
+		unlinkWatcher(p);
 	}
 });
+
 
 ICOMMAND(maxspeed, "ss", (char *ent, char *speed), {
 	if (ent && ent[0]) {
@@ -834,4 +838,28 @@ ICOMMAND(bufget, "", (), {
 });
 ICOMMAND(buflen, "", (), {
 	intret(strbuf.length());
+});
+
+extern 	vector<hudimageinfo *> tc_hudimages;
+ICOMMAND(clearhud, "", (), {
+	while (tc_hudimages.length()) {
+		hudimageinfo *hi = tc_hudimages[0];
+		delete hi;
+		tc_hudimages.remove(0);
+	}
+});
+
+ICOMMAND(addhuditem, "ssssss", (char *type, char *exp, char *x, char *y, char *w, char *h), {
+	if (w && *w) {
+		hudimageinfo *hi = new hudimageinfo;
+		strncpy(hi->type, type,  sizeof(hi->type));
+		hi->type[sizeof(hi->type) - 1] = '\0';
+		strncpy(hi->tc_var, exp, sizeof(hi->tc_var));
+		hi->tc_var[sizeof(hi->tc_var) - 1] = '\0';
+		hi->x = atoi(x);
+		hi->y = atoi(y);
+		hi->w = atoi(w);
+		hi->h = atoi(h);
+		tc_hudimages.add(hi);
+	}
 });

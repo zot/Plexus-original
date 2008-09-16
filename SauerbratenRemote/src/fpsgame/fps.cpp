@@ -10,13 +10,14 @@
 #include "fpsserver.h"
 
 #ifdef TC
+	#include "../remote/tc.h"
 	#include "../remote/fpsplug.h"
 
 	VAR(peers, 0, 0, 9999);
 	VAR(tc_lagtime, 0, 30000, 999999);
-	SVAR(tc_hud_image, "packages/plexus/dist/hud_plexus.png");
-	SVAR(tc_hud_connect_image, "packages/plexus/dist/hud_connect.png");
-	SVAR(tc_hud_disconnect_image, "packages/plexus/dist/hud_disconnect.png");
+
+
+	vector<hudimageinfo *> tc_hudimages;
 #endif
 
 #ifndef STANDALONE
@@ -845,38 +846,28 @@ struct fpsclient : igameclient
     }
     void gameplayhud(int w, int h)
     {
-		extern int remotePort;
-		extern char *remoteHost;
-		extern ENetSocket mysocket;
-
-		glLoadIdentity();
-        glOrtho(0, w, h, 0, -1, 1);
-        settexture(tc_hud_image, true);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        quad(0, h-128, w, 128);   
-
-
-		glLoadIdentity();
-        glOrtho(0, w, h, 0, -1, 1);
-		settexture(-1 == mysocket ? tc_hud_disconnect_image : tc_hud_connect_image, true);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        quad(w - 46, h-126, 44, 44);   
-
-  //      glLoadIdentity();
-  //      glOrtho(0, w*900/h, 900, 0, -1, 1);
-
-		//if (-1 == mysocket)
-		//	draw_textf("Disconnected",  90, 822);
-		//else
-		//	draw_textf("Connected",  90, 822);
-
-        glLoadIdentity();
-        glOrtho(0, w*1800/h, 1800, 0, -1, 1);
-
-		draw_textf("Online: %d",  1900, 1720, peers);
-		extern char *tc_loadmsg;
-		extern int tc_mapcount;
-		draw_textf("Map: %s (%d)",  1300, 1720, tc_loadmsg, tc_mapcount);
+		loopv(tc_hudimages) {
+			hudimageinfo *hi = tc_hudimages[i];
+			char *txt = executeret(hi->tc_var);
+			if (txt && *txt) {
+				if (hi->type[0] == 'i') {
+					glLoadIdentity();
+					glOrtho(0, w, h, 0, -1, 1);
+					settexture(txt, true);
+					glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+					int left = (hi->x >= 0) ? hi->x : w + hi->x, top = (hi->y >= 0) ? hi->y : h + hi->y;
+					int width = (hi->w > 0) ? hi->w : w + hi->w, height = (hi->h > 0) ? hi->h : h + hi->h; 
+					quad(left, top, width, height);   
+					//printf("texture is '%s', l: %d t: %d w: %d h: %d\n", txt, left, top, width, height);
+				} else if (hi->type[0] == 't') {
+					glLoadIdentity();
+					int left = (hi->x >= 0) ? hi->x : w + hi->x, top = (hi->y >= 0) ? hi->y : h + hi->y;
+					int width = (hi->w > 0) ? hi->w : w + hi->w, height = (hi->h > 0) ? hi->h : h + hi->h; 
+					glOrtho(0, width*1800/height, 1800, 0, -1, 1);
+					draw_textf(txt, left, top);   
+				}
+			}
+		}
 	}
 #else
     void gameplayhud(int w, int h)
