@@ -139,12 +139,11 @@ static char *remoteconnect() {
 		}
 		enet_socket_set_option(mysocket, ENET_SOCKOPT_NONBLOCK, 1);
 		conoutf("Connected to %s:%d", remoteHost, remotePort);
-		char buf [32];
-		sprintf(buf, "mysocket = %d", mysocket);
-		executeret(buf);
 		break;
 	}
-	executeret("mysocket = -1");
+	char buf [32];
+	sprintf(buf, "mysocket = %d", mysocket);
+	executeret(buf);
 	return NULL;
 }
 ICOMMAND(remoteconnect, "", (), remoteconnect(););
