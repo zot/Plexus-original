@@ -383,7 +383,7 @@ println "NOW FOLLOWING: ${followingPlayer?.name}"
 							downloadCountField = label(text: '0')
 							label(text: 'Current ')
 							loadTypeField = label(text: 'Upload')
-							downloadProgressBar = progressBar(constraints: 'growx')
+							downloadProgressBar = progressBar(constraints: 'growx', minimum: 0, maximum: 100)
 						}
 					}
 					panel(name: 'Stats', layout: new MigLayout('fill,ins 0')) {
@@ -737,18 +737,6 @@ println "NOW FOLLOWING: ${followingPlayer?.name}"
 		showDownloadProgress(0, 16)
 		updateDownloads()
 		queueIo(cont, {downloads--; updateDownloads(); clearDownloadProgress()}) {chain -> P2PMudFile.fetchDir(id, cacheDir, dir, {chunk, total -> showDownloadProgress(chunk, total)}, chain, mutable)}
-	}
-	def showUploadProgress(chunk, total) {
-		println "Uploading chunk $chunk/$total"
-	}
-	def clearUploadProgress() {
-		println "Finished uploading"
-	}
-	def showDownloadProgress(chunk, total) {
-		println "Downloading chunk $chunk/$total"
-	}
-	def clearDownloadProgress() {
-		println "Finished downloading"
 	}
 	def queueIo(cont, completedBlock, block) {
 		checkExec()
@@ -1368,6 +1356,11 @@ println "createPortal portal_$trigger = $name; portal $trigger"
 			sauer('up', 'tc_piechart_image = ""')
 			dumpCommands()
 		}
+		if (swing) {
+			swing.edt {
+				downloadProgressBar.setValue(0)
+			}
+		}
 	}
 	def showUploadProgress(cur, total) {
 		exec {
@@ -1375,11 +1368,22 @@ println "createPortal portal_$trigger = $name; portal $trigger"
 			sauer('up', 'tc_piechart_image = "packages/plexus/dist/ul_' + x + '.png"')
 			dumpCommands()
 		}
+		if (swing) {
+			swing.edt {
+				downloadProgressBar.setMaximum(total)
+				downloadProgressBar.setValue(cur)
+			}
+		}
 	}
 	def clearDownloadProgress() {
 		exec {
 			sauer('up', 'tc_piechart_image = ""')
 			dumpCommands()
+		}
+		if (swing) {
+			swing.edt {
+				downloadProgressBar.setValue(0)
+			}
 		}
 	}
 	def showDownloadProgress(cur, total) {
@@ -1387,6 +1391,12 @@ println "createPortal portal_$trigger = $name; portal $trigger"
 			def x = total > 0 ? Math.round(cur/total*16.0) : 0
 			sauer('up', 'tc_piechart_image = "packages/plexus/dist/dl_' + x + '.png"')
 			dumpCommands()
+		}
+		if (swing) {
+			swing.edt {
+				downloadProgressBar.setMaximum(total)
+				downloadProgressBar.setValue(cur)
+			}
 		}
 	}
 }
