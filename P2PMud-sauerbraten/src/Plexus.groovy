@@ -469,8 +469,6 @@ println "NOW FOLLOWING: ${followingPlayer?.name}"
 
 	// generate a random dungeon
 	def generateDungeon() {
-		showUploadProgress(32, 75)
-		return
 		println ("Going to generate dungeon")
 		Thread.start {
 			exec {
