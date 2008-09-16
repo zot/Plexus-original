@@ -290,12 +290,14 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	}
 	def fetchAndSave(type, prop, id, location) {
 		pendingDownloads.add(prop)
+		showDownloadProgress(0, 16)
 		fetchDir(id, new File(plexusDir, "cache/$name/$location"), receiveResult: {r ->
 			exec {
 				println "RECEVED ${type.toUpperCase()}, CHECKPOINTING CLOUD PROPS"
 				pendingDownloads.remove(prop)
 				cloudProperties.save()
 				updateDownloads()
+				clearDownloadProgress()
 			}
 		}, receiveException: {ex -> err("Could not fetch data for $type: $id -> ${new File(plexusDir, "cache/$name/$location")}", ex)})
 	}
@@ -714,23 +716,39 @@ println "NOW FOLLOWING: ${followingPlayer?.name}"
 	}
 	def storeFile(cont, file, mutable = false, cacheOverride = false) {
 		uploads++
+		showUploadProgress(0, 16)
 		updateDownloads()
-		queueIo(cont, {uploads--; updateDownloads()}) {chain -> peer.wimpyStoreFile(cacheDir, file, chain, mutable, cacheOverride)}
+		queueIo(cont, {uploads--; updateDownloads(); clearUploadProgress()}) {chain -> peer.wimpyStoreFile(cacheDir, file, {chunk, total-> showUploadProgress(chunk, total)}, chain, mutable, cacheOverride)}
 	}
 	def storeDir(cont, dir) {
 		uploads++
+		showUploadProgress(0, 16)
 		updateDownloads()
-		queueIo(cont, {uploads--; updateDownloads()}) {chain -> P2PMudFile.storeDir(cacheDir, dir, chain)}
+		queueIo(cont, {uploads--; updateDownloads(); clearUploadProgress()}) {chain -> P2PMudFile.storeDir(cacheDir, dir, {chunk, total -> showUploadProgress(chunk, total)}, chain)}
 	}
 	def fetchFile(cont, id) {
 		downloads++
+		showDownloadProgress(0, 16)
 		updateDownloads()
-		queueIo(cont, {downloads--; updateDownloads()}) {chain -> peer.wimpyGetFile(id, cacheDir, chain)}
+		queueIo(cont, {downloads--; updateDownloads(); clearDownloadProgress()}) {chain -> peer.wimpyGetFile(id, cacheDir, {chunk, total -> showDownloadProgress(chunk, total)}, chain)}
 	}
 	def fetchDir(cont, id, dir, mutable = false) {
 		downloads++
+		showDownloadProgress(0, 16)
 		updateDownloads()
-		queueIo(cont, {downloads--; updateDownloads()}) {chain -> P2PMudFile.fetchDir(id, cacheDir, dir, chain, mutable)}
+		queueIo(cont, {downloads--; updateDownloads(); clearDownloadProgress()}) {chain -> P2PMudFile.fetchDir(id, cacheDir, dir, {chunk, total -> showDownloadProgress(chunk, total)}, chain, mutable)}
+	}
+	def showUploadProgress(chunk, total) {
+		println "Uploading chunk $chunk/$total"
+	}
+	def clearUploadProgress() {
+		println "Finished uploading"
+	}
+	def showDownloadProgress(chunk, total) {
+		println "Downloading chunk $chunk/$total"
+	}
+	def clearDownloadProgress() {
+		println "Finished downloading"
 	}
 	def queueIo(cont, completedBlock, block) {
 		checkExec()
