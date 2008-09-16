@@ -68,6 +68,7 @@ public class P2PMudFile extends ContentHashPastContent {
 			for (file in dir) {
 println "STORE: $file.key -> $file.value"
 				files.add([file.value, file.key])
+				chunkTotal += estimateChunks(file.value.length())
 			}
 		} else {
 			dir = dir as File

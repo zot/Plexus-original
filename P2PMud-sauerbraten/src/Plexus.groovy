@@ -1357,51 +1357,51 @@ println "createPortal portal_$trigger = $name; portal $trigger"
 		}
 	}
 	def clearUploadProgress() {
-		exec {
-			sauer('up', 'tc_piechart_image = ""')
-			dumpCommands()
-		}
 		if (swing) {
 			swing.edt {
 				downloadProgressBar.setValue(0)
 			}
 		}
+		exec {
+			sauer('up', 'tc_piechart_image = ""')
+			dumpCommands()
+		}
 	}
 	def showUploadProgress(cur, total) {
+		if (swing) {
+			swing.edt {
+				downloadProgressBar.setMaximum(total)
+				downloadProgressBar.setValue(cur)
+			}
+		}
 		exec {
 			def x = total > 0 ? Math.round(cur/total*16.0) : 0
 			sauer('up', 'tc_piechart_image = "packages/plexus/dist/ul_' + x + '.png"')
 			dumpCommands()
 		}
-		if (swing) {
-			swing.edt {
-				downloadProgressBar.setMaximum(total)
-				downloadProgressBar.setValue(cur)
-			}
-		}
 	}
 	def clearDownloadProgress() {
-		exec {
-			sauer('up', 'tc_piechart_image = ""')
-			dumpCommands()
-		}
 		if (swing) {
 			swing.edt {
 				downloadProgressBar.setValue(0)
 			}
 		}
-	}
-	def showDownloadProgress(cur, total) {
 		exec {
-			def x = total > 0 ? Math.round(cur/total*16.0) : 0
-			sauer('up', 'tc_piechart_image = "packages/plexus/dist/dl_' + x + '.png"')
+			sauer('up', 'tc_piechart_image = ""')
 			dumpCommands()
 		}
+	}
+	def showDownloadProgress(cur, total) {
 		if (swing) {
 			swing.edt {
 				downloadProgressBar.setMaximum(total)
 				downloadProgressBar.setValue(cur)
 			}
+		}
+		exec {
+			def x = total > 0 ? Math.round(cur/total*16.0) : 0
+			sauer('up', 'tc_piechart_image = "packages/plexus/dist/dl_' + x + '.png"')
+			dumpCommands()
 		}
 	}
 }
