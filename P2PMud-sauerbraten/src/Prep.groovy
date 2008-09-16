@@ -294,7 +294,7 @@ public class Prep {
 	}
 	def static chooseProfile(item) {
 		props.setLastProfile(item)
-		println ("setting last_profile to $props.last_profile")
+		println ("setting last_profile to '$props.last_profile'")
 		props.setProfile(item)
 		removeProfileButton.enabled = !!props.profile
 		fields.each {
