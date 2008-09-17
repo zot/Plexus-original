@@ -40,7 +40,8 @@ public class BuildPlexusJar {
 		
 		// copy over remaining files
 		Tools.copyAll(new File(peer, "bin"), build)
-		Tools.copyAll(new File(plx, "bin"), build)
+		Tools.copyAll(new File(plx, "build/plexus"), build)
+		Tools.copyAll(new File(plx, "META-INF"), build)
 		Tools.copyAll(new File(sauer, "src/sauer_client"), new File(build, "dist/sauerbraten_plexus_linux"))
 
 		// update the timestamp on the version file
