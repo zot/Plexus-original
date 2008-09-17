@@ -75,6 +75,8 @@ println "STORE: $file.key -> $file.value"
 			dir.eachFileRecurse {
 				if (it.getName() == "Thumbs.db") {
 					println "IGNORING FILE: $it"
+				} else if (it.isDirectory()) {
+					println "IGNORING DIRECTORY: $it"
 				} else {
 					println "adding file: $it"
 					files.add([it, Tools.subpath(dir, it)])
