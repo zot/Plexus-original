@@ -58,6 +58,7 @@ public class Tools {
 	def static copyAll(from, to) {
 		from = from as File
 		to = to as File
+		if (!from.exists()) return
 		if (from.isFile()) {
 			copyFile(from, to);
 		} else {
@@ -180,5 +181,9 @@ public class Tools {
 		items.each {
 			block(it, multi.getSubContinuation(counter++))
 		}
+	}
+	
+	def static getCwd() {
+		return new File('').getAbsoluteFile()
 	}
 }
