@@ -1,3 +1,6 @@
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
+import java.util.zip.ZipFile
 import p2pmud.Tools
 import java.util.jar.*
 
@@ -26,16 +29,14 @@ public class BuildPlexusJar {
 		
 		new File(build, "dist").mkdirs()
 		def libDir = new File(peer, "lib") 
-		libDir.list( [accept:{d, f-> f ==~ /.*\.jar/ }] as FilenameFilter ).toList().each( { it ->
-			def fn = it.toString()
-			if (fn != "bouncycastle.jar") {
-				fn = new File(libDir, fn)
-				println "Checking $fn to extract"
-				if (!version.exists() || fn.lastModified() > version.lastModified()) {
-					extractZip(fn.toString(), build)
+		libDir.eachFileMatch(~/.*\.jar/) { it ->
+			if (it.name != "bouncycastle.jar") {
+				println "Checking $it to extract"
+				if (!version.exists() || it.lastModified() > version.lastModified()) {
+					extractZip(it, build)
 				}
 			}
-		} )
+		}
 		
 		// copy over remaining files
 		Tools.copyAll(new File(peer, "bin"), build)
@@ -48,6 +49,22 @@ public class BuildPlexusJar {
 		version << "PLEXUS BUILD $today"
 		
 		createManifest()
+
+		def fileOut = new FileOutputStream('/tmp/plexus.jar')
+		def zo = new ZipOutputStream(fileOut)
+
+		build.eachFileRecurse {
+			if (!it.isDirectory()) {
+				def input = it.newInputStream()
+
+				zo.putNextEntry(new ZipEntry(Tools.subpath(build, it)))
+				zo << input
+				zo.closeEntry()
+				input.close()
+			}
+		}
+		zo.finish()
+		fileOut.close()
 		
 		// new JarFile("/tmp/plexus.jar")
 //		cd $build
@@ -64,7 +81,7 @@ public class BuildPlexusJar {
 		def mani = new File(build, "dist/manifest")
 		if (mani.exists()) mani.delete()
 		def dist = new File(build, "dist")
-		dist.eachFile( { it -> if (it.isFile()) mani << it.name << '\n' } )
+		dist.eachFileRecurse { it -> if (it.isFile()) mani << Tools.subpath(build, it) << '\n' }
 	}
 	
 	static void extractZip(zipfile, destDir) {

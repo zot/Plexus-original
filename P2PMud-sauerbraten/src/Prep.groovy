@@ -116,9 +116,13 @@ public class Prep {
 				def input = Prep.getResourceAsStream('/' + it)
 				def file = new File(plexusdir, it)
 
-				file.getParentFile().mkdirs()
-				Tools.copyStreamToFile(input, file)
-				input.close()
+				if (!input) {
+					println "WARNING, NO FILE FOR MANIFEST ENTRY: $it!"
+				} else {
+					file.getParentFile().mkdirs()
+					Tools.copyStreamToFile(input, file)
+					input.close()
+				}
 			}
 			manifest.close()
 			new File(distdir, 'sauerbraten_plexus_linux').setExecutable(true)
