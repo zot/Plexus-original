@@ -1,3 +1,4 @@
+import org.jdesktop.swingx.painter.TextPainter
 import javax.swing.plaf.FontUIResource
 import java.awt.Font
 import org.jdesktop.swingx.painter.GlossPainter
@@ -43,6 +44,7 @@ public class Prep {
 	def static removeProfileButton
 	def static sauerDir
 	def static final MARKER = "\n//THIS LINE ADDED BY TEAM CTHULHU'S PLEXUS: PLEASE DO NOT EDIT THIS LINE OR THE NEXT ONE\n"
+	def static swing
 
 	def static initProps() {
 		for (e in defaultProps) {
@@ -212,6 +214,31 @@ public class Prep {
 		  // some IO Exception occured during communication with device
 		}
 	}
+	def static makeTitlePainter(label) {
+		swing.compoundPainter() {
+            mattePainter(fillPaint:Color.BLACK)
+            textPainter(text: label, font: new FontUIResource("SansSerif", Font.BOLD, 12), fillPaint: new Color(1.0f,1.0f,1.0f,1.0f))
+            glossPainter(paint:new Color(1.0f,1.0f,1.0f,0.2f), position:GlossPainter.GlossPosition.TOP)
+        }
+	}
+	def static field(lbl, key, constraints = 'span 2, wrap, growx') {
+		swing.label(text: lbl)
+		def tf = swing.textField(actionPerformed: {setprop(key)}, focusLost: {setprop(key)}, text: props[key], constraints: constraints)
+		fields[key] = [
+			setText: {value -> tf.text = value},
+			getText: {tf.text}
+		]
+		tf
+	}
+	def static check(lbl, key, description) {
+		swing.label(text: lbl)
+		def cb = swing.checkBox(text: description, actionPerformed: {evt -> props[key] = evt.source.selected ? '1' : '0' }, constraints: 'wrap' )
+		fields[key] = [
+			setText: {value -> cb.selected = value == '1'},
+			getText: {cb.selected ? '1' : '0'}
+		]
+		cb
+	}
 	def static showPropEditor() {
 		def p = props
 		def f
@@ -222,68 +249,41 @@ public class Prep {
 		   UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
 		} catch (Exception e) {e.printStackTrace()}
 		UIManager.put("Label.font", new FontUIResource("SansSerif", Font.PLAIN, 12))
-		def swing = new SwingXBuilder()
-		swing.build {
-			def makeTitlePainter = {
-				swing.compoundPainter() {
-		            swing.mattePainter(fillPaint:Color.BLACK)
-		            swing.glossPainter(paint:new Color(1.0f,1.0f,1.0f,0.2f), position:GlossPainter.GlossPosition.TOP)
-		        }
-			}
-			def field = {lbl, key, constraints = 'span 2, wrap, growx' ->
-				swing.label(text: lbl)
-				def tf = swing.textField(actionPerformed: {setprop(key)}, focusLost: {setprop(key)}, text: p[key], constraints: constraints)
-				fields[key] = [
-					setText: {value -> tf.text = value},
-					getText: {tf.text}
-				]
-				tf
-			}
-			def check = {lbl, key, description ->
-				swing.label(text: lbl)
-				def cb = swing.checkBox(text: description, actionPerformed: {evt -> props[key] = evt.source.selected ? '1' : '0' }, constraints: 'wrap' )
-				fields[key] = [
-					setText: {value -> cb.selected = value == '1'},
-					getText: {cb.selected ? '1' : '0'}
-				]
-			}
-			f = swing.frame(title: 'Plexus Configuration', size: [600, 600], windowClosing: {System.exit(0)}, pack: true, show: true) {
-				swing.titledPanel(title: 'Plexus Properties', titlePainter: makeTitlePainter(), border: new DropShadowBorder(Color.BLACK, 15)) {
-					swing.panel(layout: new MigLayout('fillx')) {
-						swing.label(text: 'Active Profile:')
-						swing.panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
-							profilesCombo = swing.comboBox(editable: true, actionPerformed: {if (profilesCombo) addProfile(profilesCombo?.editor?.item)})
-							removeProfileButton = swing.button(text: 'Remove Profile', actionPerformed: { if (MessageBox.AreYouSure("Remove Profile", "Are you sure you want to remove the $props.profile profile?")) removeProfile()}, enabled: false)
-						}
-						field('Your name: ', 'name')
-						field('Team/Guild: ', 'guild')
-						field('External IP: ', 'external_ip', 'growx')
-						swing.button(text: "Discover", actionPerformed: { discoverExternalIP() }, constraints: 'wrap')
-						field('External port: ', 'external_port')
-						check('Use UPnP', 'upnp', 'If checked, make sure UPnP is enabled on your router')
-						field('Pastry port: ', 'pastry_port')
-						field('Pastry boot host: ', 'pastry_boot_host')
-						field('Pastry boot port: ', 'pastry_boot_port')
-						field('Sauer cmd: ', 'sauer_cmd')
-						field('Sauer port: ', 'sauer_port')
-						check('Verbose Log', 'verbose_log', 'Turn on verbose logging')
-						swing.label(text: 'Launch sauer: ')
-						sauerButton = swing.checkBox(text: 'If checked, it will auto start the Plexus custom Sauerbraten', actionPerformed: { evt -> props.sauer_mode = evt.source.selected ? 'launch' : 'noLaunch' }, constraints: 'wrap' )
-						swing.label(text: "Node id: ")
-						nodeIdLabel = swing.label(text: props.nodeId ?: "none", constraints: 'wrap, growx')
-						swing.panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
-							swing.button(text: "Start", actionPerformed: {f.dispose(); finished(true)})
-							swing.button(text: "Save and Exit", actionPerformed: {f.dispose(); finished(false)} )
-							swing.button(text: "Exit", actionPerformed: { System.exit(0) } )
-						}
-						swing.button(text: 'Clear P2P Cache', actionPerformed: { clearCache() } )
+		swing = new SwingXBuilder()
+		f = swing.frame(title: 'Plexus Configuration', size: [600, 600], location: [200, 300], windowClosing: {System.exit(0)}, pack: true, show: true) {
+			titledPanel(title: ' ', titleForeground: Color.WHITE, titlePainter: makeTitlePainter('Plexus Properties'), border: new DropShadowBorder(Color.BLACK, 15)) {
+				panel(layout: new MigLayout('fillx')) {
+					label(text: 'Active Profile:')
+					panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
+						profilesCombo = comboBox(editable: true, actionPerformed: {if (profilesCombo) addProfile(profilesCombo?.editor?.item)})
+						removeProfileButton = button(text: 'Remove Profile', actionPerformed: { if (MessageBox.AreYouSure("Remove Profile", "Are you sure you want to remove the $props.profile profile?")) removeProfile()}, enabled: false)
 					}
+					field('Your name: ', 'name')
+					field('Team/Guild: ', 'guild')
+					field('External IP: ', 'external_ip', 'growx')
+					button(text: "Discover", actionPerformed: { discoverExternalIP() }, constraints: 'wrap')
+					field('External port: ', 'external_port')
+					check('Use UPnP', 'upnp', 'If checked, make sure UPnP is enabled on your router')
+					field('Pastry port: ', 'pastry_port')
+					field('Pastry boot host: ', 'pastry_boot_host')
+					field('Pastry boot port: ', 'pastry_boot_port')
+					field('Sauer cmd: ', 'sauer_cmd')
+					field('Sauer port: ', 'sauer_port')
+					check('Verbose Log', 'verbose_log', 'Turn on verbose logging')
+					label(text: 'Launch sauer: ')
+					sauerButton = checkBox(text: 'If checked, it will auto start the Plexus custom Sauerbraten', actionPerformed: { evt -> props.sauer_mode = evt.source.selected ? 'launch' : 'noLaunch' }, constraints: 'wrap' )
+					label(text: "Node id: ")
+					nodeIdLabel = label(text: props.nodeId ?: "none", constraints: 'wrap, growx')
+					panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
+						button(text: "Start", actionPerformed: {f.dispose(); finished(true)})
+						button(text: "Save and Exit", actionPerformed: {f.dispose(); finished(false)} )
+						button(text: "Exit", actionPerformed: { System.exit(0) } )
+					}
+					button(text: 'Clear P2P Cache', actionPerformed: { clearCache() } )
 				}
 			}
 			update()
 			chooseProfile(props.last_profile)
-			f.setLocation(200, 200)
-//			f.size = [600, (int)f.size.height] as Dimension
 		}
 	}
 	def static clearCache() {
