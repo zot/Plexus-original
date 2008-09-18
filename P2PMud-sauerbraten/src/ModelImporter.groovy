@@ -1,7 +1,4 @@
 import javax.swing.UIManager
-import com.jgoodies.looks.plastic.PlasticLookAndFeel
-import com.jgoodies.looks.plastic.Plastic3DLookAndFeel
-import com.jgoodies.looks.plastic.theme.DesertBlue
 import javax.swing.DefaultListModel
 import java.awt.FlowLayout
 import net.miginfocom.swing.MigLayout
@@ -29,7 +26,7 @@ class ModelImporter {
 	static void main(args) {
 		try {
 //			   UIManager.setLookAndFeel(new Plastic3DLookAndFeel());
-			   UIManager.setLookAndFeel("org.jdesktop.swingx.plaf.nimbus.NimbusLookAndFeel");
+			   UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
 			} catch (Exception e) {}
 		
 		readProps()
