@@ -14,19 +14,12 @@ char idbuf[1024];
 /////
 // MEMBERS FOR: dynent
 /////
-void dynent::renderplayer(fpsclient &cl, void *void_mdl, int team) {
-	fpsclient::playermodelinfo &mdl = *((fpsclient::playermodelinfo *) void_mdl);
+void dynent::renderplayer(fpsclient &cl, const char *mdlname, void *attachments, int attack, int attackdelay, int lastaction, int lastpain, float sink) {
 	fpsent *ent = (fpsent *)this;
-	//const char *model = modelname ? modelname : modelnames[mdl];
-
-//	printf("render player (%s) %s\n", name, suggestion);
 	if(ent->state!=CS_DEAD) {
-		//cl.fr.renderplayer(ent, mdl, team);
-		char *mdlname = ent->modelname;
 		if (!mdlname) mdlname = "mrfixit";
 
-        int lastaction = ent->lastaction, attack = ent->gunselect==GUN_FIST ? ANIM_PUNCH : ANIM_SHOOT, delay = mdl.vwep ? 300 : cl.ws.reloadtime(ent->gunselect)+50;
-        renderclient(ent, mdlname, NULL, attack, delay, lastaction, ent->lastpain);
+        renderclient(ent, mdlname, (modelattach *) attachments, attack, attackdelay, lastaction, lastpain, sink);
 
 		vec v = ent->abovehead().add(vec(0, 0, 2));
 		if (ent->name[0]) particle_text(v, ent->name, 24, 1);
