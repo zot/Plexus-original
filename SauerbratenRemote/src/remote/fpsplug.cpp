@@ -19,6 +19,7 @@ void dynent::renderplayer(fpsclient &cl, const char *mdlname, void *attachments,
 	if(ent->state!=CS_DEAD) {
 		if (!mdlname) mdlname = "mrfixit";
 
+		attachments = NULL;		// this will turn off all weapons
         renderclient(ent, mdlname, (modelattach *) attachments, attack, attackdelay, lastaction, lastpain, sink);
 
 		vec v = ent->abovehead().add(vec(0, 0, 2));
