@@ -145,6 +145,7 @@ public class Plexus {
 			executorThread = Thread.currentThread()
 		}
 		soleInstance = this
+		name = args[1]
 		if (LaunchPlexus.props.headless == '0') {
 			sauerDir = System.getProperty("sauerdir");
 			if (!verifySauerdir(sauerDir)) {
@@ -156,7 +157,6 @@ public class Plexus {
 		} else {
 			sauerDir = new File('duh').getAbsoluteFile().getParentFile()
 		}
-		name = args[1]
 		plexusDir = new File(sauerDir, "packages/plexus")
 		cloudProperties = new CloudProperties(this, new File(plexusDir, "cache/$name/cloud.properties"))
 		cloudProperties.persistentPropertyPattern = ~'(map|privateMap|costume)/..*'
