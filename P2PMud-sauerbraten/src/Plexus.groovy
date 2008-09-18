@@ -7,7 +7,6 @@ import p2pmud.Tools
 import static p2pmud.Tools.*
 import java.awt.event.ItemEvent
 import java.util.concurrent.Executors
-import com.jgoodies.looks.plastic.Plastic3DLookAndFeel
 import javax.swing.UIManager
 import p2pmud.CloudProperties
 import java.text.SimpleDateFormat
@@ -229,7 +228,7 @@ public class Plexus {
 			//PlasticLookAndFeel.setPlasticTheme(new DesertBlue());
 			try {
 //			   UIManager.setLookAndFeel(new Plastic3DLookAndFeel());
-			   UIManager.setLookAndFeel("org.jdesktop.swingx.plaf.nimbus.NimbusLookAndFeel");
+			   UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
 			} catch (Exception e) {}
 			buildPlexusGui()
 			start(args[0])
