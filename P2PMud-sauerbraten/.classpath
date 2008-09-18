@@ -16,7 +16,7 @@
 	<classpathentry kind="lib" path="lib/MultipleGradientPaint.jar"/>
 	<classpathentry kind="lib" path="lib/swing-layout.jar"/>
 	<classpathentry kind="lib" path="lib/swing-worker.jar"/>
-	<classpathentry kind="lib" path="lib/swingx-0.9.2.jar"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/1.6"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/1.6-10"/>
+	<classpathentry kind="lib" path="lib/swingx-2008_05_18.jar" sourcepath="lib/swingx-2008_05_18-src.zip"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
