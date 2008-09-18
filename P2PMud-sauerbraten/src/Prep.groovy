@@ -243,7 +243,7 @@ public class Prep {
 			}
 			def check = {lbl, key, description ->
 				swing.label(text: lbl)
-				def cb = checkBox(text: description, actionPerformed: {evt -> props[key] = evt.source.selected ? '1' : '0' }, constraints: 'wrap' )
+				def cb = swing.checkBox(text: description, actionPerformed: {evt -> props[key] = evt.source.selected ? '1' : '0' }, constraints: 'wrap' )
 				fields[key] = [
 					setText: {value -> cb.selected = value == '1'},
 					getText: {cb.selected ? '1' : '0'}
