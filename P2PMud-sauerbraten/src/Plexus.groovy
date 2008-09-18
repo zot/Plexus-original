@@ -152,6 +152,7 @@ public class Plexus {
 			executorThread = Thread.currentThread()
 		}
 		soleInstance = this
+		name = args[1]
 		headless = LaunchPlexus.props.headless == '1'
 		if (!headless) {
 			sauerDir = System.getProperty("sauerdir");
@@ -164,7 +165,6 @@ public class Plexus {
 		} else {
 			sauerDir = new File('duh').getAbsoluteFile().getParentFile()
 		}
-		name = args[1]
 		plexusDir = new File(sauerDir, "packages/plexus")
 		cloudProperties = new CloudProperties(this, new File(plexusDir, "cache/$name/cloud.properties"))
 		cloudProperties.persistentPropertyPattern = ~'(map|privateMap|costume)/..*'
@@ -1222,6 +1222,11 @@ println "COSTUME SELS: $triples"
 	def selectCostume() {
 		tumesCombo.selectedItem = costume ? getCostume(costume)?.name ?: '' : ''
 	}
+	def clearPlayers() {
+		//println "Going to clear players"
+		names = [p0: peerId]
+		ids = [peerId: 'p0']
+	}
 	def connectWorld(id) {
 		if (id) {
 			def map = getMap(id)
@@ -1230,6 +1235,7 @@ println "COSTUME SELS: $triples"
 				sauer('entry', "tc_msgbox [Couldn't find map] [Unknown map id: $id]")
 			} else if (map.id != mapTopic?.getId()?.toStringFull()) {
 				println "CONNECTING TO WORLD: $map.name ($map.id)"
+				clearPlayers()
 				if (mapTopic) {
 					peer.unsubscribe(mapTopic)
 				}

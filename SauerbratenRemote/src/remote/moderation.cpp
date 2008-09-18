@@ -598,7 +598,7 @@ void tc_edittrigger(const selinfo &sel, int op, int arg1, int arg2, int arg3)
 }
 
 void tc_taunthook() {
-	strcpy(buf, "tc_taunthook");
+	strcpy(buf, "tc_taunt_hook");
 	executehook(buf);
 }
 

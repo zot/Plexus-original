@@ -102,7 +102,7 @@ struct fpsrender
             case 2: mdlname = mdl.redteam; break;
         }
 #ifdef TC
-		d->renderplayer(cl, (void *) &mdl, team);
+		d->renderplayer(cl, mdlname, a[0].name ? a : NULL, attack, delay, lastaction, cl.intermission ? 0 : d->lastpain);
 #else
         renderclient(d, mdlname, a[0].name ? a : NULL, attack, delay, lastaction, cl.intermission ? 0 : d->lastpain);
 #endif
