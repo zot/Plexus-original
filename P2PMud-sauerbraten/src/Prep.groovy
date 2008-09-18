@@ -3,10 +3,8 @@ import java.awt.Font
 import org.jdesktop.swingx.painter.GlossPainter
 import java.awt.Color
 import org.jdesktop.swingx.border.DropShadowBorder
-import org.jdesktop.swingx.plaf.nimbus.NimbusLookAndFeelAddons
 import groovy.swing.SwingXBuilder
 import javax.swing.DefaultComboBoxModel
-import com.jgoodies.looks.plastic.Plastic3DLookAndFeel
 import javax.swing.UIManager
 import java.awt.Dimension
 import net.miginfocom.swing.MigLayout
@@ -221,7 +219,7 @@ public class Prep {
 		//PlasticLookAndFeel.setPlasticTheme(new DesertBlue());
 		try {
 //		   UIManager.setLookAndFeel(new Plastic3DLookAndFeel());
-		   UIManager.setLookAndFeel("org.jdesktop.swingx.plaf.nimbus.NimbusLookAndFeel");
+		   UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
 		} catch (Exception e) {e.printStackTrace()}
 		UIManager.put("Label.font", new FontUIResource("SansSerif", Font.PLAIN, 12))
 		def swing = new SwingXBuilder()
