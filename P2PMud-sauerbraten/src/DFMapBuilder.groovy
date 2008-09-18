@@ -22,6 +22,7 @@ public class DFMapBuilder {
 	def buildMap(plexus, filename) {
 		m_plexus = plexus
 		sauer('newmap', 'if (= 1 $editing) [ edittoggle ]; tc_allowedit 1; thirdperson 0; newmap 13; musicvol 0; undomegs 0')
+		sauer('tex', 'texturereset; setshader stdworld; exec packages/egyptsoc/package.cfg ')
 		loadFromFile(filename)
 		sauer("spawn", "selcube 32 32 4088 1 1 1 32 5; ent.yaw p0 135; newent playerstart; tc_respawn p0")
 		sauer('finished', 'remip;  tc_allowedit 0; thirdperson 1')  // calclight 3;
@@ -59,32 +60,27 @@ public class DFMapBuilder {
 					// get chunks of identical letters to process them all the same
 					rle = getRLE(dfmapcolarray, j, cols)
 					def first = map[dfmapcolarray[j]]
-					def tex = texmap[dfmapcolarray[j]]
 					if (first != '$') {
 						//println "i got an rle of $rle at index: $j  first is $first"
 						def x = j * cubesize;
 						def y = ir * cubesize;
+						def tex = texmap[dfmapcolarray[j]]
+						if (tex == '?') tex = 56
+						def texture = "tc_settex $tex 1; "
 						if (first == 'f') {
 							def z1 = z + floorThick, len = Math.round(rle * cubesize / floorThick), floor = Math.round((cubesize  - floorThick) / floorThick), foo = Math.round(cubesize / floorThick)
 							//println  "selcube $x $y $z1 $len $foo $floor $floorThick 5; delcube"
-							sauer('delcube', "selcube $x $y $z1 $len $foo $floor $floorThick 5; delcube")
+							sauer('delcube', "selcube $x $y $z1 $len $foo $floor $floorThick 5; $texture delcube")
 							//sauer('wall1', "selcube $x $y $z 3 3 1 32 0; tc_settex 56 1")
 							remipCount += rle
 						}else if (first == 'w') {
 							sauer('delcube', "selcube $x $y $z $rle 1 1 $cubesize 5; delcube; editmat water")
 						} else if(first == 'e'){
-							sauer('delcube', "selcube $x $y $z $rle 1 1 $cubesize 5; delcube")
+							sauer('delcube', "selcube $x $y $z $rle 1 1 $cubesize 5; $texture delcube")
 					 	} else if(first == 's') {
-					 		sauer('delcube', "selcube $x $y $z $rle 1 1 $cubesize 5; delcube")
+					 		sauer('delcube', "selcube $x $y $z $rle 1 1 $cubesize 5; $texture delcube")
 						}
 					}
-					/*if (tex != 'e'){
-						if (tex == 'rock'){}
-						if (tex == 'grass'){}
-						if (tex == 'wall'){}
-						if (tex == 'river'){}
-						if (tex == ''){}
-					}*/
 					dumpCommands()
 				}
 				
@@ -95,59 +91,6 @@ public class DFMapBuilder {
 				}
 			}
 		} 
-		//texturing process should we maybe make the texturing and geometry process simultaneous?
-		exec {
-		sauer('tex', 'texturereset; setshader stdworld; exec packages/egyptsoc/package.cfg ')
-		sauer("texture", "selcube 0 0 480 2 2 2 512 4; tc_settex 35 1")
-		sauer("texture2", "tc_settex 37 0; selcube 0 0 480 2 2 2 512 5; tc_settex 51 0")
-		sauer("texture3", "selcube 0 0 470 512 512 1 16 5; tc_settex 7 1")
-		}
-		
-		for (def i = 1; i < totalrows; ++i ){
-			def dfmapcol = dfmaprow.get(i)
-			ir ++;
-			//def ir = Math.round(i - (h * rows)) //resets row
-			def dfmapcolarray = dfmapcol.split()
-			def rle = 0, cols = dfmapcolarray.length
-			if (cols < 3){
-				println "i: $i, New layer found: " + dfmapcolarray.toString()
-				ir = 0;
-				h++;
-				z = 3072 + h * cubesize;
-			} else {
-				//println "cols: $cols, line: $dfmapcol"
-				for (def j = 0; j < cols; j += rle) {
-					// get chunks of identical letters to process them all the same
-					rle = getRLE(dfmapcolarray, j, cols)
-					def tex = texmap[dfmapcolarray[j]]
-					if (tex != 'e') {
-						//println "i got an rle of $rle at index: $j  first is $first"
-						def x = j * cubesize;
-						def y = ir * cubesize;
-						if (tex == 'f') {
-							sauer('wall1', "selcube $x $y $z 3 3 1 32 0; tc_settex 56 1")
-							sauer('wall2', "selcube $x $y $z 3 3 1 32 1; tc_settex 56 1")
-						}else if (tex == 'w') {
-							sauer('wall1', "selcube $x $y $z 3 3 1 32 0; tc_settex 56 1")
-							sauer('wall2', "selcube $x $y $z 3 3 1 32 1; tc_settex 56 1")
-						} else if(tex == 'e'){
-							sauer('wall1', "selcube $x $y $z 3 3 1 32 0; tc_settex 56 1")
-							sauer('wall2', "selcube $x $y $z 3 3 1 32 1; tc_settex 56 1")
-					 	} else if(tex == 's') {
-							sauer('wall1', "selcube $x $y $z 3 3 1 32 0; tc_settex 56 1")
-							sauer('wall2', "selcube $x $y $z 3 3 1 32 1; tc_settex 56 1")
-						}
-					}
-					dumpCommands()
-				}
-				
-				if (remipCount > 25000) {
-					sauer('remip', 'remip')
-					dumpCommands()
-					remipCount = 0
-				}
-			}
-		}
 
 		//while (z //< 4064) {
 	 	//	sauer('delcube', "selcube 0 0 $z 7500 7500 1 $cubesize 5; delcube")
