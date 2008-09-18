@@ -1,3 +1,8 @@
+import org.jdesktop.swingx.painter.GlossPainter
+import java.awt.Color
+import org.jdesktop.swingx.border.DropShadowBorder
+import groovy.swing.SwingXBuilder
+import java.awt.Font
 import p2pmud.Tools
 import static p2pmud.Tools.*
 import java.awt.event.ItemEvent
@@ -98,6 +103,8 @@ public class Plexus {
 	def pendingDownloads = [] as Set
 	def uploads = 0
 	def downloads = 0
+	def headless = false
+	def cloudFields = [:]
 
 	def static sauerExec
 	def static soleInstance
@@ -145,7 +152,8 @@ public class Plexus {
 			executorThread = Thread.currentThread()
 		}
 		soleInstance = this
-		if (LaunchPlexus.props.headless == '0') {
+		headless = LaunchPlexus.props.headless == '1'
+		if (!headless) {
 			sauerDir = System.getProperty("sauerdir");
 			if (!verifySauerdir(sauerDir)) {
 				usage("sauerdir must be provided")
@@ -168,7 +176,7 @@ public class Plexus {
 		deleteAll(pastStor)
 		pastStor.mkdirs()
 		System.setProperty('past.storage', pastStor.getAbsolutePath())
-		if (LaunchPlexus.props.headless != '1') {
+		if (!headless) {
 			cloudProperties.setPropertyHooks[~'player/..*'] = {key, value, oldValue ->
 				if (mapTopic) {
 					def pid = key.substring('player/'.length())
@@ -220,7 +228,8 @@ public class Plexus {
 			if ((LaunchPlexus.props.sauer_mode ?: 'launch') == 'launch') launchSauer();
 			//PlasticLookAndFeel.setPlasticTheme(new DesertBlue());
 			try {
-			   UIManager.setLookAndFeel(new Plastic3DLookAndFeel());
+//			   UIManager.setLookAndFeel(new Plastic3DLookAndFeel());
+			   UIManager.setLookAndFeel("org.jdesktop.swingx.plaf.nimbus.NimbusLookAndFeel");
 			} catch (Exception e) {}
 			buildPlexusGui()
 			start(args[0])
@@ -302,113 +311,128 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		}, receiveException: {ex -> err("Could not fetch data for $type: $id -> ${new File(plexusDir, "cache/$name/$location")}", ex)})
 	}
 	def buildPlexusGui() {
-		swing = new SwingBuilder()
+		swing = new SwingXBuilder()
 		swing.build {
+			def makeTitlePainter = {
+					swing.compoundPainter() {
+			            swing.mattePainter(fillPaint:Color.BLACK)
+			            swing.glossPainter(paint:new Color(1.0f,1.0f,1.0f,0.2f), position:GlossPainter.GlossPosition.TOP)
+			        }
+				}
 			def field = {lbl, key ->
-				label(text: lbl)
-				fields[key] = textField(actionPerformed: {sauerEnt(key)}, focusLost: {sauerEnt(key)}, constraints: 'wrap, growx')
+				swing.label(text: lbl)
+				fields[key] = swing.textField(actionPerformed: {sauerEnt(key)}, focusLost: {sauerEnt(key)}, constraints: 'wrap, growx')
 			}
-			def f = frame(title: 'Plexus: ' + LaunchPlexus.props.name, windowClosing: {System.exit(0)}, layout: new MigLayout('fill'), pack: true, show: true) {
-				label(text: "Node id: ")
-				label(text: LaunchPlexus.props.nodeId ?: "none", constraints: 'wrap, growx')
-				label(text: "Neighbors: ")
-				panel(layout: new MigLayout('fill, ins 0'), constraints: 'spanx,wrap,growx') {
-					button(text: "Update Neighbor List", actionPerformed: {updateNeighborList()})
-					neighborField = label(text: 'none', constraints: 'wrap, growx')
-				}
-				label(text: "Command: ")
-				fields.cmd = textField(actionPerformed: {cmd()}, constraints: 'wrap, growx')
-				tabbedPane(constraints: 'spanx,width 100%,growy,wrap') {
-					panel(name: 'Commands', layout: new MigLayout('fill')) {
-						label(text: 'Generation')
-						panel(layout: new MigLayout('fill, ins 0'), constraints: 'growx,wrap') {
-							button(text: "Launch 3D", actionPerformed: {launchSauer()})
-							button(text: "Generate Dungeon", actionPerformed: {generateDungeon()})
-							button(text: "Load DF Map", actionPerformed: {loadDFMap()})
-							panel(constraints: 'growx,wrap')
+			def f = swing.frame(title: 'Plexus: ' + LaunchPlexus.props.name, size: [500, 500], windowClosing: {System.exit(0)}, layout: new MigLayout('fill'), pack: true, show: true) {
+				swing.titledPanel(title: 'Plexus Properties', titlePainter: makeTitlePainter(), border: new DropShadowBorder(Color.BLACK, 15)) {
+					swing.panel(layout: new MigLayout('fillx')) {
+						swing.label(text: "Node id: ")
+						swing.label(text: LaunchPlexus.props.nodeId ?: "none", constraints: 'wrap, growx')
+						swing.label(text: "Neighbors: ")
+						swing.panel(layout: new MigLayout('fill, ins 0'), constraints: 'spanx,wrap,growx') {
+							swing.button(text: "Update Neighbor List", actionPerformed: {updateNeighborList()})
+							neighborField = swing.label(text: 'none', constraints: 'wrap, growx')
 						}
-						label(text: "Current Map: ")
-						mapCombo = comboBox(editable: false, actionPerformed: {
-							exec {
-								if (mapCombo && mapCombo.selectedIndex > -1) {
-									connectWorld(mapCombo.selectedIndex == 0 ? null : maps[mapCombo.selectedIndex - 1].id)
+						swing.label(text: "Command: ")
+						fields.cmd = swing.textField(actionPerformed: {cmd()}, constraints: 'wrap, growx')
+						swing.tabbedPane(constraints: 'spanx,width 100%,growy,wrap') {
+							swing.panel(name: 'Commands', layout: new MigLayout('fill')) {
+								swing.label(text: 'Generation')
+								swing.panel(layout: new MigLayout('fill, ins 0'), constraints: 'growx,wrap') {
+									swing.button(text: "Launch 3D", actionPerformed: {launchSauer()})
+									swing.button(text: "Generate Dungeon", actionPerformed: {generateDungeon()})
+									swing.button(text: "Load DF Map", actionPerformed: {loadDFMap()})
+									swing.panel(constraints: 'growx,wrap')
 								}
-							}
-						}, constraints: 'wrap')
-						label(text: 'Choose Costume')
-						tumesCombo = comboBox(editable: false, actionPerformed: {
-							exec {
-								if (tumesCombo && tumesCombo.selectedIndex > -1) {
-									if (tumesCombo.selectedIndex) {
-										def tume = tumes[tumesCombo.selectedIndex - 1]
-
-										useCostume(tume.name, tume.dir)
+								swing.label(text: "Current Map: ")
+								mapCombo = swing.comboBox(editable: false, actionPerformed: {
+									exec {
+										if (mapCombo && mapCombo.selectedIndex > -1) {
+											connectWorld(mapCombo.selectedIndex == 0 ? null : maps[mapCombo.selectedIndex - 1].id)
+										}
 									}
-								}
-							}
-						}, constraints: 'wrap')
-						label(text: "Follow player: ")
-						mapPlayersCombo = comboBox(editable: false, actionPerformed: {
-							if (mapPlayersCombo && mapPlayersCombo.selectedIndex > -1) {
-								followingPlayer = mapPlayersCombo.selectedIndex == 0 ? null : mapPlayers[mapPlayersCombo.selectedIndex - 1]
-println "NOW FOLLOWING: ${followingPlayer?.name}"
-							}
-						}, constraints: 'wrap')
-						button(text: 'Upload Costume', actionPerformed: {
-							exec {
-								if (costumeUploadField.text) {
-									pushCostumeDir(costumeUploadField.text as File)
-								}
-							}
-						})
-						panel(constraints: 'growx,wrap', layout: new MigLayout('fill,ins 0')) {
-							costumeUploadField = textField(constraints: 'growx', actionPerformed: {
-								exec {pushCostumeDir(costumeUploadField.text as File)}
-							})
-							button(text: '...', actionPerformed: {
-								exec {
-									def file = chooseFile("Choose a model to upload", costumeUploadField, "Costumes", "")
-
-									if (file) {
-										pushCostumeDir(file)
+								}, constraints: 'wrap')
+								swing.label(text: 'Choose Costume')
+								tumesCombo = swing.comboBox(editable: false, actionPerformed: {
+									exec {
+										if (tumesCombo && tumesCombo.selectedIndex > -1) {
+											if (tumesCombo.selectedIndex) {
+												def tume = tumes[tumesCombo.selectedIndex - 1]
+		
+												useCostume(tume.name, tume.dir)
+											}
+										}
 									}
+								}, constraints: 'wrap')
+								swing.label(text: "Follow player: ")
+								mapPlayersCombo = swing.comboBox(editable: false, actionPerformed: {
+									if (mapPlayersCombo && mapPlayersCombo.selectedIndex > -1) {
+										followingPlayer = mapPlayersCombo.selectedIndex == 0 ? null : mapPlayers[mapPlayersCombo.selectedIndex - 1]
+		println "NOW FOLLOWING: ${followingPlayer?.name}"
+									}
+								}, constraints: 'wrap')
+								swing.button(text: 'Upload Costume', actionPerformed: {
+									exec {
+										if (costumeUploadField.text) {
+											pushCostumeDir(costumeUploadField.text as File)
+										}
+									}
+								})
+								swing.panel(constraints: 'growx,wrap', layout: new MigLayout('fill,ins 0')) {
+									costumeUploadField = swing.textField(constraints: 'growx', actionPerformed: {
+										exec {pushCostumeDir(costumeUploadField.text as File)}
+									})
+									swing.button(text: '...', actionPerformed: {
+										exec {
+											def file = chooseFile("Choose a model to upload", costumeUploadField, "Costumes", "")
+		
+											if (file) {
+												pushCostumeDir(file)
+											}
+										}
+									})
 								}
-							})
-						}
-						panel(constraints: 'growy,wrap')
-						downloadPanel = panel(constraints: 'growx,spanx,wrap', layout: new MigLayout('fill,ins 0'), enabled: false) {
-							label(text: ' Pending Uploads: ')
-							uploadCountField = label(text: '0')
-							label(text: ' Pending Downloads: ')
-							downloadCountField = label(text: '0')
-							label(text: 'Current ')
-							loadTypeField = label(text: 'Upload')
-							downloadProgressBar = progressBar(constraints: 'growx', minimum: 0, maximum: 100)
+								swing.panel(constraints: 'growy,wrap')
+								downloadPanel = swing.panel(constraints: 'growx,spanx,wrap', layout: new MigLayout('fill,ins 0'), enabled: false) {
+									swing.label(text: ' Pending Uploads: ')
+									uploadCountField = swing.label(text: '0')
+									swing.label(text: ' Pending Downloads: ')
+									downloadCountField = swing.label(text: '0')
+									swing.label(text: 'Current ')
+									loadTypeField = swing.label(text: 'Upload')
+									downloadProgressBar = swing.progressBar(constraints: 'growx', minimum: 0, maximum: 100)
+								}
+							}
+							swing.panel(name: 'Stats', layout: new MigLayout('fill,ins 0')) {
+								field('x: ', 'x')
+								field('y: ', 'y')
+								field('z: ', 'z')
+								field('vx: ', 'vx')
+								field('vy: ', 'vy')
+								field('vz: ', 'vz')
+								field('fx: ', 'fx')
+								field('fy: ', 'fy')
+								field('fz: ', 'fz')
+								field('roll: ', 'rol')
+								field('pitch: ', 'pit')
+								field('yaw: ', 'yaw')
+								field('strafe: ', 's')
+								field('edit: ', 'e')
+								field('move: ', 'm')
+								field('physics state: ', 'ps')
+								field('max speed: ', 'ms')
+								swing.panel(constraints: 'growy,wrap')
+							}
+							swing.panel(name: 'Cloud', layout: new MigLayout('fill,ins 0')) {
+								swing.label(text: 'Neighbors: ')
+								cloudFields.neighbors = swing.label(constraints: 'growx,wrap')
+								swing.label(text: 'Cloud Properties', constraints: 'growx,spanx,wrap')
+								cloudFields.properties = swing.textPane(constraints: 'grow,span,wrap')
+							}
 						}
 					}
-					panel(name: 'Stats', layout: new MigLayout('fill,ins 0')) {
-						field('x: ', 'x')
-						field('y: ', 'y')
-						field('z: ', 'z')
-						field('vx: ', 'vx')
-						field('vy: ', 'vy')
-						field('vz: ', 'vz')
-						field('fx: ', 'fx')
-						field('fy: ', 'fy')
-						field('fz: ', 'fz')
-						field('roll: ', 'rol')
-						field('pitch: ', 'pit')
-						field('yaw: ', 'yaw')
-						field('strafe: ', 's')
-						field('edit: ', 'e')
-						field('move: ', 'm')
-						field('physics state: ', 'ps')
-						field('max speed: ', 'ms')
-						panel(constraints: 'growy,wrap')
-					}
 				}
 			}
-			f.size = [500, (int)f.size.height] as Dimension
 		}
 	}
 	def updateDownloads() {
@@ -646,7 +670,9 @@ println "NOW FOLLOWING: ${followingPlayer?.name}"
 			'echo INIT'
 		].join(';'))
 	 	dumpCommands()
-//	 	updateFriendList()
+	 	updateFriendList()
+	 	updateMapGui()
+	 	updateCostumeGui()
 	}
 	def broadcast(cmds) {
 		checkExec()
@@ -881,13 +907,15 @@ println "NOW FOLLOWING: ${followingPlayer?.name}"
 		}
 	}
 	def updateMyPlayerInfo() {
-		def id = mapTopic?.getId()?.toStringFull()
-
-		println "UPDATING PLAYER INFO"
-//		after we get the players list, send ourselves out
-		def node = peer.nodeId.toStringFull()
-//TODO put tume in here and persist in props
-		transmitSetCloudProperty("player/$node", "${id ?: 'none'} ${costume ?: 'none'} $name")
+		if (!headless) {
+			def id = mapTopic?.getId()?.toStringFull()
+	
+			println "UPDATING PLAYER INFO"
+	//		after we get the players list, send ourselves out
+			def node = peer.nodeId.toStringFull()
+	//TODO put tume in here and persist in props
+			transmitSetCloudProperty("player/$node", "${id ?: 'none'} ${costume ?: 'none'} $name")
+		}
 	}
 	def removePlayerFromSauerMap(node) {
 		if (peerToSauerIdMap[node]) {
