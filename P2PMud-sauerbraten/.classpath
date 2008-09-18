@@ -10,13 +10,13 @@
 	<classpathentry kind="lib" path="lib/miglayout-3.5.5-swing.jar" sourcepath="lib/miglayout-3.5.5-sources.zip"/>
 	<classpathentry kind="lib" path="lib/egit-20080715.jar" sourcepath="lib/egit-20080715-src.zip"/>
 	<classpathentry kind="lib" path="lib/javolution-5.2.6.jar" sourcepath="lib/javolution-5.2.6-src.zip"/>
-	<classpathentry exported="true" kind="con" path="GROOVY_SUPPORT"/>
-	<classpathentry kind="lib" path="lib/swingxbuilder-0.1.5.jar" sourcepath="lib/swingxbuilder-0.1.5-svn-src.zip"/>
 	<classpathentry kind="lib" path="lib/Filters.jar"/>
 	<classpathentry kind="lib" path="lib/MultipleGradientPaint.jar"/>
 	<classpathentry kind="lib" path="lib/swing-layout.jar"/>
 	<classpathentry kind="lib" path="lib/swing-worker.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/1.6-10"/>
 	<classpathentry kind="lib" path="lib/swingx-2008_05_18.jar" sourcepath="lib/swingx-2008_05_18-src.zip"/>
+	<classpathentry kind="con" path="GROOVY_SUPPORT"/>
+	<classpathentry kind="lib" path="lib/swingxbuilder-0.1.5-svn.jar" sourcepath="lib/swingxbuilder-0.1.5-svn-src.zip"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
