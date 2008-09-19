@@ -246,8 +246,8 @@ public class Prep {
 			}
 			def makeTitlePainter = {label ->
 				compoundPainter() {
-		            mattePainter(fillPaint:Color.BLACK)
-	            	textPainter(text: label, font: new FontUIResource("SansSerif", Font.BOLD, 12), fillPaint: new Color(1.0f,1.0f,1.0f,1.0f))
+		            mattePainter(fillPaint: new Color(0x28, 0x26, 0x19))
+	            	textPainter(text: label, font: new FontUIResource("SansSerif", Font.BOLD, 12), fillPaint: new Color(0xFF, 0x99, 0x00))
 	            	glossPainter(paint:new Color(1.0f,1.0f,1.0f,0.2f), position:GlossPainter.GlossPosition.TOP)
 				}
 	        }
