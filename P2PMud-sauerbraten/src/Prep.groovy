@@ -214,31 +214,6 @@ public class Prep {
 		  // some IO Exception occured during communication with device
 		}
 	}
-	def static makeTitlePainter(label) {
-		swing.compoundPainter() {
-            mattePainter(fillPaint:Color.BLACK)
-            textPainter(text: label, font: new FontUIResource("SansSerif", Font.BOLD, 12), fillPaint: new Color(1.0f,1.0f,1.0f,1.0f))
-            glossPainter(paint:new Color(1.0f,1.0f,1.0f,0.2f), position:GlossPainter.GlossPosition.TOP)
-        }
-	}
-	def static field(lbl, key, constraints = 'span 2, wrap, growx') {
-		swing.label(text: lbl)
-		def tf = swing.textField(actionPerformed: {setprop(key)}, focusLost: {setprop(key)}, text: props[key], constraints: constraints)
-		fields[key] = [
-			setText: {value -> tf.text = value},
-			getText: {tf.text}
-		]
-		tf
-	}
-	def static check(lbl, key, description) {
-		swing.label(text: lbl)
-		def cb = swing.checkBox(text: description, actionPerformed: {evt -> props[key] = evt.source.selected ? '1' : '0' }, constraints: 'wrap' )
-		fields[key] = [
-			setText: {value -> cb.selected = value == '1'},
-			getText: {cb.selected ? '1' : '0'}
-		]
-		cb
-	}
 	def static showPropEditor() {
 		def p = props
 		def f
@@ -251,6 +226,31 @@ public class Prep {
 		UIManager.put("Label.font", new FontUIResource("SansSerif", Font.PLAIN, 12))
 		swing = new SwingXBuilder()
 		f = swing.frame(title: 'Plexus Configuration', size: [600, 600], location: [200, 300], windowClosing: {System.exit(0)}, pack: true, show: true) {
+			def field = {lbl, key, constraints = 'span 2, wrap, growx' ->
+				label(text: lbl)
+				def tf = textField(actionPerformed: {setprop(key)}, focusLost: {setprop(key)}, text: props[key], constraints: constraints)
+				fields[key] = [
+					setText: {value -> tf.text = value},
+					getText: {tf.text}
+				]
+				tf
+			}
+			def check = {lbl, key, description ->
+				label(text: lbl)
+				def cb = checkBox(text: description, actionPerformed: {evt -> props[key] = evt.source.selected ? '1' : '0' }, constraints: 'wrap' )
+				fields[key] = [
+					setText: {value -> cb.selected = value == '1'},
+					getText: {cb.selected ? '1' : '0'}
+				]
+				cb
+			}
+			def makeTitlePainter = {label ->
+				compoundPainter() {
+		            mattePainter(fillPaint:Color.BLACK)
+	            	textPainter(text: label, font: new FontUIResource("SansSerif", Font.BOLD, 12), fillPaint: new Color(1.0f,1.0f,1.0f,1.0f))
+	            	glossPainter(paint:new Color(1.0f,1.0f,1.0f,0.2f), position:GlossPainter.GlossPosition.TOP)
+				}
+	        }
 			titledPanel(title: ' ', titleForeground: Color.WHITE, titlePainter: makeTitlePainter('Plexus Properties'), border: new DropShadowBorder(Color.BLACK, 15)) {
 				panel(layout: new MigLayout('fillx')) {
 					label(text: 'Active Profile:')
