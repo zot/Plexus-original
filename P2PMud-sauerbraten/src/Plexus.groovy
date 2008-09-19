@@ -1,3 +1,5 @@
+import javax.swing.border.BevelBorder
+import org.jdesktop.swingx.JXStatusBar
 import javax.swing.plaf.FontUIResource
 import org.jdesktop.swingx.painter.GlossPainter
 import java.awt.Color
@@ -309,29 +311,31 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	}
 	def buildPlexusGui() {
 		swing = new SwingXBuilder()
-		def f = swing.frame(title: 'Plexus: ' + LaunchPlexus.props.name, size: [500, 500], windowClosing: {System.exit(0)}, layout: new MigLayout('fill'), pack: true, show: true) {
-			def makeTitlePainter = {label ->
+		def f = swing.frame(title: "PLEXUS [${LaunchPlexus.props.name}]", size: [500, 500], windowClosing: {System.exit(0)}, pack: true, show: true) {
+			def makeTitlePainter = {label, pos = null ->
 				compoundPainter() {
 		            mattePainter(fillPaint: new Color(0x28, 0x26, 0x19))
 	            	textPainter(text: label, font: new FontUIResource("SansSerif", Font.BOLD, 12), fillPaint: new Color(0xFF, 0x99, 0x00))
-	            	glossPainter(paint:new Color(1.0f,1.0f,1.0f,0.2f), position:GlossPainter.GlossPosition.TOP)
+	            	glossPainter(paint:new Color(1.0f,1.0f,1.0f,0.2f), position: pos ?: GlossPainter.GlossPosition.TOP)
 				}
 	        }
 			def field = {lbl, key ->
 				label(text: lbl)
 				fields[key] = textField(actionPerformed: {sauerEnt(key)}, focusLost: {sauerEnt(key)}, constraints: 'wrap, growx')
 			}
-			titledPanel(title: ' ', titlePainter: makeTitlePainter('Plexus Properties'), border: new DropShadowBorder(Color.BLACK, 15)) {
-				panel(layout: new MigLayout('fillx')) {
-					label(text: "Node id: ")
-					label(text: LaunchPlexus.props.nodeId ?: "none", constraints: 'wrap, growx')
-					label(text: "Neighbors: ")
-					panel(layout: new MigLayout('fill, ins 0'), constraints: 'spanx,wrap,growx') {
-						button(text: "Update Neighbor List", actionPerformed: {updateNeighborList()})
-						neighborField = label(text: 'none', constraints: 'wrap, growx')
+			titledPanel(title: ' ', titlePainter: makeTitlePainter("PLEXUS [${LaunchPlexus.props.name}]: Killer App of the Future - Here Today!"), border: new DropShadowBorder(Color.BLACK, 15)) {
+				panel(layout: new MigLayout('fill, ins 0')) {
+					panel(layout: new MigLayout(), constraints: 'spanx, wrap') {
+						label(text: "Node id: ")
+						label(text: LaunchPlexus.props.nodeId ?: "none", constraints: 'wrap, growx')
+						label(text: "Neighbors: ")
+						panel(layout: new MigLayout('fill, ins 0'), constraints: 'spanx,wrap,growx') {
+							button(text: "Update Neighbor List", actionPerformed: {updateNeighborList()})
+							neighborField = label(text: 'none', constraints: 'wrap, growx')
+						}
+						label(text: "Command: ")
+						fields.cmd = textField(actionPerformed: {cmd()}, constraints: 'wrap, growx')
 					}
-					label(text: "Command: ")
-					fields.cmd = textField(actionPerformed: {cmd()}, constraints: 'wrap, growx')
 					tabbedPane(constraints: 'spanx,width 100%,growy,wrap') {
 						panel(name: 'Commands', layout: new MigLayout('fill')) {
 							label(text: 'Generation')
@@ -390,15 +394,6 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 								})
 							}
 							panel(constraints: 'growy,wrap')
-							downloadPanel = panel(constraints: 'growx,spanx,wrap', layout: new MigLayout('fill,ins 0'), enabled: false) {
-								label(text: ' Pending Uploads: ')
-								uploadCountField = label(text: '0')
-								label(text: ' Pending Downloads: ')
-								downloadCountField = label(text: '0')
-								label(text: 'Current ')
-								loadTypeField = label(text: 'Upload')
-								downloadProgressBar = progressBar(constraints: 'growx', minimum: 0, maximum: 100)
-							}
 						}
 						panel(name: 'Stats', layout: new MigLayout('fill,ins 0')) {
 							field('x: ', 'x')
@@ -427,6 +422,19 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 							cloudFields.properties = textPane(constraints: 'grow,span,wrap')
 						}
 					}
+					label(text: ' ', foregroundPainter: makeTitlePainter('Copyright (C) 2008, TEAM CTHULHU', GlossPainter.GlossPosition.BOTTOM), constraints: 'growx, spanx, height 24')
+				}
+			}
+			statusBar() {
+//				downloadPanel = panel(constraints: new JXStatusBar.Constraint(JXStatusBar.Constraint.ResizeBehavior.FILL), layout: new MigLayout('ins 0,fillx,debug'), enabled: false, border: new BevelBorder(BevelBorder.LOWERED)) {
+				downloadPanel = panel(layout: new MigLayout('ins 0,fillx,debug'), enabled: false, border: new BevelBorder(BevelBorder.LOWERED)) {
+					label(text: 'Pending Uploads: ')
+					uploadCountField = label(text: '0')
+					label(text: ' Pending Downloads: ')
+					downloadCountField = label(text: '0')
+					label(text: ' Current ')
+					loadTypeField = label(text: 'Upload')
+					downloadProgressBar = progressBar(constraints: 'growx', minimum: 0, maximum: 100)
 				}
 			}
 		}
