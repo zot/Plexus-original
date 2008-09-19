@@ -244,47 +244,50 @@ public class Prep {
 				]
 				cb
 			}
-			def makeTitlePainter = {label ->
+			def makeTitlePainter = {label, pos = null ->
 				compoundPainter() {
 		            mattePainter(fillPaint: new Color(0x28, 0x26, 0x19))
 	            	textPainter(text: label, font: new FontUIResource("SansSerif", Font.BOLD, 12), fillPaint: new Color(0xFF, 0x99, 0x00))
-	            	glossPainter(paint:new Color(1.0f,1.0f,1.0f,0.2f), position:GlossPainter.GlossPosition.TOP)
+	            	glossPainter(paint:new Color(1.0f,1.0f,1.0f,0.2f), position: pos ?: GlossPainter.GlossPosition.TOP)
 				}
 	        }
-			titledPanel(title: ' ', titleForeground: Color.WHITE, titlePainter: makeTitlePainter('Plexus Properties'), border: new DropShadowBorder(Color.BLACK, 15)) {
-				tabbedPane() {
-					panel(name: 'Settings', layout: new MigLayout('fill')) {
-						label(text: 'Active Profile:')
-						panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
-							profilesCombo = comboBox(editable: true, actionPerformed: {if (profilesCombo) addProfile(profilesCombo?.editor?.item)})
-							removeProfileButton = button(text: 'Remove Profile', actionPerformed: { if (MessageBox.AreYouSure("Remove Profile", "Are you sure you want to remove the $props.profile profile?")) removeProfile()}, enabled: false)
+			titledPanel(title: ' ', titleForeground: Color.WHITE, titlePainter: makeTitlePainter('Properties For PLEXUS: Killer App of the Future - Here Today!'), border: new DropShadowBorder(Color.BLACK, 15)) {
+				panel(layout: new MigLayout('fill, ins 0')) {
+					tabbedPane(constraints: 'grow,wrap') {
+						panel(name: 'Settings', layout: new MigLayout('fill')) {
+							label(text: 'Active Profile:')
+							panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
+								profilesCombo = comboBox(editable: true, actionPerformed: {if (profilesCombo) addProfile(profilesCombo?.editor?.item)})
+								removeProfileButton = button(text: 'Remove Profile', actionPerformed: { if (MessageBox.AreYouSure("Remove Profile", "Are you sure you want to remove the $props.profile profile?")) removeProfile()}, enabled: false)
+							}
+							field('Your name: ', 'name')
+							field('Team/Guild: ', 'guild')
+							field('External IP: ', 'external_ip', 'growx')
+							button(text: "Discover", actionPerformed: { discoverExternalIP() }, constraints: 'wrap')
+							field('External port: ', 'external_port')
+							check('Use UPnP', 'upnp', 'If checked, make sure UPnP is enabled on your router')
+							field('Pastry port: ', 'pastry_port')
+							field('Pastry boot host: ', 'pastry_boot_host')
+							field('Pastry boot port: ', 'pastry_boot_port')
+							field('Sauer cmd: ', 'sauer_cmd')
+							field('Sauer port: ', 'sauer_port')
+							check('Verbose Log', 'verbose_log', 'Turn on verbose logging')
+							label(text: 'Launch sauer: ')
+							sauerButton = checkBox(text: 'If checked, it will auto start the Plexus custom Sauerbraten', actionPerformed: { evt -> props.sauer_mode = evt.source.selected ? 'launch' : 'noLaunch' }, constraints: 'wrap' )
+							label(text: "Node id: ")
+							nodeIdLabel = label(text: props.nodeId ?: "none", constraints: 'wrap, growx')
+							panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
+								button(text: "Start", actionPerformed: {f.dispose(); finished(true)})
+								button(text: "Save and Exit", actionPerformed: {f.dispose(); finished(false)} )
+								button(text: "Exit", actionPerformed: { System.exit(0) } )
+							}
+							button(text: 'Clear P2P Cache', actionPerformed: { clearCache() } )
 						}
-						field('Your name: ', 'name')
-						field('Team/Guild: ', 'guild')
-						field('External IP: ', 'external_ip', 'growx')
-						button(text: "Discover", actionPerformed: { discoverExternalIP() }, constraints: 'wrap')
-						field('External port: ', 'external_port')
-						check('Use UPnP', 'upnp', 'If checked, make sure UPnP is enabled on your router')
-						field('Pastry port: ', 'pastry_port')
-						field('Pastry boot host: ', 'pastry_boot_host')
-						field('Pastry boot port: ', 'pastry_boot_port')
-						field('Sauer cmd: ', 'sauer_cmd')
-						field('Sauer port: ', 'sauer_port')
-						check('Verbose Log', 'verbose_log', 'Turn on verbose logging')
-						label(text: 'Launch sauer: ')
-						sauerButton = checkBox(text: 'If checked, it will auto start the Plexus custom Sauerbraten', actionPerformed: { evt -> props.sauer_mode = evt.source.selected ? 'launch' : 'noLaunch' }, constraints: 'wrap' )
-						label(text: "Node id: ")
-						nodeIdLabel = label(text: props.nodeId ?: "none", constraints: 'wrap, growx')
-						panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
-							button(text: "Start", actionPerformed: {f.dispose(); finished(true)})
-							button(text: "Save and Exit", actionPerformed: {f.dispose(); finished(false)} )
-							button(text: "Exit", actionPerformed: { System.exit(0) } )
+						panel(name: 'Diagnostics', layout: new MigLayout('fill')) {
+							
 						}
-						button(text: 'Clear P2P Cache', actionPerformed: { clearCache() } )
 					}
-					panel(name: 'Diagnostics', layout: new MigLayout('fill')) {
-						
-					}
+					label(text: ' ', foregroundPainter: makeTitlePainter('Copyright (C) 2008, TEAM CTHULHU', GlossPainter.GlossPosition.BOTTOM), constraints: 'growx, height 24')
 				}
 			}
 			update()
