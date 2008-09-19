@@ -1,4 +1,4 @@
- import org.jdesktop.swingx.painter.GlossPainter
+import org.jdesktop.swingx.painter.GlossPainter
 import java.awt.Color
 import org.jdesktop.swingx.border.DropShadowBorder
 import groovy.swing.SwingXBuilder
