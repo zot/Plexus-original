@@ -71,7 +71,7 @@ public class DFMapBuilder {
 							def z1 = z + floorThick, len = Math.round(rle * cubesize / floorThick), floor = Math.round((cubesize  - floorThick) / floorThick), foo = Math.round(cubesize / floorThick)
 							//println  "selcube $x $y $z1 $len $foo $floor $floorThick 5; delcube"
 							sauer('delcube', "selcube $x $y $z1 $len $foo $floor $floorThick 5;  delcube")//$texture
-							sauer('wall1', "selcube $x $y $z $len 8 8 8 8; $texture")
+							sauer('wall1', "selcube $x $y $z $len 4 4 4 4; $texture")
 							remipCount += rle
 						}else if (first == 'w') {
 							sauer('delcube', "selcube $x $y $z $rle 1 1 $cubesize 5; delcube; editmat water")
