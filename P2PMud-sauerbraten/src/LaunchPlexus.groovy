@@ -10,6 +10,7 @@ public class LaunchPlexus {
 	def static runCount
 
 	public static void main(String[] args) {
+		System.setProperty("sun.java2d.d3d", "false")
 		Prep.main()
 		args = Prep.mainArgs
 		props = Prep.props

@@ -11,13 +11,17 @@ import groovy.swing.SwingXBuilder
 public class SwingXTest {
 	def static swing
 	public static void main(String[] args) {
-		useSwing()
+		System.setProperty("sun.java2d.d3d", "false");
+		System.getProperties().each {
+			println "$it.key: $it.value"
+		}
+		useSwingX()
 	}
 	def static useSwingX() {
 		try {
 		   UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
 		} catch (Exception e) {e.printStackTrace()}
-		UIManager.put("Label.font", new FontUIResource("SansSerif", Font.PLAIN, 12))
+//		UIManager.put("Label.font", new FontUIResource("SansSerif", Font.PLAIN, 12))
 		swing = new SwingXBuilder()
 		swing.frame(title: "hello", size: [300,300], show: true) {
 			def makeTitlePainter = {label ->

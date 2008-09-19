@@ -223,7 +223,7 @@ public class Prep {
 //		   UIManager.setLookAndFeel(new Plastic3DLookAndFeel());
 		   UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
 		} catch (Exception e) {e.printStackTrace()}
-		UIManager.put("Label.font", new FontUIResource("SansSerif", Font.PLAIN, 12))
+//		UIManager.put("Label.font", new FontUIResource("SansSerif", Font.PLAIN, 12))
 		swing = new SwingXBuilder()
 		f = swing.frame(title: 'Plexus Configuration', size: [600, 600], location: [200, 300], windowClosing: {System.exit(0)}, pack: true, show: true) {
 			def field = {lbl, key, constraints = 'span 2, wrap, growx' ->
@@ -252,34 +252,39 @@ public class Prep {
 				}
 	        }
 			titledPanel(title: ' ', titleForeground: Color.WHITE, titlePainter: makeTitlePainter('Plexus Properties'), border: new DropShadowBorder(Color.BLACK, 15)) {
-				panel(layout: new MigLayout('fillx')) {
-					label(text: 'Active Profile:')
-					panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
-						profilesCombo = comboBox(editable: true, actionPerformed: {if (profilesCombo) addProfile(profilesCombo?.editor?.item)})
-						removeProfileButton = button(text: 'Remove Profile', actionPerformed: { if (MessageBox.AreYouSure("Remove Profile", "Are you sure you want to remove the $props.profile profile?")) removeProfile()}, enabled: false)
+				tabbedPane() {
+					panel(name: 'Settings', layout: new MigLayout('fill')) {
+						label(text: 'Active Profile:')
+						panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
+							profilesCombo = comboBox(editable: true, actionPerformed: {if (profilesCombo) addProfile(profilesCombo?.editor?.item)})
+							removeProfileButton = button(text: 'Remove Profile', actionPerformed: { if (MessageBox.AreYouSure("Remove Profile", "Are you sure you want to remove the $props.profile profile?")) removeProfile()}, enabled: false)
+						}
+						field('Your name: ', 'name')
+						field('Team/Guild: ', 'guild')
+						field('External IP: ', 'external_ip', 'growx')
+						button(text: "Discover", actionPerformed: { discoverExternalIP() }, constraints: 'wrap')
+						field('External port: ', 'external_port')
+						check('Use UPnP', 'upnp', 'If checked, make sure UPnP is enabled on your router')
+						field('Pastry port: ', 'pastry_port')
+						field('Pastry boot host: ', 'pastry_boot_host')
+						field('Pastry boot port: ', 'pastry_boot_port')
+						field('Sauer cmd: ', 'sauer_cmd')
+						field('Sauer port: ', 'sauer_port')
+						check('Verbose Log', 'verbose_log', 'Turn on verbose logging')
+						label(text: 'Launch sauer: ')
+						sauerButton = checkBox(text: 'If checked, it will auto start the Plexus custom Sauerbraten', actionPerformed: { evt -> props.sauer_mode = evt.source.selected ? 'launch' : 'noLaunch' }, constraints: 'wrap' )
+						label(text: "Node id: ")
+						nodeIdLabel = label(text: props.nodeId ?: "none", constraints: 'wrap, growx')
+						panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
+							button(text: "Start", actionPerformed: {f.dispose(); finished(true)})
+							button(text: "Save and Exit", actionPerformed: {f.dispose(); finished(false)} )
+							button(text: "Exit", actionPerformed: { System.exit(0) } )
+						}
+						button(text: 'Clear P2P Cache', actionPerformed: { clearCache() } )
 					}
-					field('Your name: ', 'name')
-					field('Team/Guild: ', 'guild')
-					field('External IP: ', 'external_ip', 'growx')
-					button(text: "Discover", actionPerformed: { discoverExternalIP() }, constraints: 'wrap')
-					field('External port: ', 'external_port')
-					check('Use UPnP', 'upnp', 'If checked, make sure UPnP is enabled on your router')
-					field('Pastry port: ', 'pastry_port')
-					field('Pastry boot host: ', 'pastry_boot_host')
-					field('Pastry boot port: ', 'pastry_boot_port')
-					field('Sauer cmd: ', 'sauer_cmd')
-					field('Sauer port: ', 'sauer_port')
-					check('Verbose Log', 'verbose_log', 'Turn on verbose logging')
-					label(text: 'Launch sauer: ')
-					sauerButton = checkBox(text: 'If checked, it will auto start the Plexus custom Sauerbraten', actionPerformed: { evt -> props.sauer_mode = evt.source.selected ? 'launch' : 'noLaunch' }, constraints: 'wrap' )
-					label(text: "Node id: ")
-					nodeIdLabel = label(text: props.nodeId ?: "none", constraints: 'wrap, growx')
-					panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
-						button(text: "Start", actionPerformed: {f.dispose(); finished(true)})
-						button(text: "Save and Exit", actionPerformed: {f.dispose(); finished(false)} )
-						button(text: "Exit", actionPerformed: { System.exit(0) } )
+					panel(name: 'Diagnostics', layout: new MigLayout('fill')) {
+						
 					}
-					button(text: 'Clear P2P Cache', actionPerformed: { clearCache() } )
 				}
 			}
 			update()

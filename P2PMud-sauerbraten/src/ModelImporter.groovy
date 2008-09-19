@@ -24,9 +24,10 @@ class ModelImporter {
    	] as Properties
 	
 	static void main(args) {
+		System.setProperty("sun.java2d.d3d", "false")
 		try {
 //			   UIManager.setLookAndFeel(new Plastic3DLookAndFeel());
-			   UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
+			   UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel")
 			} catch (Exception e) {}
 		
 		readProps()
