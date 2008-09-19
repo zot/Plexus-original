@@ -1077,6 +1077,19 @@ void mapname()
 
 COMMAND(mapname, "");
 
+#ifdef TC
+void mappath()
+{
+	char path[256];
+	_snprintf(path, sizeof(path), "packages%c%s", PATHDIV, cl->getclientmap());
+	char *mapogz = strstr(path, "/map");
+	if (!mapogz) mapogz = strstr(path, "\\map");
+	if (mapogz) *mapogz = '\0';
+	result(path);
+}
+COMMAND(mappath, "");
+#endif
+
 void mapsize()
 {
     int size = 0;

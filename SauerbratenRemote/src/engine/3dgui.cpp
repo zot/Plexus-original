@@ -497,7 +497,14 @@ struct gui : g3d_gui
         if(tiled) defaultshader->set();
         if(overlaid) 
         {
+#ifdef TC
+			char buf[256];
+			extern char *tc_guipath;
+			_snprintf(buf, sizeof(buf), "%s%cguioverlay.png", (tc_guipath == NULL || *tc_guipath == '\0') ? "data" : tc_guipath, PATHDIV);
+            if(!overlaytex || 0 != strcmp(buf, overlaytex->name)) overlaytex = textureload(buf);
+#else
             if(!overlaytex) overlaytex = textureload("data/guioverlay.png");
+#endif
             glColor3fv(light.v);
             glBindTexture(GL_TEXTURE_2D, overlaytex->id);
             glBegin(GL_QUADS);
@@ -510,7 +517,14 @@ struct gui : g3d_gui
     {		
         if(visible())
         {
+#ifdef TC
+			char buf[256];
+			extern char *tc_guipath;
+			_snprintf(buf, sizeof(buf), "%s%cguislider.png", (tc_guipath == NULL || *tc_guipath == '\0') ? "data" : tc_guipath, PATHDIV);
+            if(!slidertex || 0 != strcmp(buf, slidertex->name)) slidertex = textureload(buf);
+#else
             if(!slidertex) slidertex = textureload("data/guislider.png");
+#endif
             glEnable(GL_TEXTURE_2D);
             glBindTexture(GL_TEXTURE_2D, slidertex->id);
             glBegin(GL_QUADS);
@@ -549,7 +563,13 @@ struct gui : g3d_gui
         
             if(icon)
             {
+#ifdef TC
+				char tname[256];
+				extern char *tc_guipath;
+				_snprintf(tname, sizeof(tname), "%s%cicons%c%s.jpg", (tc_guipath == NULL || *tc_guipath == '\0') ? "packages" : tc_guipath, PATHDIV, PATHDIV, icon);
+#else
                 s_sprintfd(tname)("packages/icons/%s.jpg", icon);
+#endif
                 icon_(textureload(tname), false, false, x, cury, ICON_SIZE, clickable && hit);
                 x += ICON_SIZE;
             }
@@ -565,7 +585,14 @@ struct gui : g3d_gui
 
     void skin_(int x, int y, int gapw, int gaph, int start, int n)//int vleft, int vright, int vtop, int vbottom, int start, int n) 
     {
+#ifdef TC
+		char buf[256];
+		extern char *tc_guipath;
+		_snprintf(buf, sizeof(buf), "%s%cguiskin.png", (tc_guipath == NULL || *tc_guipath == '\0') ? "data" : tc_guipath, PATHDIV);
+        if(!skintex || 0 != strcmp(buf, skintex->name)) skintex = textureload(buf);
+#else
         if(!skintex) skintex = textureload("data/guiskin.png");
+#endif
         glBindTexture(GL_TEXTURE_2D, skintex->id);
         int gapx1 = INT_MAX, gapy1 = INT_MAX, gapx2 = INT_MAX, gapy2 = INT_MAX;
         float wscale = 1.0f/(SKIN_W*SKIN_SCALE), hscale = 1.0f/(SKIN_H*SKIN_SCALE);
