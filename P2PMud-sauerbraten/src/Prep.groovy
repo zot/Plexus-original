@@ -284,7 +284,7 @@ public class Prep {
 							button(text: 'Clear P2P Cache', toolTipText: 'Clear the p2p file cache for the current profile', actionPerformed: { clearCache() } )
 						}
 						panel(name: 'Diagnostics', layout: new MigLayout('fill')) {
-							
+							button(text: 'Test connectivity', actionPerformed: {println testConnectivity()})
 						}
 					}
 					label(text: ' ', foregroundPainter: makeTitlePainter('Copyright (C) 2008, TEAM CTHULHU', GlossPainter.GlossPosition.BOTTOM), constraints: 'growx, height 24')
@@ -293,6 +293,20 @@ public class Prep {
 			update()
 			chooseProfile(props.last_profile)
 		}
+	}
+	def static testConnectivity(listen = true) {
+		def port = Integer.parseInt(props.pastry_port)
+		def sock = listen ? new ServerSocket(port) : null
+		def con = new URL("http://plubble.com/p2p.php?port=$port").openConnection()
+		def conProps = [:] as Properties
+		def input = con.getInputStream()
+
+		conProps.load(input)
+		input.close()
+		if (sock) {
+			sock.close()
+		}
+		return conProps
 	}
 	def static clearCache() {
 		def dir = new File('fred').getAbsoluteFile().getParent()
