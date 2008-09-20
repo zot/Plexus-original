@@ -23,20 +23,6 @@ public class Prep {
 	def static plexusdir
 	def static lock = new Object()
 	def static lastPeerName
-	def static defaultProps = [
-		sauer_port: '12345',
-		name: 'bubba-' + System.currentTimeMillis(),
-		guild: '',
-		pastry_port: '3993',
-		pastry_boot_host: '-',
-		pastry_boot_port: '3993',
-		external_ip: '',
-		external_port: '3993',
-		headless: '0',
-		upnp: '1',
-		sauer_mode: 'launch',
-		past_storage:'/tmp/storage-9090'
-	] as Properties
 	def static props = new Props()
 	def static fields = [:]
 	def static profilesCombo
@@ -46,18 +32,6 @@ public class Prep {
 	def static sauerDir
 	def static final MARKER = "\n//THIS LINE ADDED BY TEAM CTHULHU'S PLEXUS: PLEASE DO NOT EDIT THIS LINE OR THE NEXT ONE\n"
 	def static swing
-
-	def static initProps() {
-		for (e in defaultProps) {
-			props[e.key] = e.value
-		}
-		if (System.getProperty('os.name').equalsIgnoreCase('linux')) {
-			props.sauer_cmd = 'packages/plexus/dist/sauerbraten_plexus_linux -t'
-		} else {
-			props.sauer_cmd = 'packages/plexus/dist/sauerbraten_plexus_windows.exe -t'
-		}
-		props.sauer_cmd += " -lplexus/dist/limbo/map.ogz"
-	}
 
 	def static verifySauerDir(dir) {
 		while (!Plexus.verifySauerdir(dir)) {
@@ -75,11 +49,8 @@ public class Prep {
 		sauerDir = dir
 	}
 	public static void main(String[] args) {
-		initProps()
-		def dir = new File('fred').getAbsoluteFile().getParent()
-		
+		def dir = new File('').getAbsoluteFile()
 		plexusdir = new File(dir, 'packages/plexus')
-		props.file = new File(plexusdir, 'plexus.properties')
 		readProps()
 		
 		if (props.headless != '0') {
@@ -191,10 +162,6 @@ public class Prep {
 	}
 	def static readProps() {
 		props.load()
-		// if there are any missing props after a read, fill them in with defaults
-		for (e in defaultProps) {
-			if (!props[e.key]) props[e.key] = e.value
-		}
 		lastPeerName = props.name
 	}
 	def static discoverExternalIP() {
@@ -354,7 +321,7 @@ public class Prep {
 		if (prof) {
 			if (props.addProfile(prof)) {
 				props.setProfile(prof)
-				initProps()
+				props.initProps()
 			}
 		}
 		chooseProfile(prof)

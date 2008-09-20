@@ -124,6 +124,15 @@ public class SauerCmds extends Cmds {
 	def autoconfig(name, guild, port) {
 		// attempt to create a profile with the name & guild
 		// auto-discover plubble.com and boot port
+		def props = new Props()
+		props.addProfile(name)
+		props.initProps()
+		props.name = name
+		props.guild = guild
+		props.pastry_port = port
+		props.pastry_boot_port = port
+		props.store()
+		
 		def result = false
 		main.sauer('p2p', result ? "showgui [P2P Success]" : "showgui [P2P Failure]")
 		main.dumpCommands()
