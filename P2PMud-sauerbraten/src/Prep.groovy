@@ -227,8 +227,10 @@ public class Prep {
 //		UIManager.put("Label.font", new FontUIResource("SansSerif", Font.PLAIN, 12))
 		swing = new SwingXBuilder()
 		f = swing.frame(title: 'Plexus Configuration', size: [600, 600], location: [200, 300], windowClosing: {System.exit(0)}, pack: true, show: true) {
-			def field = {lbl, key, constraints = 'span 2, wrap, growx' ->
-				label(text: lbl)
+			def field = {lbl, key, constraints = 'span 2, wrap, growx', useLabel = true ->
+				if (useLabel) {
+					label(text: lbl)
+				}
 				def tf = textField(actionPerformed: {setprop(key)}, focusLost: {setprop(key)}, text: props[key], constraints: constraints)
 				fields[key] = [
 					setText: {value -> tf.text = value},
@@ -263,7 +265,7 @@ public class Prep {
 								panel(constraints: 'growx')
 							}
 							panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Player Settings'), constraints: 'wrap,spanx,growx') {
-								field('Your name: ', 'name')
+								field('Your name: ', 'name', 'span 2, growx')
 								field('Team/Guild: ', 'guild')
 							}
 							panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Peer Settings'), constraints: 'wrap,spanx,growx') {
@@ -272,14 +274,20 @@ public class Prep {
 								nodeIdLabel = label(text: props.nodeId ?: "none", constraints: 'wrap, growx')
 								field('Pastry port: ', 'pastry_port')
 								check('Override IP autodetect', 'override_autodetect', 'This will prevent PLEXUS from validating your IP address')
-								field('External IP: ', 'external_ip', 'growx')
-								button(text: "Discover", toolTipText: 'Use UPnP to discover your external IP. This may not function properly if you are behind multiple firewalls.', actionPerformed: { props.external_ip = testConnectivity().address; showprop('external_ip')}, constraints: 'wrap')
-								field('External port: ', 'external_port')
+								label('External IP: ')
+								panel(layout: new MigLayout('fill, ins 0'), constraints: 'wrap, growx, spanx') {
+									field('', 'external_ip', 'growx', false)
+									button(text: "Discover", toolTipText: 'Use UPnP to discover your external IP. This may not function properly if you are behind multiple firewalls.', actionPerformed: { props.external_ip = testConnectivity().address; showprop('external_ip')})
+									field('Port: ', 'external_port', 'width 50px,wrap')
+								}
 								check('Use UPnP', 'upnp', 'If checked, make sure UPnP is enabled on your router')
 							}
 							panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Boot Peer Settings'), constraints: 'wrap,spanx,growx') {
-								field('Pastry boot host: ', 'pastry_boot_host')
-								field('Pastry boot port: ', 'pastry_boot_port')
+								label('Pastry boot host: ')
+								panel(layout: new MigLayout('fill, ins 0'), constraints: 'wrap, growx, spanx') {
+									field('', 'pastry_boot_host', 'growx', false)
+									field('Port: ', 'pastry_boot_port', 'width 50px')
+								}
 							}
 							panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Sauerbraten Settings'), constraints: 'wrap,spanx,growx') {
 								field('Sauer cmd: ', 'sauer_cmd')
