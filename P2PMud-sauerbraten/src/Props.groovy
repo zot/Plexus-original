@@ -38,7 +38,7 @@ class Props {
 			properties.load(input)
 			input.close()
 			profiles = [*(properties?.profiles ? properties.profiles.split(',') : [])] as Set
-			if (properities?.last_profile == null) properties.last_profile = ""
+			if (properties.last_profile == null) properties.last_profile = ""
 			last_profile = properties.last_profile
 		}
 	}
