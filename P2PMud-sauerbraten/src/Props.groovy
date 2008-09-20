@@ -83,6 +83,9 @@ class Props {
 			last_profile = properties.last_profile = prof
 		}
 	}
+	def containsProfile(prof) {
+		return profiles.contains(prof);
+	}
 	def addProfile(prof) {
 		if (!profiles.contains(prof)) {
 			profiles.add prof

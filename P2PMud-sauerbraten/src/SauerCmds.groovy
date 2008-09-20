@@ -125,7 +125,10 @@ public class SauerCmds extends Cmds {
 		// attempt to create a profile with the name & guild
 		// auto-discover plubble.com and boot port
 		def props = new Props()
-		props.addProfile(name)
+		props.load()
+		if (!props.containsProfile(name)) props.addProfile(name)
+		props.setProfile(name)
+		props.setLastProfile(name)
 		props.initProps()
 		props.name = name
 		props.guild = guild
