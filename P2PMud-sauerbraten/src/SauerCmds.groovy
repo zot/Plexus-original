@@ -121,8 +121,11 @@ public class SauerCmds extends Cmds {
 	def hit(shooter, target, type) {
 		println "HIT shooter: $shooter, target: $target, type: $type"
 	}
-	def autoconfig(name, guild) {
+	def autoconfig(name, guild, port) {
 		// attempt to create a profile with the name & guild
 		// auto-discover plubble.com and boot port
+		def result = false
+		main.sauer('p2p', result ? "showgui [P2P Success]" : "showgui [P2P Failure]")
+		main.dumpCommands()
 	}
 }
