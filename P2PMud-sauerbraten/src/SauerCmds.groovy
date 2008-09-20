@@ -121,4 +121,8 @@ public class SauerCmds extends Cmds {
 	def hit(shooter, target, type) {
 		println "HIT shooter: $shooter, target: $target, type: $type"
 	}
+	def autoconfig(name, guild) {
+		// attempt to create a profile with the name & guild
+		// auto-discover plubble.com and boot port
+	}
 }
