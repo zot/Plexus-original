@@ -263,7 +263,7 @@ public class Prep {
 							field('Your name: ', 'name')
 							field('Team/Guild: ', 'guild')
 							field('External IP: ', 'external_ip', 'growx')
-							button(text: "Discover", actionPerformed: { discoverExternalIP() }, constraints: 'wrap')
+							button(text: "Discover", toolTipText: 'Use UPnP to discover your external IP. This may not function properly if you are behind multiple firewalls.', actionPerformed: { discoverExternalIP() }, constraints: 'wrap')
 							field('External port: ', 'external_port')
 							check('Use UPnP', 'upnp', 'If checked, make sure UPnP is enabled on your router')
 							field('Pastry port: ', 'pastry_port')
@@ -277,11 +277,11 @@ public class Prep {
 							label(text: "Node id: ")
 							nodeIdLabel = label(text: props.nodeId ?: "none", constraints: 'wrap, growx')
 							panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
-								button(text: "Start", actionPerformed: {f.dispose(); finished(true)})
-								button(text: "Save and Exit", actionPerformed: {f.dispose(); finished(false)} )
-								button(text: "Exit", actionPerformed: { System.exit(0) } )
+								button(text: "Start", toolTipText: 'Press to start Plexus', actionPerformed: {f.dispose(); finished(true)})
+								button(text: "Save and Exit", toolTipText: 'Save your changes and exit', actionPerformed: {f.dispose(); finished(false)} )
+								button(text: "Exit", toolTipText: 'Exit without saving your changes', actionPerformed: { System.exit(0) } )
 							}
-							button(text: 'Clear P2P Cache', actionPerformed: { clearCache() } )
+							button(text: 'Clear P2P Cache', toolTipText: 'Clear the p2p file cache for the current profile', actionPerformed: { clearCache() } )
 						}
 						panel(name: 'Diagnostics', layout: new MigLayout('fill')) {
 							
