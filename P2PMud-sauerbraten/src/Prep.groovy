@@ -1,4 +1,8 @@
-import javax.swing.ScrollPaneConstantsimport org.jdesktop.swingx.painter.TextPainter
+import javax.swing.BoxLayout
+import javax.swing.OverlayLayout
+import java.awt.CardLayout
+import javax.swing.ScrollPaneConstants
+import org.jdesktop.swingx.painter.TextPainter
 import javax.swing.plaf.FontUIResource
 import java.awt.Font
 import org.jdesktop.swingx.painter.GlossPainter
@@ -230,45 +234,47 @@ public class Prep {
 						panel(constraints: 'growx')
 					}
 					tabbedPane(constraints: 'grow,wrap') {
-						scrollPane(name: 'Settings', verticalScrollBarPolicy: ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, horizontalScrollBarPolicy: ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED) {
-							panel(layout: new MigLayout('fillx,ins 0')) {
-								panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Player'), constraints: 'wrap,spanx,growx') {
-									field('Your name: ', 'name', 'span 2, growx')
-									field('Team/Guild: ', 'guild')
-								}
-								panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Peer'), constraints: 'wrap,spanx,growx') {
-									check('Verbose Log', 'verbose_log', 'Turn on verbose logging')
-									label(text: "Node id: ")
-									nodeIdLabel = label(text: props.nodeId ?: "none", constraints: 'wrap, growx')
-									field('Pastry port: ', 'pastry_port')
-									check('Override IP autodetect', 'override_autodetect', 'This will prevent PLEXUS from validating your IP address')
-									label('External IP: ')
-									panel(layout: new MigLayout('fill, ins 0'), constraints: 'wrap, growx, spanx') {
-										field('', 'external_ip', 'growx', false)
-										button(text: "Discover", toolTipText: 'Use UPnP to discover your external IP. This may not function properly if you are behind multiple firewalls.', actionPerformed: { props.external_ip = testConnectivity().address; showprop('external_ip')})
-										field('Port: ', 'external_port', 'width 50px,wrap')
+						scroll = scrollPane(name: 'Settings', verticalScrollBarPolicy: ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, horizontalScrollBarPolicy: ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER) {
+							box() {
+								panel(layout: new MigLayout('fillx,ins 0')) {
+									panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Player'), constraints: 'wrap,spanx,growx') {
+										field('Your name: ', 'name', 'span 2, growx')
+										field('Team/Guild: ', 'guild')
 									}
-									check('Use UPnP', 'upnp', 'If checked, make sure UPnP is enabled on your router')
-								}
-								panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Boot Peer'), constraints: 'wrap,spanx,growx') {
-									label('Pastry boot host: ')
-									panel(layout: new MigLayout('fill, ins 0'), constraints: 'wrap, growx, spanx') {
-										field('', 'pastry_boot_host', 'growx', false)
-										field('Port: ', 'pastry_boot_port', 'width 50px')
+									panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Peer'), constraints: 'wrap,spanx,growx') {
+										check('Verbose Log', 'verbose_log', 'Turn on verbose logging')
+										label(text: "Node id: ")
+										nodeIdLabel = label(text: props.nodeId ?: "none", constraints: 'wrap, growx')
+										field('Pastry port: ', 'pastry_port')
+										check('Override IP autodetect', 'override_autodetect', 'This will prevent PLEXUS from validating your IP address')
+										label('External IP: ')
+										panel(layout: new MigLayout('fill, ins 0'), constraints: 'wrap, growx, spanx') {
+											field('', 'external_ip', 'growx', false)
+											button(text: "Discover", toolTipText: 'Use UPnP to discover your external IP. This may not function properly if you are behind multiple firewalls.', actionPerformed: { props.external_ip = testConnectivity().address; showprop('external_ip')})
+											field('Port: ', 'external_port', 'width 50px,wrap')
+										}
+										check('Use UPnP', 'upnp', 'If checked, make sure UPnP is enabled on your router')
 									}
+									panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Boot Peer'), constraints: 'wrap,spanx,growx') {
+										label('Pastry boot host: ')
+										panel(layout: new MigLayout('fill, ins 0'), constraints: 'wrap, growx, spanx') {
+											field('', 'pastry_boot_host', 'growx', false)
+											field('Port: ', 'pastry_boot_port', 'width 50px')
+										}
+									}
+									panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Sauerbraten'), constraints: 'wrap,spanx,growx') {
+										field('Sauer cmd: ', 'sauer_cmd')
+										field('Sauer port: ', 'sauer_port')
+										label(text: 'Launch sauer: ')
+										sauerButton = checkBox(text: 'If checked, it will auto start the Plexus custom Sauerbraten', actionPerformed: { evt -> props.sauer_mode = evt.source.selected ? 'launch' : 'noLaunch' }, constraints: 'wrap' )
+									}
+									panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
+										button(text: "Start", toolTipText: 'Press to start Plexus', actionPerformed: {f.dispose(); finished(true)})
+										button(text: "Save and Exit", toolTipText: 'Save your changes and exit', actionPerformed: {f.dispose(); finished(false)} )
+										button(text: "Exit", toolTipText: 'Exit without saving your changes', actionPerformed: { System.exit(0) } )
+									}
+									button(text: 'Clear P2P Cache', toolTipText: 'Clear the p2p file cache for the current profile', actionPerformed: { clearCache() } )
 								}
-								panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Sauerbraten'), constraints: 'wrap,spanx,growx') {
-									field('Sauer cmd: ', 'sauer_cmd')
-									field('Sauer port: ', 'sauer_port')
-									label(text: 'Launch sauer: ')
-									sauerButton = checkBox(text: 'If checked, it will auto start the Plexus custom Sauerbraten', actionPerformed: { evt -> props.sauer_mode = evt.source.selected ? 'launch' : 'noLaunch' }, constraints: 'wrap' )
-								}
-								panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
-									button(text: "Start", toolTipText: 'Press to start Plexus', actionPerformed: {f.dispose(); finished(true)})
-									button(text: "Save and Exit", toolTipText: 'Save your changes and exit', actionPerformed: {f.dispose(); finished(false)} )
-									button(text: "Exit", toolTipText: 'Exit without saving your changes', actionPerformed: { System.exit(0) } )
-								}
-								button(text: 'Clear P2P Cache', toolTipText: 'Clear the p2p file cache for the current profile', actionPerformed: { clearCache() } )
 							}
 						}
 						panel(name: 'Diagnostics', layout: new MigLayout('fill')) {
@@ -281,6 +287,7 @@ public class Prep {
 			}
 			update()
 			chooseProfile(props.last_profile)
+			scroll.verticalScrollBar.unitIncrement = 16
 		}
 	}
 	def static testConnectivity(listen = true) {
