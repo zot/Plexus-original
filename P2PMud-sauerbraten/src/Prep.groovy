@@ -17,6 +17,7 @@ import net.sbbi.upnp.impls.InternetGatewayDevice;
 import p2pmud.MessageBox
 
 public class Prep {
+	def static conProps
 	def static success = false
 	def static mainArgs
 	def static plexusdir
@@ -255,27 +256,37 @@ public class Prep {
 				panel(layout: new MigLayout('fill, ins 0')) {
 					tabbedPane(constraints: 'grow,wrap') {
 						panel(name: 'Settings', layout: new MigLayout('fill')) {
-							label(text: 'Active Profile:')
-							panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
+							panel(layout: new MigLayout('fillx'), constraints: 'wrap,spanx,growx') {
+								label(text: 'Active Profile:')
 								profilesCombo = comboBox(editable: true, actionPerformed: {if (profilesCombo) addProfile(profilesCombo?.editor?.item)})
 								removeProfileButton = button(text: 'Remove Profile', actionPerformed: { if (MessageBox.AreYouSure("Remove Profile", "Are you sure you want to remove the $props.profile profile?")) removeProfile()}, enabled: false)
+								panel(constraints: 'growx')
 							}
-							field('Your name: ', 'name')
-							field('Team/Guild: ', 'guild')
-							field('External IP: ', 'external_ip', 'growx')
-							button(text: "Discover", toolTipText: 'Use UPnP to discover your external IP. This may not function properly if you are behind multiple firewalls.', actionPerformed: { discoverExternalIP() }, constraints: 'wrap')
-							field('External port: ', 'external_port')
-							check('Use UPnP', 'upnp', 'If checked, make sure UPnP is enabled on your router')
-							field('Pastry port: ', 'pastry_port')
-							field('Pastry boot host: ', 'pastry_boot_host')
-							field('Pastry boot port: ', 'pastry_boot_port')
-							field('Sauer cmd: ', 'sauer_cmd')
-							field('Sauer port: ', 'sauer_port')
-							check('Verbose Log', 'verbose_log', 'Turn on verbose logging')
-							label(text: 'Launch sauer: ')
-							sauerButton = checkBox(text: 'If checked, it will auto start the Plexus custom Sauerbraten', actionPerformed: { evt -> props.sauer_mode = evt.source.selected ? 'launch' : 'noLaunch' }, constraints: 'wrap' )
-							label(text: "Node id: ")
-							nodeIdLabel = label(text: props.nodeId ?: "none", constraints: 'wrap, growx')
+							panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Player Settings'), constraints: 'wrap,spanx,growx') {
+								field('Your name: ', 'name')
+								field('Team/Guild: ', 'guild')
+							}
+							panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Peer Settings'), constraints: 'wrap,spanx,growx') {
+								check('Verbose Log', 'verbose_log', 'Turn on verbose logging')
+								label(text: "Node id: ")
+								nodeIdLabel = label(text: props.nodeId ?: "none", constraints: 'wrap, growx')
+								field('Pastry port: ', 'pastry_port')
+								check('Override IP autodetect', 'override_autodetect', 'This will prevent PLEXUS from validating your IP address')
+								field('External IP: ', 'external_ip', 'growx')
+								button(text: "Discover", toolTipText: 'Use UPnP to discover your external IP. This may not function properly if you are behind multiple firewalls.', actionPerformed: { props.external_ip = testConnectivity().address; showprop('external_ip')}, constraints: 'wrap')
+								field('External port: ', 'external_port')
+								check('Use UPnP', 'upnp', 'If checked, make sure UPnP is enabled on your router')
+							}
+							panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Boot Peer Settings'), constraints: 'wrap,spanx,growx') {
+								field('Pastry boot host: ', 'pastry_boot_host')
+								field('Pastry boot port: ', 'pastry_boot_port')
+							}
+							panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Sauerbraten Settings'), constraints: 'wrap,spanx,growx') {
+								field('Sauer cmd: ', 'sauer_cmd')
+								field('Sauer port: ', 'sauer_port')
+								label(text: 'Launch sauer: ')
+								sauerButton = checkBox(text: 'If checked, it will auto start the Plexus custom Sauerbraten', actionPerformed: { evt -> props.sauer_mode = evt.source.selected ? 'launch' : 'noLaunch' }, constraints: 'wrap' )
+							}
 							panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
 								button(text: "Start", toolTipText: 'Press to start Plexus', actionPerformed: {f.dispose(); finished(true)})
 								button(text: "Save and Exit", toolTipText: 'Save your changes and exit', actionPerformed: {f.dispose(); finished(false)} )
@@ -295,16 +306,17 @@ public class Prep {
 		}
 	}
 	def static testConnectivity(listen = true) {
-		def port = Integer.parseInt(props.pastry_port)
-		def sock = listen ? new ServerSocket(port) : null
-		def con = new URL("http://plubble.com/p2p.php?port=$port").openConnection()
-		def conProps = [:] as Properties
-		def input = con.getInputStream()
+		if (conProps?.status != 'success') {
+			def sock = listen ? new ServerSocket(Integer.parseInt(props.pastry_port)) : null
+			def con = new URL("http://plubble.com/p2p.php?port=$props.external_port").openConnection()
+			def input = con.getInputStream()
 
-		conProps.load(input)
-		input.close()
-		if (sock) {
-			sock.close()
+			conProps = [:] as Properties
+			conProps.load(input)
+			input.close()
+			if (sock) {
+				sock.close()
+			}
 		}
 		return conProps
 	}
