@@ -256,19 +256,19 @@ public class Prep {
 	        }
 			titledPanel(title: ' ', titleForeground: Color.WHITE, titlePainter: makeTitlePainter('Properties For PLEXUS: Killer App of the Future - Here Today!'), border: new DropShadowBorder(Color.BLACK, 15)) {
 				panel(layout: new MigLayout('fill, ins 0')) {
+					panel(layout: new MigLayout('fillx'), constraints: 'wrap,spanx,growx') {
+						label(text: 'Active Profile:')
+						profilesCombo = comboBox(editable: true, actionPerformed: {if (profilesCombo) addProfile(profilesCombo?.editor?.item)})
+						removeProfileButton = button(text: 'Remove Profile', actionPerformed: { if (MessageBox.AreYouSure("Remove Profile", "Are you sure you want to remove the $props.profile profile?")) removeProfile()}, enabled: false)
+						panel(constraints: 'growx')
+					}
 					tabbedPane(constraints: 'grow,wrap') {
 						panel(name: 'Settings', layout: new MigLayout('fill')) {
-							panel(layout: new MigLayout('fillx'), constraints: 'wrap,spanx,growx') {
-								label(text: 'Active Profile:')
-								profilesCombo = comboBox(editable: true, actionPerformed: {if (profilesCombo) addProfile(profilesCombo?.editor?.item)})
-								removeProfileButton = button(text: 'Remove Profile', actionPerformed: { if (MessageBox.AreYouSure("Remove Profile", "Are you sure you want to remove the $props.profile profile?")) removeProfile()}, enabled: false)
-								panel(constraints: 'growx')
-							}
-							panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Player Settings'), constraints: 'wrap,spanx,growx') {
+							panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Player'), constraints: 'wrap,spanx,growx') {
 								field('Your name: ', 'name', 'span 2, growx')
 								field('Team/Guild: ', 'guild')
 							}
-							panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Peer Settings'), constraints: 'wrap,spanx,growx') {
+							panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Peer'), constraints: 'wrap,spanx,growx') {
 								check('Verbose Log', 'verbose_log', 'Turn on verbose logging')
 								label(text: "Node id: ")
 								nodeIdLabel = label(text: props.nodeId ?: "none", constraints: 'wrap, growx')
@@ -282,14 +282,14 @@ public class Prep {
 								}
 								check('Use UPnP', 'upnp', 'If checked, make sure UPnP is enabled on your router')
 							}
-							panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Boot Peer Settings'), constraints: 'wrap,spanx,growx') {
+							panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Boot Peer'), constraints: 'wrap,spanx,growx') {
 								label('Pastry boot host: ')
 								panel(layout: new MigLayout('fill, ins 0'), constraints: 'wrap, growx, spanx') {
 									field('', 'pastry_boot_host', 'growx', false)
 									field('Port: ', 'pastry_boot_port', 'width 50px')
 								}
 							}
-							panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Sauerbraten Settings'), constraints: 'wrap,spanx,growx') {
+							panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Sauerbraten'), constraints: 'wrap,spanx,growx') {
 								field('Sauer cmd: ', 'sauer_cmd')
 								field('Sauer port: ', 'sauer_port')
 								label(text: 'Launch sauer: ')
@@ -303,7 +303,8 @@ public class Prep {
 							button(text: 'Clear P2P Cache', toolTipText: 'Clear the p2p file cache for the current profile', actionPerformed: { clearCache() } )
 						}
 						panel(name: 'Diagnostics', layout: new MigLayout('fill')) {
-							button(text: 'Test connectivity', actionPerformed: {println testConnectivity()})
+							button(text: 'Test connectivity', actionPerformed: {println testConnectivity()}, constraints: 'wrap')
+							panel(constraints: 'grow')
 						}
 					}
 					label(text: ' ', foregroundPainter: makeTitlePainter('Copyright (C) 2008, TEAM CTHULHU', GlossPainter.GlossPosition.BOTTOM), constraints: 'growx, height 24')
