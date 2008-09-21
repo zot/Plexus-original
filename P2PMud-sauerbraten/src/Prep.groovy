@@ -188,7 +188,7 @@ public class Prep {
 	}
 	def static showPropEditor() {
 		def p = props
-		def f
+		def propsWindow
 
 		//PlasticLookAndFeel.setPlasticTheme(new DesertBlue());
 		try {
@@ -196,8 +196,15 @@ public class Prep {
 		   UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
 		} catch (Exception e) {e.printStackTrace()}
 //		UIManager.put("Label.font", new FontUIResource("SansSerif", Font.PLAIN, 12))
+		def showTitle = {
+			def item = profilesCombo?.editor?.item
+
+			if (propsWindow) {
+				propsWindow.title = "PLEXUS Configuration [${item ? item as String : 'DEFAULT'}]"
+			}
+		}
 		swing = new SwingXBuilder()
-		f = swing.frame(title: 'Plexus Configuration', size: [600, 600], location: [200, 300], windowClosing: {System.exit(0)}, pack: true, show: true) {
+		propsWindow = swing.frame(title: 'Plexus Configuration', size: [600, 600], location: [200, 300], windowClosing: {System.exit(0)}, pack: true, show: true, windowOpened: {showTitle()}) {
 			def field = {lbl, key, constraints = 'span 2, wrap, growx', useLabel = true ->
 				if (useLabel) {
 					label(text: lbl)
@@ -227,16 +234,19 @@ public class Prep {
 	        }
 			titledPanel(title: ' ', titleForeground: Color.WHITE, titlePainter: makeTitlePainter('Properties For PLEXUS: Killer App of the Future - Here Today!'), border: new DropShadowBorder(Color.BLACK, 15)) {
 				panel(layout: new MigLayout('fill, ins 0')) {
-					panel(layout: new MigLayout('fillx'), constraints: 'wrap,spanx,growx') {
-						label(text: 'Active Profile:')
-						profilesCombo = comboBox(editable: true, actionPerformed: {if (profilesCombo) addProfile(profilesCombo?.editor?.item)})
-						removeProfileButton = button(text: 'Remove Profile', actionPerformed: { if (MessageBox.AreYouSure("Remove Profile", "Are you sure you want to remove the $props.profile profile?")) removeProfile()}, enabled: false)
-						panel(constraints: 'growx')
-					}
 					tabbedPane(constraints: 'grow,wrap') {
 						scroll = scrollPane(name: 'Settings', verticalScrollBarPolicy: ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, horizontalScrollBarPolicy: ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER) {
 							box() {
 								panel(layout: new MigLayout('fillx,ins 0')) {
+									panel(layout: new MigLayout('fillx'), constraints: 'wrap,spanx,growx') {
+										label(text: 'Active Profile:')
+										profilesCombo = comboBox(editable: true, actionPerformed: {
+											if (profilesCombo) addProfile(profilesCombo?.editor?.item)
+											showTitle()
+										})
+										removeProfileButton = button(text: 'Remove Profile', actionPerformed: { if (MessageBox.AreYouSure("Remove Profile", "Are you sure you want to remove the $props.profile profile?")) removeProfile()}, enabled: false)
+										panel(constraints: 'growx')
+									}
 									panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Player'), constraints: 'wrap,spanx,growx') {
 										field('Your name: ', 'name', 'span 2, growx')
 										field('Team/Guild: ', 'guild')
@@ -246,11 +256,10 @@ public class Prep {
 										label(text: "Node id: ")
 										nodeIdLabel = label(text: props.nodeId ?: "none", constraints: 'wrap, growx')
 										field('Pastry port: ', 'pastry_port')
-										check('Override IP autodetect', 'override_autodetect', 'This will prevent PLEXUS from validating your IP address')
 										label('External IP: ')
 										panel(layout: new MigLayout('fill, ins 0'), constraints: 'wrap, growx, spanx') {
 											field('', 'external_ip', 'growx', false)
-											button(text: "Discover", toolTipText: 'Use UPnP to discover your external IP. This may not function properly if you are behind multiple firewalls.', actionPerformed: { props.external_ip = testConnectivity().address; showprop('external_ip')})
+											button(text: "Discover", toolTipText: 'Discover your external IP.', actionPerformed: { props.external_ip = testConnectivity().address; showprop('external_ip')})
 											field('Port: ', 'external_port', 'width 50px,wrap')
 										}
 										check('Use UPnP', 'upnp', 'If checked, make sure UPnP is enabled on your router')
@@ -269,8 +278,8 @@ public class Prep {
 										sauerButton = checkBox(text: 'If checked, it will auto start the Plexus custom Sauerbraten', actionPerformed: { evt -> props.sauer_mode = evt.source.selected ? 'launch' : 'noLaunch' }, constraints: 'wrap' )
 									}
 									panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
-										button(text: "Start", toolTipText: 'Press to start Plexus', actionPerformed: {f.dispose(); finished(true)})
-										button(text: "Save and Exit", toolTipText: 'Save your changes and exit', actionPerformed: {f.dispose(); finished(false)} )
+										button(text: "Start", toolTipText: 'Press to start Plexus', actionPerformed: {propsWindow.dispose(); propsWindow = null; finished(true)})
+										button(text: "Save and Exit", toolTipText: 'Save your changes and exit', actionPerformed: {propsWindow.dispose(); propsWindow = null; finished(false)} )
 										button(text: "Exit", toolTipText: 'Exit without saving your changes', actionPerformed: { System.exit(0) } )
 									}
 									button(text: 'Clear P2P Cache', toolTipText: 'Clear the p2p file cache for the current profile', actionPerformed: { clearCache() } )
@@ -287,6 +296,7 @@ public class Prep {
 			}
 			update()
 			chooseProfile(props.last_profile)
+			showTitle()
 			scroll.verticalScrollBar.unitIncrement = 16
 		}
 	}
