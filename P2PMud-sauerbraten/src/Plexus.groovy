@@ -264,6 +264,10 @@ public class Plexus {
 		}
 		P2PMudPeer.verboseLogging = LaunchPlexus.props.verbose_log == '1'
 		P2PMudPeer.logFile = new File(plexusDir, "cache/$name/plexus.log")
+		if (P2PMudPeer.verboseLogging) {
+			P2PMudPeer.sauerLogFile = new File(plexusDir, "cache/$name/sauer.log")
+			if (P2PMudPeer.sauerLogFile.exists()) P2PMudPeer.sauerLogFile.delete()
+		}
 		P2PMudPeer.main(
 			{id, topic, cmd ->
 				try {
@@ -654,6 +658,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			if (socket?.isConnected()) {
 				def out = pendingCommands.collect{it.value}.join(";") + '\n'
 //				println out
+				if (P2PMudPeer?.sauerLogFile) { P2PMudPeer.sauerLogFile << new Date().toString() << ' ' << out;  }
 				try {
 					output << out
 					output.flush()
@@ -688,7 +693,9 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	}
 	def init() {
 	 	sauer('init', [
-			"alias p2pname [$name]",
+  			"alias p2pname [$name]",
+			"name [$name]",
+			"team [$LaunchPlexus.props.guild]",
 			"cleargui 1",
 			"showgui Plexus",
 			'echo INIT'
