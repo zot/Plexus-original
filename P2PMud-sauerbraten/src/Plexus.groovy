@@ -135,8 +135,8 @@ public class Plexus {
 		return true
 	}
 	def static err(msg, err) {
+		err.printStackTrace()
 		println(msg)
-//		err.printStackTrace()
 		stackTrace(err)
 		System.exit(1)
 	}
@@ -185,7 +185,9 @@ public class Plexus {
 		mapDir = new File(plexusDir, "cache/$name/maps")
 		mapDir.mkdirs()
 		def pastStor = new File(plexusDir, "cache/$name/PAST")
-		deleteAll(pastStor)
+		if (LaunchPlexus.props.cleanStart) {
+			deleteAll(pastStor)
+		}
 		pastStor.mkdirs()
 		System.setProperty('past.storage', pastStor.getAbsolutePath())
 		if (!headless) {
@@ -350,7 +352,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 						fields.cmd = textField(actionPerformed: {cmd()}, constraints: 'wrap, growx')
 					}
 					tabbedPane(constraints: 'spanx,width 100%,growy,wrap') {
-						panel(name: 'Commands', layout: new MigLayout('fill')) {
+						panel(name: 'Commands', layout: new MigLayout('')) {
 							label(text: 'Generation')
 							panel(layout: new MigLayout('fill, ins 0'), constraints: 'growx,wrap') {
 								button(text: "Launch 3D", actionPerformed: {launchSauer()})
@@ -406,7 +408,6 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 									}
 								})
 							}
-							panel(constraints: 'growy,wrap')
 						}
 						panel(name: 'Stats', layout: new MigLayout('fill,ins 0')) {
 							field('x: ', 'x')
@@ -426,7 +427,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 							field('move: ', 'm')
 							field('physics state: ', 'ps')
 							field('max speed: ', 'ms')
-							panel(constraints: 'growy,wrap')
+							panel(constraints: 'growy')
 						}
 						panel(name: 'Cloud', layout: new MigLayout('fill,ins 0')) {
 							label(text: 'Neighbors: ')
@@ -451,10 +452,6 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 				}
 			}
 		}
-	}
-	def updateDownloads() {
-		downloadCountField.text = downloads as String
-		uploadCountField.text = uploads as String
 	}
 	def chooseFile(message, field, filterName, filterRegexp) {
 		def ch = new JFileChooser();
@@ -745,7 +742,9 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			cloudProperties.load()
 		}
 		updateMyPlayerInfo()
-		storeCache()
+		if (LaunchPlexus.props.cleanStart) {
+			storeCache()
+		}
 	}
 	def initJoin() {
 		checkExec()
@@ -753,7 +752,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		peer.anycastCmds(plexusTopic, "sendCloudProperties")
 	}
 	def storeFile(cont, file, mutable = false, cacheOverride = false) {
-		def total = P2PMudFile.estimateChunks(file.length)
+		def total = P2PMudFile.estimateChunks(file.length())
 		def chunk = 0
 
 		uploads++
@@ -1402,52 +1401,66 @@ println "createPortal portal_$trigger = $name; portal $trigger"
 			broadcast(["update $name ${format.join(' ')}"])
 		}
 	}
-	def clearUploadProgress() {
-		if (swing) {
-			swing.edt {
-				downloadProgressBar.setValue(0)
-			}
+	def updateDownloads() {
+		if (!headless) {
+			downloadCountField.text = downloads as String
+			uploadCountField.text = uploads as String
 		}
-		exec {
-			sauer('up', 'tc_piechart_image = ""')
-			dumpCommands()
+	}
+	def clearUploadProgress() {
+		if (!headless) {
+			if (swing) {
+				swing.edt {
+					downloadProgressBar.setValue(0)
+				}
+			}
+			exec {
+				sauer('up', 'tc_piechart_image = ""')
+				dumpCommands()
+			}
 		}
 	}
 	def showUploadProgress(cur, total) {
-		if (swing) {
-			swing.edt {
-				downloadProgressBar.setMaximum(total)
-				downloadProgressBar.setValue(cur)
+		if (!headless) {
+			if (swing) {
+				swing.edt {
+					downloadProgressBar.setMaximum(total)
+					downloadProgressBar.setValue(cur)
+				}
 			}
-		}
-		exec {
-			def x = total > 0 ? Math.round(cur/total*16.0) : 0
-			sauer('up', 'tc_piechart_image = "packages/plexus/dist/ul_' + x + '.png"')
-			dumpCommands()
+			exec {
+				def x = total > 0 ? Math.round(cur/total*16.0) : 0
+				sauer('up', 'tc_piechart_image = "packages/plexus/dist/ul_' + x + '.png"')
+				dumpCommands()
+			}
 		}
 	}
 	def clearDownloadProgress() {
-		if (swing) {
-			swing.edt {
-				downloadProgressBar.setValue(0)
+		if (!headless) {
+			if (swing) {
+				swing.edt {
+					downloadProgressBar.setValue(0)
+				}
 			}
-		}
-		exec {
-			sauer('up', 'tc_piechart_image = ""')
-			dumpCommands()
+			exec {
+				sauer('up', 'tc_piechart_image = ""')
+				dumpCommands()
+			}
 		}
 	}
 	def showDownloadProgress(cur, total) {
-		if (swing) {
-			swing.edt {
-				downloadProgressBar.setMaximum(total)
-				downloadProgressBar.setValue(cur)
+		if (!headless) {
+			if (swing) {
+				swing.edt {
+					downloadProgressBar.setMaximum(total)
+					downloadProgressBar.setValue(cur)
+				}
 			}
-		}
-		exec {
-			def x = total > 0 ? Math.round(cur/total*16.0) : 0
-			sauer('up', 'tc_piechart_image = "packages/plexus/dist/dl_' + x + '.png"')
-			dumpCommands()
+			exec {
+				def x = total > 0 ? Math.round(cur/total*16.0) : 0
+				sauer('up', 'tc_piechart_image = "packages/plexus/dist/dl_' + x + '.png"')
+				dumpCommands()
+			}
 		}
 	}
 }
