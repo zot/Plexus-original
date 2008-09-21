@@ -13,6 +13,7 @@ public class LaunchPlexus {
 	public static void main(String[] args) {
 		try {
 			System.setProperty("sun.java2d.d3d", "false")
+			System.setProperty("sun.java2d.opengl", "true");
 			Prep.main()
 			args = Prep.mainArgs
 			props = Prep.props
