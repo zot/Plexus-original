@@ -238,14 +238,13 @@ public class Prep {
 						scroll = scrollPane(name: 'Settings', verticalScrollBarPolicy: ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, horizontalScrollBarPolicy: ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED) {
 							box() {
 								panel(layout: new MigLayout('fillx,ins 0')) {
-									panel(layout: new MigLayout('fillx'), constraints: 'wrap,spanx,growx') {
+									panel(layout: new MigLayout(''), constraints: 'wrap,spanx,growx') {
 										label(text: 'Active Profile:')
 										profilesCombo = comboBox(editable: true, actionPerformed: {
 											if (profilesCombo) addProfile(profilesCombo?.editor?.item)
 											showTitle()
 										})
 										removeProfileButton = button(text: 'Remove Profile', actionPerformed: { if (MessageBox.AreYouSure("Remove Profile", "Are you sure you want to remove the $props.profile profile?")) removeProfile()}, enabled: false)
-										panel(constraints: 'growx')
 									}
 									panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Player'), constraints: 'wrap,spanx,growx') {
 										field('Your name: ', 'name', 'span 2, growx')
@@ -287,8 +286,7 @@ public class Prep {
 							}
 						}
 						panel(name: 'Diagnostics', layout: new MigLayout('fill')) {
-							button(text: 'Test connectivity', actionPerformed: {println testConnectivity()}, constraints: 'wrap')
-							panel(constraints: 'grow')
+							button(text: 'Test connectivity', actionPerformed: {println testConnectivity()}, constraints: 'wrap,top')
 						}
 					}
 					label(minimumSize: [24,24], text: ' ', foregroundPainter: makeTitlePainter('Copyright (C) 2008, TEAM CTHULHU', GlossPainter.GlossPosition.BOTTOM), constraints: 'growx, height 24')

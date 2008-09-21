@@ -11,22 +11,29 @@ import java.security.MessageDigest
 public class Tools {
 	def static digest = MessageDigest.getInstance("SHA-1")
 
-    def static printSanitizedStackTrace(Throwable t, PrintWriter p) {
+    def static addSanitizedStackTrace(t, lines) {
+        if (t.getCause()) {
+        	addSanitizedStackTrace(t.getCause(), lines)
+        	lines.add(0, "caused by: $t")
+        }
         t = StackTraceUtils.sanitize(t);
-
         StackTraceElement[] trace = t.getStackTrace();
         for (int i = 0; i < trace.length; i++) {
             StackTraceElement stackTraceElement = trace[i];
-            p.println(  "\tat "+stackTraceElement.getClassName()
-                        +"["+ stackTraceElement.getMethodName()+"] ("
-                        + stackTraceElement.getFileName() + ":"+stackTraceElement.getLineNumber()+")");
+            lines.add(i, "\tat "+stackTraceElement.getClassName()
+            	+"["+ stackTraceElement.getMethodName()+"] ("
+            	+ stackTraceElement.getFileName() + ":"+stackTraceElement.getLineNumber()+")");
         }
     }
 	def static stackTrace(ex) {
 //		ex.printStackTrace()
 		def w = new PrintWriter(System.err)
 		w.println(ex)
-		printSanitizedStackTrace(ex, w)
+		def lines = []
+		addSanitizedStackTrace(ex, lines)
+		lines.each {
+			w.println it
+		}
 		w.flush()
 	}
 	def static deleteAll(file) {
