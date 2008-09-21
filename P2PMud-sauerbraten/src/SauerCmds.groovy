@@ -134,10 +134,25 @@ public class SauerCmds extends Cmds {
 		props.guild = guild
 		props.pastry_port = port
 		props.pastry_boot_port = port
-		props.store()
 		
-		def result = false
-		main.sauer('p2p', result ? "showgui [P2P Success]" : "showgui [P2P Failure]")
+		def conProps = [:] as Properties
+		def sock = null
+		try {
+			sock = new ServerSocket(Integer.parseInt(port))
+		}  catch (Exception e) { }
+		try {
+			def con = new URL("http://plubble.com/p2p.php?port=$port").openConnection()
+			def input = con.getInputStream()
+	
+			conProps.load(input)
+			input.close()
+		}  catch (Exception e) { }
+		if (sock) sock.close()
+		props.pastry_boot_port = conProps?.bootport
+		props.store()
+		println conProps
+		
+		main.sauer('p2p', conProps?.status == 'success' ? "showgui [P2P Success]" : "showgui [P2P Failure]")
 		main.dumpCommands()
 	}
 }

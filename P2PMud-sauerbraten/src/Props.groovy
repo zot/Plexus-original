@@ -10,7 +10,7 @@ class Props {
 		guild: '',
 		pastry_port: '3993',
 		pastry_boot_host: 'plubble.com',
-		pastry_boot_port: '3993',
+		pastry_boot_port: '9090',
 		external_ip: '',
 		external_port: '3993',
 		headless: '0',
