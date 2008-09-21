@@ -235,7 +235,7 @@ public class Prep {
 			titledPanel(title: ' ', titleForeground: Color.WHITE, titlePainter: makeTitlePainter('Properties For PLEXUS: Killer App of the Future - Here Today!'), border: new DropShadowBorder(Color.BLACK, 15)) {
 				panel(layout: new MigLayout('fill, ins 0')) {
 					tabbedPane(constraints: 'grow,wrap') {
-						scroll = scrollPane(name: 'Settings', verticalScrollBarPolicy: ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, horizontalScrollBarPolicy: ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED) {
+						scroll = scrollPane(name: 'Settings', border: null, verticalScrollBarPolicy: ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, horizontalScrollBarPolicy: ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED) {
 							box() {
 								panel(layout: new MigLayout('fillx,ins 0')) {
 									panel(layout: new MigLayout(''), constraints: 'wrap,spanx,growx') {
@@ -259,7 +259,7 @@ public class Prep {
 										panel(layout: new MigLayout('fill, ins 0'), constraints: 'wrap, growx, spanx') {
 											field('', 'external_ip', 'growx', false)
 											button(text: "Discover", toolTipText: 'Discover your external IP.', actionPerformed: { props.external_ip = testConnectivity().address; showprop('external_ip')})
-											field('Port: ', 'external_port', 'width 50px,wrap')
+											field('Port: ', 'external_port', 'width 64px,wrap')
 										}
 										check('Use UPnP', 'upnp', 'If checked, make sure UPnP is enabled on your router')
 									}
@@ -267,7 +267,7 @@ public class Prep {
 										label('Pastry boot host: ')
 										panel(layout: new MigLayout('fill, ins 0'), constraints: 'wrap, growx, spanx') {
 											field('', 'pastry_boot_host', 'growx', false)
-											field('Port: ', 'pastry_boot_port', 'width 50px')
+											field('Port: ', 'pastry_boot_port', 'width 64px')
 										}
 									}
 									panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Sauerbraten'), constraints: 'wrap,spanx,growx') {
