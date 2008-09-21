@@ -19,6 +19,10 @@ import javax.swing.JFileChooser
 import net.sbbi.upnp.Discovery.*;
 import net.sbbi.upnp.impls.InternetGatewayDevice;
 import p2pmud.MessageBox
+import java.awt.event.MouseListener
+import java.awt.event.MouseMotionListener
+import java.awt.event.MouseEvent
+import java.awt.event.InputEvent
 
 public class Prep {
 	def static conProps
@@ -36,7 +40,8 @@ public class Prep {
 	def static sauerDir
 	def static final MARKER = "\n//THIS LINE ADDED BY TEAM CTHULHU'S PLEXUS: PLEASE DO NOT EDIT THIS LINE OR THE NEXT ONE\n"
 	def static swing
-
+	def static initialClick = null
+	
 	def static verifySauerDir(dir) {
 		while (!Plexus.verifySauerdir(dir)) {
 			def ch = new JFileChooser(dir);
@@ -204,7 +209,7 @@ public class Prep {
 			}
 		}
 		swing = new SwingXBuilder()
-		propsWindow = swing.frame(title: 'Plexus Configuration', size: [800, 700], location: [200, 300], windowClosing: {System.exit(0)}, show: true, windowOpened: {showTitle()}) {
+		propsWindow = swing.frame(title: 'Plexus Configuration', size: [800, 700], location: [200, 300], windowClosing: {System.exit(0)}, undecorated: true, show: true, windowOpened: {showTitle()}) {
 			def field = {lbl, key, constraints = 'span 2, wrap, growx', useLabel = true ->
 				if (useLabel) {
 					label(text: lbl)
@@ -297,7 +302,44 @@ public class Prep {
 			showTitle()
 			scroll.verticalScrollBar.unitIncrement = 16
 		}
+		installListeners(propsWindow)
+		com.sun.awt.AWTUtilities.setWindowOpacity(propsWindow, 1)
+		com.sun.awt.AWTUtilities.setWindowOpaque(propsWindow, false)
 	}
+	
+	def static installListeners(frame) {
+	    // Get point of initial mouse click
+	    frame.addMouseListener(( 
+	    		{ e  -> 
+	    		if ((e.getModifiers() & InputEvent.BUTTON1_MASK) == InputEvent.BUTTON1_MASK) {
+	    			Prep.initialClick = e.getPoint(); frame.getComponentAt( Prep.initialClick );
+	    		} else {
+	    			Prep.initialClick = null
+	    		}
+	        } as MouseListener
+	    ));
+	 
+	    // Move window when mouse is dragged
+	    frame.addMouseMotionListener((
+	        { e ->
+	        	if ((e.getModifiers() & InputEvent.BUTTON1_MASK) == InputEvent.BUTTON1_MASK) {
+	    		} else {
+	    			Prep.initialClick = null
+	    		}
+	        	if (Prep.initialClick != null ) {
+	            // get location of Window
+	            int thisX = frame.getLocation().x; int thisY = frame.getLocation().y;
+	 
+	            // Determine how much the mouse moved since the initial click
+	            int xMoved = ( thisX + e.getX() ) - ( thisX + Prep.initialClick.x );
+	            int yMoved = ( thisY + e.getY() ) - ( thisY + Prep.initialClick.y );
+	 
+	            // Move window to this position
+	            int X = thisX + xMoved; int Y = thisY + yMoved; frame.setLocation( X, Y );
+	        	}
+	        } as MouseMotionListener
+	    )); 
+	}	
 	def static testConnectivity(listen = true) {
 		if (conProps?.status != 'success') {
 			def sock = listen ? new ServerSocket(Integer.parseInt(props.pastry_port)) : null
