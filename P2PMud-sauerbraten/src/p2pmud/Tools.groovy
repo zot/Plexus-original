@@ -11,9 +11,23 @@ import java.security.MessageDigest
 public class Tools {
 	def static digest = MessageDigest.getInstance("SHA-1")
 
+    def static printSanitizedStackTrace(Throwable t, PrintWriter p) {
+        t = StackTraceUtils.sanitize(t);
+
+        StackTraceElement[] trace = t.getStackTrace();
+        for (int i = 0; i < trace.length; i++) {
+            StackTraceElement stackTraceElement = trace[i];
+            p.println(  "\tat "+stackTraceElement.getClassName()
+                        +"["+ stackTraceElement.getMethodName()+"] ("
+                        + stackTraceElement.getFileName() + ":"+stackTraceElement.getLineNumber()+")");
+        }
+    }
 	def static stackTrace(ex) {
-		ex.printStackTrace()
-		StackTraceUtils.printSanitizedStackTrace(ex)
+//		ex.printStackTrace()
+		def w = new PrintWriter(System.err)
+		w.println(ex)
+		printSanitizedStackTrace(ex, w)
+		w.flush()
 	}
 	def static deleteAll(file) {
 		def f = file as File

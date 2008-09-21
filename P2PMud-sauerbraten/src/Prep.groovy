@@ -204,7 +204,7 @@ public class Prep {
 			}
 		}
 		swing = new SwingXBuilder()
-		propsWindow = swing.frame(title: 'Plexus Configuration', size: [600, 600], location: [200, 300], windowClosing: {System.exit(0)}, pack: true, show: true, windowOpened: {showTitle()}) {
+		propsWindow = swing.frame(title: 'Plexus Configuration', size: [800, 700], location: [200, 300], windowClosing: {System.exit(0)}, show: true, windowOpened: {showTitle()}) {
 			def field = {lbl, key, constraints = 'span 2, wrap, growx', useLabel = true ->
 				if (useLabel) {
 					label(text: lbl)
@@ -235,7 +235,7 @@ public class Prep {
 			titledPanel(title: ' ', titleForeground: Color.WHITE, titlePainter: makeTitlePainter('Properties For PLEXUS: Killer App of the Future - Here Today!'), border: new DropShadowBorder(Color.BLACK, 15)) {
 				panel(layout: new MigLayout('fill, ins 0')) {
 					tabbedPane(constraints: 'grow,wrap') {
-						scroll = scrollPane(name: 'Settings', verticalScrollBarPolicy: ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, horizontalScrollBarPolicy: ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER) {
+						scroll = scrollPane(name: 'Settings', verticalScrollBarPolicy: ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, horizontalScrollBarPolicy: ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED) {
 							box() {
 								panel(layout: new MigLayout('fillx,ins 0')) {
 									panel(layout: new MigLayout('fillx'), constraints: 'wrap,spanx,growx') {

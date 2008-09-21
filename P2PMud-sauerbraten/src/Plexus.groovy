@@ -134,6 +134,13 @@ public class Plexus {
 		}
 		return true
 	}
+	def static err(msg, err) {
+		println(msg)
+//		err.printStackTrace()
+		stackTrace(err)
+		System.exit(1)
+	}
+
 	def tst(a, b) {
 		println "TST: $a, $b"
 	}
@@ -144,7 +151,13 @@ public class Plexus {
 		assert executorThread == Thread.currentThread()
 	}
 	def exec(block) {
-		executor.submit(block)
+		executor.submit({
+			try {
+				block()
+			} catch (Exception ex) {
+				err("", ex)
+			}
+		})
 	}
 	def _main(args) {
 		exec {
@@ -724,11 +737,6 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	}
 	def selectMap() {
 		mapCombo.selectedItem = mapTopic ? getMap(mapTopic.getId().toStringFull()).name : ''
-	}
-	def err(msg, err) {
-		println(msg)
-		err.printStackTrace()
-		stackTrace(err)
 	}
 	def initBoot() {
 		def docFile = new File(plexusDir, "cache/$name/cloud.properties")
