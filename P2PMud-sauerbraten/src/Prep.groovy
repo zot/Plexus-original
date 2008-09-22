@@ -1,3 +1,5 @@
+import p2pmud.PlexusImagePanel
+import javax.swing.SwingUtilities
 import org.jdesktop.swingx.graphics.GraphicsUtilities
 import org.jdesktop.swingx.painter.ImagePainter
 import org.jdesktop.swingx.painter.MattePainter
@@ -197,7 +199,7 @@ public class Prep {
 	def static showPropEditor() {
 		def p = props
 		def propsWindow
-
+		def topPanel
 		//PlasticLookAndFeel.setPlasticTheme(new DesertBlue());
 		try {
 //		   UIManager.setLookAndFeel(new Plastic3DLookAndFeel());
@@ -214,7 +216,7 @@ public class Prep {
 		swing = new SwingXBuilder()
 		def offsetX = 0
 		def offsetY = 0
-		propsWindow = swing.frame(title: 'Plexus Configuration', size: [800, 700], location: [200, 300], windowClosing: {System.exit(0)}, /* iconImage: GraphicsUtilities.loadCompatibleImage(Prep.getResource('/tinyCthulhu.png')), */ undecorated: true, show: true, windowOpened: {showTitle()},
+		propsWindow = swing.frame(title: 'Plexus Configuration', size: [800, 700], location: [200, 300], windowClosing: {System.exit(0)}, /* iconImage: GraphicsUtilities.loadCompatibleImage(Prep.getResource('/tinyCthulhu.png')), */ undecorated: true, show: true, /*windowOpened: {showTitle()},*/
 			mousePressed: {e ->
 				def loc = propsWindow.getLocation()
 
@@ -252,20 +254,20 @@ public class Prep {
 	            	glossPainter(paint:new Color(1.0f,1.0f,1.0f,0.2f), position: pos ?: GlossPainter.GlossPosition.TOP)
 				}
 	        }
-			def topPanel = panel(backgroundPainter: new MattePainter(new Color(0,0,0,127)), border: new DropShadowBorder(Color.BLACK, 15), layout: new MigLayout('fill, ins 0, gap 0 0')) {
+			topPanel = panel(backgroundPainter: new MattePainter(new Color(0,0,0,127)), border: new DropShadowBorder(Color.BLACK, 15), layout: new MigLayout('fill, ins 0, gap 0 0')) {
 				panel(layout: new MigLayout('fill, ins 0'), constraints: 'growx,wrap') {
 					def killbox = panel(constraints: 'width 16, height 16, pos container.x2-16 container.y', background: new Color(255, 255, 255, 0), backgroundPainter: new ImagePainter(Prep.getResource('/tinyCthulhu.png')),
 						mousePressed: {e -> System.exit(0)}
 					)
 					killbox.backgroundPainter.scaleToFit = true
-					label(minimumSize: [24,24], text: ' ', foregroundPainter: makeTitlePainter('Properties For PLEXUS: Killer App of the Future - Here Today!', GlossPainter.GlossPosition.BOTTOM), constraints: 'growx, height 24,wrap')
+					label(minimumSize: [24,24], text: ' ', foregroundPainter: makeTitlePainter('Properties For PLEXUS: Killer App of the Future - Here Today!', GlossPainter.GlossPosition.TOP), constraints: 'growx, height 24,wrap')
 				}
-				panel(constraints: 'width 48, height 32, pos footer.x2-48 footer.y2-32', background: new Color(255, 255, 255, 0), backgroundPainter: new ImagePainter(Prep.getResource('/tentacles.png')),
+				widget(new PlexusImagePanel(Prep.getResource('/tentacles.png')), constraints: 'width 48, height 32, pos footer.x2-48 footer.y2-32', background: new Color(255, 255, 255, 0),
 					mousePressed: {e ->
-	    				def sz = propsWindow.size
+    					def sz = propsWindow.size
 		
-	    				offsetX = sz.width - e.getXOnScreen()
-	    				offsetY = sz.height - e.getYOnScreen()
+    					offsetX = sz.width - e.getXOnScreen()
+    					offsetY = sz.height - e.getYOnScreen()
 					},
 					mouseDragged: {e->
 		        		propsWindow.setSize((int)(e.getXOnScreen() + offsetX), (int)(e.getYOnScreen() + offsetY))
