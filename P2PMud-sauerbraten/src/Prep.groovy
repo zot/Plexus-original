@@ -252,7 +252,7 @@ public class Prep {
 	            	glossPainter(paint:new Color(1.0f,1.0f,1.0f,0.2f), position: pos ?: GlossPainter.GlossPosition.TOP)
 				}
 	        }
-			panel(backgroundPainter: new MattePainter(new Color(0,0,0,127)), border: new DropShadowBorder(Color.BLACK, 15), layout: new MigLayout('fill, ins 0')) {
+			def topPanel = panel(backgroundPainter: new MattePainter(new Color(0,0,0,127)), border: new DropShadowBorder(Color.BLACK, 15), layout: new MigLayout('fill, ins 0, gap 0 0')) {
 				panel(layout: new MigLayout('fill, ins 0'), constraints: 'growx,wrap') {
 					def killbox = panel(constraints: 'width 16, height 16, pos container.x2-16 container.y', background: new Color(255, 255, 255, 0), backgroundPainter: new ImagePainter(Prep.getResource('/tinyCthulhu.png')),
 						mousePressed: {e -> System.exit(0)}
@@ -328,6 +328,7 @@ public class Prep {
 				}
 				label(minimumSize: [24,24], text: ' ', foregroundPainter: makeTitlePainter('Copyright (C) 2008, TEAM CTHULHU', GlossPainter.GlossPosition.BOTTOM), constraints: 'growx, height 24, id footer')
 			}
+			topPanel.opaque = false
 			update()
 			chooseProfile(props.last_profile)
 			showTitle()
