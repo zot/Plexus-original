@@ -1,3 +1,12 @@
+import java.awt.BorderLayout
+import org.jdesktop.swingx.JXFrame
+import javax.swing.JFrame
+import com.sun.awt.AWTUtilities
+import java.awt.GraphicsConfiguration
+import java.awt.GraphicsDevice
+import java.awt.GraphicsEnvironment
+import p2pmud.PlexusImagePanel
+import javax.swing.SwingUtilities
 import org.jdesktop.swingx.graphics.GraphicsUtilities
 import org.jdesktop.swingx.painter.ImagePainter
 import org.jdesktop.swingx.painter.MattePainter
@@ -197,89 +206,97 @@ public class Prep {
 	def static showPropEditor() {
 		def p = props
 		def propsWindow
-
+		def topPanel
 		//PlasticLookAndFeel.setPlasticTheme(new DesertBlue());
 		try {
 //		   UIManager.setLookAndFeel(new Plastic3DLookAndFeel());
 		   UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
 		} catch (Exception e) {e.printStackTrace()}
 //		UIManager.put("Label.font", new FontUIResource("SansSerif", Font.PLAIN, 12))
-		def showTitle = {
-			def item = profilesCombo?.editor?.item
-
-			if (propsWindow) {
-				propsWindow.title = "PLEXUS Configuration [${item ? item as String : 'DEFAULT'}]"
-			}
-		}
+//		def showTitle = {
+//			def item = profilesCombo?.editor?.item
+//
+//			if (propsWindow) {
+//				propsWindow.title = "PLEXUS Configuration [${item ? item as String : 'DEFAULT'}]"
+//			}
+//		}
 		swing = new SwingXBuilder()
 		def offsetX = 0
 		def offsetY = 0
-		propsWindow = swing.frame(title: 'Plexus Configuration', size: [800, 700], location: [200, 300], windowClosing: {System.exit(0)}, /* iconImage: GraphicsUtilities.loadCompatibleImage(Prep.getResource('/tinyCthulhu.png')), */ undecorated: true, show: true, windowOpened: {showTitle()},
+		def field = {lbl, key, constraints = 'span 2, wrap, growx', useLabel = true ->
+			if (useLabel) {
+				swing.label(text: lbl)
+			}
+			def tf = swing.textField(actionPerformed: {setprop(key)}, focusLost: {setprop(key)}, text: props[key], constraints: constraints)
+			fields[key] = [
+				setText: {value -> tf.text = value},
+				getText: {tf.text}
+			]
+			tf
+		}
+		def check = {lbl, key, description ->
+			swing.label(text: lbl)
+			def cb = swing.checkBox(text: description, actionPerformed: {evt -> props[key] = evt.source.selected ? '1' : '0' }, constraints: 'wrap' )
+			fields[key] = [
+				setText: {value -> cb.selected = value == '1'},
+				getText: {cb.selected ? '1' : '0'}
+			]
+			cb
+		}
+		def makeTitlePainter = {label, pos = null ->
+			swing.compoundPainter() {
+	            mattePainter(fillPaint: new Color(0x28, 0x26, 0x19))
+            	textPainter(text: label, font: new FontUIResource("SansSerif", Font.BOLD, 12), fillPaint: new Color(0xFF, 0x99, 0x00))
+            	glossPainter(paint:new Color(1.0f,1.0f,1.0f,0.2f), position: pos ?: GlossPainter.GlossPosition.TOP)
+			}
+        }
+		def config;
+		if (System.properties['os.name'] != 'Linux') {
+			def env = GraphicsEnvironment.getLocalGraphicsEnvironment()
+			def devices = env.getScreenDevices();
+			for (int i = 0; i < devices.length && config == null; i++) {
+				GraphicsConfiguration[] configs = devices[i].getConfigurations();
+				
+				for (int j = 0; j < configs.length && config == null; j++) {
+					if (AWTUtilities.isTranslucencyCapable(configs[j])) {
+						config = configs[j];
+					}
+				}
+			}
+		}
+		propsWindow = config ? new JFrame(config) : new JXFrame()
+		swing.widget(propsWindow, title: 'Plexus Configuration', size: [800, 700], location: [200, 300], windowClosing: {System.exit(0)}, undecorated: true,
 			mousePressed: {e ->
 				def loc = propsWindow.getLocation()
 
 				offsetX = loc.x - e.getXOnScreen()
 				offsetY = loc.y - e.getYOnScreen()
 			},
-			mouseDragged: {e->
-				propsWindow.setLocation((int)(e.getXOnScreen() + offsetX), (int)(e.getYOnScreen() + offsetY))
-			}
-		) {
-			def field = {lbl, key, constraints = 'span 2, wrap, growx', useLabel = true ->
-				if (useLabel) {
-					label(text: lbl)
-				}
-				def tf = textField(actionPerformed: {setprop(key)}, focusLost: {setprop(key)}, text: props[key], constraints: constraints)
-				fields[key] = [
-					setText: {value -> tf.text = value},
-					getText: {tf.text}
-				]
-				tf
-			}
-			def check = {lbl, key, description ->
-				label(text: lbl)
-				def cb = checkBox(text: description, actionPerformed: {evt -> props[key] = evt.source.selected ? '1' : '0' }, constraints: 'wrap' )
-				fields[key] = [
-					setText: {value -> cb.selected = value == '1'},
-					getText: {cb.selected ? '1' : '0'}
-				]
-				cb
-			}
-			def makeTitlePainter = {label, pos = null ->
-				compoundPainter() {
-		            mattePainter(fillPaint: new Color(0x28, 0x26, 0x19))
-	            	textPainter(text: label, font: new FontUIResource("SansSerif", Font.BOLD, 12), fillPaint: new Color(0xFF, 0x99, 0x00))
-	            	glossPainter(paint:new Color(1.0f,1.0f,1.0f,0.2f), position: pos ?: GlossPainter.GlossPosition.TOP)
-				}
-	        }
-			def topPanel = panel(backgroundPainter: new MattePainter(new Color(0,0,0,127)), border: new DropShadowBorder(Color.BLACK, 15), layout: new MigLayout('fill, ins 0, gap 0 0')) {
-				panel(layout: new MigLayout('fill, ins 0'), constraints: 'growx,wrap') {
-					def killbox = panel(constraints: 'width 16, height 16, pos container.x2-16 container.y', background: new Color(255, 255, 255, 0), backgroundPainter: new ImagePainter(Prep.getResource('/tinyCthulhu.png')),
-						mousePressed: {e -> System.exit(0)}
-					)
-					killbox.backgroundPainter.scaleToFit = true
-					label(minimumSize: [24,24], text: ' ', foregroundPainter: makeTitlePainter('Properties For PLEXUS: Killer App of the Future - Here Today!', GlossPainter.GlossPosition.BOTTOM), constraints: 'growx, height 24,wrap')
-				}
-				panel(constraints: 'width 48, height 32, pos footer.x2-48 footer.y2-32', background: new Color(255, 255, 255, 0), backgroundPainter: new ImagePainter(Prep.getResource('/tentacles.png')),
+			mouseDragged: {e-> propsWindow.setLocation((int)(e.getXOnScreen() + offsetX), (int)(e.getYOnScreen() + offsetY))}
+		)
+		propsWindow.contentPane = swing.panel(layout: new BorderLayout()) {
+			topPanel = panel(opaque: false, background: new Color(0, 0, 0, 0), border: new DropShadowBorder(Color.BLACK, 15), layout: new MigLayout('fill, ins 0, gap 0 0')) {
+				widget(new PlexusImagePanel(Prep.getResource('/tentacles.png')), constraints: 'width 48, height 32, pos footer.x2-48 footer.y2-32', background: new Color(255, 255, 255, 0),
 					mousePressed: {e ->
-	    				def sz = propsWindow.size
+    					def sz = propsWindow.size
 		
-	    				offsetX = sz.width - e.getXOnScreen()
-	    				offsetY = sz.height - e.getYOnScreen()
+    					offsetX = sz.width - e.getXOnScreen()
+    					offsetY = sz.height - e.getYOnScreen()
 					},
-					mouseDragged: {e->
-		        		propsWindow.setSize((int)(e.getXOnScreen() + offsetX), (int)(e.getYOnScreen() + offsetY))
-					}
+					mouseDragged: {e-> propsWindow.setSize((int)(e.getXOnScreen() + offsetX), (int)(e.getYOnScreen() + offsetY))}
 				)
-				tabbedPane(constraints: 'grow,wrap') {
+				def killbox = panel(constraints: 'pos label.x2-32 0, width 32, height 32', background: new Color(255, 255, 255, 0), backgroundPainter: new ImagePainter(Prep.getResource('/tinyCthulhu.png')), mousePressed: {e -> System.exit(0)})
+				killbox.backgroundPainter.scaleToFit = true
+				label(minimumSize: [24,24], text: ' ', foregroundPainter: makeTitlePainter('Properties For PLEXUS: Killer App of the Future - Here Today!', GlossPainter.GlossPosition.TOP), constraints: 'id label, width 100%-15, height 24, pos 0 0')
+				tabbedPane(constraints: 'width 100%-15, height 100%-48-15, pos 0 24') {
 					scroll = scrollPane(name: 'Settings', border: null, verticalScrollBarPolicy: ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, horizontalScrollBarPolicy: ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED) {
 						box() {
-							panel(layout: new MigLayout('fillx,ins 0')) {
+							panel(layout: new MigLayout('fillx,ins 0,nocache')) {
 								panel(layout: new MigLayout(''), constraints: 'wrap,spanx,growx') {
 									label(text: 'Active Profile:')
 									profilesCombo = comboBox(editable: true, actionPerformed: {
 										if (profilesCombo) addProfile(profilesCombo?.editor?.item)
-										showTitle()
+//										showTitle()
 									})
 									removeProfileButton = button(text: 'Remove Profile', actionPerformed: { if (MessageBox.AreYouSure("Remove Profile", "Are you sure you want to remove the $props.profile profile?")) removeProfile()}, enabled: false)
 								}
@@ -326,18 +343,19 @@ public class Prep {
 						button(text: 'Test connectivity', actionPerformed: {println testConnectivity()}, constraints: 'wrap,top')
 					}
 				}
-				label(minimumSize: [24,24], text: ' ', foregroundPainter: makeTitlePainter('Copyright (C) 2008, TEAM CTHULHU', GlossPainter.GlossPosition.BOTTOM), constraints: 'growx, height 24, id footer')
+				label(minimumSize: [24,24], text: ' ', foregroundPainter: makeTitlePainter('Copyright (C) 2008, TEAM CTHULHU', GlossPainter.GlossPosition.BOTTOM), constraints: 'id footer, height 24, width 100%-15, pos 0 visual.h-24-15')
 			}
-			topPanel.opaque = false
 			update()
 			chooseProfile(props.last_profile)
-			showTitle()
+//			showTitle()
 			scroll.verticalScrollBar.unitIncrement = 16
 		}
-		if (System.properties['os.name'] != 'Linux') {
+		if (config) {
+			propsWindow.background = new Color(0, 0, 0, 0)
 			com.sun.awt.AWTUtilities.setWindowOpacity(propsWindow, 1)
 			com.sun.awt.AWTUtilities.setWindowOpaque(propsWindow, false)
 		}
+		propsWindow.show()
 	}
 	def static testConnectivity(listen = true) {
 		if (conProps?.status != 'success') {
