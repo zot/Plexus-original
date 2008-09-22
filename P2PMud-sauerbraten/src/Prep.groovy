@@ -206,13 +206,13 @@ public class Prep {
 		   UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
 		} catch (Exception e) {e.printStackTrace()}
 //		UIManager.put("Label.font", new FontUIResource("SansSerif", Font.PLAIN, 12))
-		def showTitle = {
-			def item = profilesCombo?.editor?.item
-
-			if (propsWindow) {
-				propsWindow.title = "PLEXUS Configuration [${item ? item as String : 'DEFAULT'}]"
-			}
-		}
+//		def showTitle = {
+//			def item = profilesCombo?.editor?.item
+//
+//			if (propsWindow) {
+//				propsWindow.title = "PLEXUS Configuration [${item ? item as String : 'DEFAULT'}]"
+//			}
+//		}
 		swing = new SwingXBuilder()
 		def offsetX = 0
 		def offsetY = 0
@@ -281,7 +281,7 @@ public class Prep {
 									label(text: 'Active Profile:')
 									profilesCombo = comboBox(editable: true, actionPerformed: {
 										if (profilesCombo) addProfile(profilesCombo?.editor?.item)
-										showTitle()
+//										showTitle()
 									})
 									removeProfileButton = button(text: 'Remove Profile', actionPerformed: { if (MessageBox.AreYouSure("Remove Profile", "Are you sure you want to remove the $props.profile profile?")) removeProfile()}, enabled: false)
 								}
