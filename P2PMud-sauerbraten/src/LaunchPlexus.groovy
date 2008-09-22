@@ -1,3 +1,4 @@
+import p2pmud.Tools
 import net.sbbi.upnp.messages.UPNPResponseException
 import net.sbbi.upnp.devices.*;
 import net.sbbi.upnp.*;
@@ -10,16 +11,23 @@ public class LaunchPlexus {
 	def static runCount
 
 	public static void main(String[] args) {
-		Prep.main()
-		args = Prep.mainArgs
-		props = Prep.props
-		runCount = props.runCount ? Integer.parseInt(props.runCount) + 1 : 0;
-		props.runCount = String.valueOf(runCount)
-
-		System.setProperty('past_storage', props.past_storage)
-		if (props.upnp == '1') pokeHole("Plexus", Integer.parseInt(props.external_port))
-		if (props.node_interface && props.node_interface != '') P2PMudPeer.node_interface = props.node_interface;
-		Plexus.main(*args)
+		try {
+			System.properties["sun.java2d.d3d"] = "false"
+			if (System.properties['os.name'] != 'Linux') {
+				System.properties["sun.java2d.opengl"] = "true"
+			}
+			Prep.main()
+			args = Prep.mainArgs
+			props = Prep.props
+			runCount = props.runCount ? Integer.parseInt(props.runCount) + 1 : 0;
+			props.runCount = String.valueOf(runCount)
+	
+			if (props.upnp == '1') pokeHole("Plexus", Integer.parseInt(props.external_port))
+			if (props.node_interface && props.node_interface != '') P2PMudPeer.node_interface = props.node_interface;
+			Plexus.main(*args)
+		} catch (Exception ex) {
+			Plexus.err('', ex)
+		}
 	}
 	public static saveProps() {
 		Prep.saveProps()

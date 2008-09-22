@@ -174,7 +174,7 @@ struct dynent : physent                         // animated characters, or chara
 #ifdef TC
     char *modelname;
 	int tc_id;
-	void renderplayer(fpsclient &cl, void *mdl, int team);
+	void renderplayer(fpsclient &cl, const char *mdlname, void *attachments, int attack, int attackdelay, int lastaction, int lastpain, float sink = 0.0);
 	void rendermonster(fpsclient &cl);
 	void rendermovable(fpsclient &cl, vec o, const char *suggestion);
 

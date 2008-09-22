@@ -40,6 +40,8 @@ public class SauerCmds extends Cmds {
 	}
 	def tc_newmap(String name) {
 		println "newmap: $name"
+		main.sauer("delp", "deleteallplayers")
+		main.dumpCommands()
 		main.mapname = name
 		main.updateMyPlayerInfo()
 	}
@@ -118,5 +120,39 @@ public class SauerCmds extends Cmds {
 	}
 	def hit(shooter, target, type) {
 		println "HIT shooter: $shooter, target: $target, type: $type"
+	}
+	def autoconfig(name, guild, port) {
+		// attempt to create a profile with the name & guild
+		// auto-discover plubble.com and boot port
+		def props = new Props()
+		props.load()
+		if (!props.containsProfile(name)) props.addProfile(name)
+		props.setProfile(name)
+		props.setLastProfile(name)
+		props.initProps()
+		props.name = name
+		props.guild = guild
+		props.pastry_port = port
+		props.pastry_boot_port = port
+		
+		def conProps = [:] as Properties
+		def sock = null
+		try {
+			sock = new ServerSocket(Integer.parseInt(port))
+		}  catch (Exception e) { }
+		try {
+			def con = new URL("http://plubble.com/p2p.php?port=$port").openConnection()
+			def input = con.getInputStream()
+	
+			conProps.load(input)
+			input.close()
+		}  catch (Exception e) { }
+		if (sock) sock.close()
+		props.pastry_boot_port = conProps?.bootport
+		props.store()
+		println conProps
+		
+		main.sauer('p2p', conProps?.status == 'success' ? "showgui [P2P Success]" : "showgui [P2P Failure]")
+		main.dumpCommands()
 	}
 }

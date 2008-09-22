@@ -143,6 +143,7 @@ static void getcomputescreenres(int &w, int &h)
 }
 #ifdef TC
 SVAR(tc_loadmsg, "");
+SVAR(tc_guipath, "");
 VAR(tc_mapcount, 0, 0, 999);
 #endif
 

@@ -26,6 +26,7 @@
 <listEntry value="C:\SauerbratenRemote\P2PMud-sauerbraten\bin"/>
 <listEntry value="C:\eclipse\plugins\org.codehaus.groovy_1.5.1.200801232227\groovy-all-1.5.1.jar"/>
 </listAttribute>
+<stringAttribute key="org.eclipse.jdt.launching.JRE_CONTAINER" value="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/1.6-10/"/>
 <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="LaunchPlexus"/>
 <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="P2PMud-sauerbraten"/>
 <stringAttribute key="org.eclipse.jdt.launching.WORKING_DIRECTORY" value="C:\Program Files\SauerCTF"/>

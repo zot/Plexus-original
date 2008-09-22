@@ -1,5 +1,18 @@
+import org.jdesktop.swingx.graphics.GraphicsUtilities
+import org.jdesktop.swingx.painter.ImagePainter
+import org.jdesktop.swingx.painter.MattePainter
+import javax.swing.BoxLayout
+import javax.swing.OverlayLayout
+import java.awt.CardLayout
+import javax.swing.ScrollPaneConstants
+import org.jdesktop.swingx.painter.TextPainter
+import javax.swing.plaf.FontUIResource
+import java.awt.Font
+import org.jdesktop.swingx.painter.GlossPainter
+import java.awt.Color
+import org.jdesktop.swingx.border.DropShadowBorder
+import groovy.swing.SwingXBuilder
 import javax.swing.DefaultComboBoxModel
-import com.jgoodies.looks.plastic.Plastic3DLookAndFeel
 import javax.swing.UIManager
 import java.awt.Dimension
 import net.miginfocom.swing.MigLayout
@@ -8,27 +21,19 @@ import p2pmud.Tools
 import javax.swing.JFileChooser
 import net.sbbi.upnp.Discovery.*;
 import net.sbbi.upnp.impls.InternetGatewayDevice;
+import p2pmud.MessageBox
+import java.awt.event.MouseListener
+import java.awt.event.MouseMotionListener
+import java.awt.event.MouseEvent
+import java.awt.event.InputEvent
 
 public class Prep {
+	def static conProps
 	def static success = false
 	def static mainArgs
 	def static plexusdir
 	def static lock = new Object()
 	def static lastPeerName
-	def static defaultProps = [
-		sauer_port: '12345',
-		name: 'bubba-' + System.currentTimeMillis(),
-		guild: '',
-		pastry_port: '9090',
-		pastry_boot_host: '-',
-		pastry_boot_port: '9090',
-		external_ip: '',
-		external_port: '9090',
-		headless: '0',
-		upnp: '1',
-		sauer_mode: 'launch',
-		past_storage:'/tmp/storage-9090'
-	] as Properties
 	def static props = new Props()
 	def static fields = [:]
 	def static profilesCombo
@@ -37,19 +42,9 @@ public class Prep {
 	def static removeProfileButton
 	def static sauerDir
 	def static final MARKER = "\n//THIS LINE ADDED BY TEAM CTHULHU'S PLEXUS: PLEASE DO NOT EDIT THIS LINE OR THE NEXT ONE\n"
-
-	def static initProps() {
-		for (e in defaultProps) {
-			props[e.key] = e.value
-		}
-		if (System.getProperty('os.name').equalsIgnoreCase('linux')) {
-			props.sauer_cmd = 'packages/plexus/dist/sauerbraten_plexus_linux -t'
-		} else {
-			props.sauer_cmd = 'packages/plexus/dist/sauerbraten_plexus_windows.exe -t'
-		}
-		props.sauer_cmd += " -lplexus/dist/limbo/map.ogz"
-	}
-
+	def static swing
+	def static initialClick = null
+	
 	def static verifySauerDir(dir) {
 		while (!Plexus.verifySauerdir(dir)) {
 			def ch = new JFileChooser(dir);
@@ -66,11 +61,8 @@ public class Prep {
 		sauerDir = dir
 	}
 	public static void main(String[] args) {
-		initProps()
-		def dir = new File('fred').getAbsoluteFile().getParent()
-		
+		def dir = new File('').getAbsoluteFile()
 		plexusdir = new File(dir, 'packages/plexus')
-		props.file = new File(plexusdir, 'plexus.properties')
 		readProps()
 		
 		if (props.headless != '0') {
@@ -115,9 +107,13 @@ public class Prep {
 				def input = Prep.getResourceAsStream('/' + it)
 				def file = new File(plexusdir, it)
 
-				file.getParentFile().mkdirs()
-				Tools.copyStreamToFile(input, file)
-				input.close()
+				if (!input) {
+					println "WARNING, NO FILE FOR MANIFEST ENTRY: $it!"
+				} else {
+					file.getParentFile().mkdirs()
+					Tools.copyStreamToFile(input, file)
+					input.close()
+				}
 			}
 			manifest.close()
 			new File(distdir, 'sauerbraten_plexus_linux').setExecutable(true)
@@ -178,10 +174,6 @@ public class Prep {
 	}
 	def static readProps() {
 		props.load()
-		// if there are any missing props after a read, fill them in with defaults
-		for (e in defaultProps) {
-			if (!props[e.key]) props[e.key] = e.value
-		}
 		lastPeerName = props.name
 	}
 	def static discoverExternalIP() {
@@ -192,8 +184,8 @@ public class Prep {
 		  if ( IGDs != null ) {
 		    // let's the the first device found
 		    def testIGD = IGDs[0];
-		    System.out.println( "Found device " + testIGD.getIGDRootDevice().getModelName() );
-		    fields['external_ip'].text = testIGD.getExternalIPAddress()
+		    System.out.println("Found device ${testIGD.getIGDRootDevice().getModelName()}, ip: ${testIGD.getExternalIPAddress()}");
+		    fields['external_ip'].setText(testIGD.getExternalIPAddress())
 		    setprop('external_ip')
 		    
 		    return
@@ -204,20 +196,45 @@ public class Prep {
 	}
 	def static showPropEditor() {
 		def p = props
-		def f
+		def propsWindow
 
 		//PlasticLookAndFeel.setPlasticTheme(new DesertBlue());
 		try {
-		   UIManager.setLookAndFeel(new Plastic3DLookAndFeel());
-		} catch (Exception e) {}
-		new SwingBuilder().build {
-			def field = {lbl, key ->
-				label(text: lbl)
-				def tf = textField(actionPerformed: {setprop(key)}, focusLost: {setprop(key)}, text: p[key], constraints: 'span 2, wrap, growx')
+//		   UIManager.setLookAndFeel(new Plastic3DLookAndFeel());
+		   UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
+		} catch (Exception e) {e.printStackTrace()}
+//		UIManager.put("Label.font", new FontUIResource("SansSerif", Font.PLAIN, 12))
+		def showTitle = {
+			def item = profilesCombo?.editor?.item
+
+			if (propsWindow) {
+				propsWindow.title = "PLEXUS Configuration [${item ? item as String : 'DEFAULT'}]"
+			}
+		}
+		swing = new SwingXBuilder()
+		def offsetX = 0
+		def offsetY = 0
+		propsWindow = swing.frame(title: 'Plexus Configuration', size: [800, 700], location: [200, 300], windowClosing: {System.exit(0)}, /* iconImage: GraphicsUtilities.loadCompatibleImage(Prep.getResource('/tinyCthulhu.png')), */ undecorated: true, show: true, windowOpened: {showTitle()},
+			mousePressed: {e ->
+				def loc = propsWindow.getLocation()
+
+				offsetX = loc.x - e.getXOnScreen()
+				offsetY = loc.y - e.getYOnScreen()
+			},
+			mouseDragged: {e->
+				propsWindow.setLocation((int)(e.getXOnScreen() + offsetX), (int)(e.getYOnScreen() + offsetY))
+			}
+		) {
+			def field = {lbl, key, constraints = 'span 2, wrap, growx', useLabel = true ->
+				if (useLabel) {
+					label(text: lbl)
+				}
+				def tf = textField(actionPerformed: {setprop(key)}, focusLost: {setprop(key)}, text: props[key], constraints: constraints)
 				fields[key] = [
 					setText: {value -> tf.text = value},
 					getText: {tf.text}
 				]
+				tf
 			}
 			def check = {lbl, key, description ->
 				label(text: lbl)
@@ -226,47 +243,115 @@ public class Prep {
 					setText: {value -> cb.selected = value == '1'},
 					getText: {cb.selected ? '1' : '0'}
 				]
+				cb
 			}
-			f = frame(title: 'Plexus Configuration', windowClosing: {System.exit(0)}, layout: new MigLayout('fillx'), pack: true, show: true) {
-				label(text: 'Active Profile:')
-				panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
-					profilesCombo = comboBox(editable: true, actionPerformed: {if (profilesCombo) addProfile(profilesCombo?.editor?.item)})
-					removeProfileButton = button(text: 'Remove Profile', actionPerformed: {removeProfile()}, enabled: false)
+			def makeTitlePainter = {label, pos = null ->
+				compoundPainter() {
+		            mattePainter(fillPaint: new Color(0x28, 0x26, 0x19))
+	            	textPainter(text: label, font: new FontUIResource("SansSerif", Font.BOLD, 12), fillPaint: new Color(0xFF, 0x99, 0x00))
+	            	glossPainter(paint:new Color(1.0f,1.0f,1.0f,0.2f), position: pos ?: GlossPainter.GlossPosition.TOP)
 				}
-				field('Your name: ', 'name')
-				field('Team/Guild: ', 'guild')
-				//field('External IP: ', 'external_ip')
-				label(text: 'External IP: ')
-				def extIpField = textField(actionPerformed: {setprop('external_ip')}, focusLost: {setprop('external_ip')}, text: p['external_ip'], constraints: 'growx')
-				fields['external_ip'] = [
-					setText: {value -> extIpField.text = value},
-					getText: {extIpField.text}
-				]
-				button(text: "Discover", actionPerformed: { discoverExternalIP() }, constraints: 'wrap')
-				field('External port: ', 'external_port')
-				check('Use UPnP', 'upnp', 'If checked, make sure UPnP is enabled on your router')
-				field('Pastry port: ', 'pastry_port')
-				field('Pastry boot host: ', 'pastry_boot_host')
-				field('Pastry boot port: ', 'pastry_boot_port')
-				field('Sauer cmd: ', 'sauer_cmd')
-				field('Sauer port: ', 'sauer_port')
-				check('Verbose Log', 'verbose_log', 'Turn on verbose logging')
-				label(text: 'Launch sauer: ')
-				sauerButton = checkBox(text: 'If checked, it will auto start the Plexus custom Sauerbraten', actionPerformed: { evt -> props.sauer_mode = evt.source.selected ? 'launch' : 'noLaunch' }, constraints: 'wrap' )
-				label(text: "Node id: ")
-				nodeIdLabel = label(text: props.nodeId ?: "none", constraints: 'wrap, growx')
-				panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
-					button(text: "Start", actionPerformed: {f.dispose(); finished(true)})
-					button(text: "Save and Exit", actionPerformed: {f.dispose(); finished(false)} )
-					button(text: "Exit", actionPerformed: { System.exit(0) } )
+	        }
+			panel(backgroundPainter: new MattePainter(new Color(0,0,0,127)), border: new DropShadowBorder(Color.BLACK, 15), layout: new MigLayout('fill, ins 0')) {
+				panel(layout: new MigLayout('fill, ins 0'), constraints: 'growx,wrap') {
+					def killbox = panel(constraints: 'width 16, height 16, pos container.x2-16 container.y', background: new Color(255, 255, 255, 0), backgroundPainter: new ImagePainter(Prep.getResource('/tinyCthulhu.png')),
+						mousePressed: {e -> System.exit(0)}
+					)
+					killbox.backgroundPainter.scaleToFit = true
+					label(minimumSize: [24,24], text: ' ', foregroundPainter: makeTitlePainter('Properties For PLEXUS: Killer App of the Future - Here Today!', GlossPainter.GlossPosition.BOTTOM), constraints: 'growx, height 24,wrap')
 				}
-				button(text: 'Clear P2P Cache', actionPerformed: { clearCache() } )
+				panel(constraints: 'width 48, height 32, pos footer.x2-48 footer.y2-32', background: new Color(255, 255, 255, 0), backgroundPainter: new ImagePainter(Prep.getResource('/tentacles.png')),
+					mousePressed: {e ->
+	    				def sz = propsWindow.size
+		
+	    				offsetX = sz.width - e.getXOnScreen()
+	    				offsetY = sz.height - e.getYOnScreen()
+					},
+					mouseDragged: {e->
+		        		propsWindow.setSize((int)(e.getXOnScreen() + offsetX), (int)(e.getYOnScreen() + offsetY))
+					}
+				)
+				tabbedPane(constraints: 'grow,wrap') {
+					scroll = scrollPane(name: 'Settings', border: null, verticalScrollBarPolicy: ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, horizontalScrollBarPolicy: ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED) {
+						box() {
+							panel(layout: new MigLayout('fillx,ins 0')) {
+								panel(layout: new MigLayout(''), constraints: 'wrap,spanx,growx') {
+									label(text: 'Active Profile:')
+									profilesCombo = comboBox(editable: true, actionPerformed: {
+										if (profilesCombo) addProfile(profilesCombo?.editor?.item)
+										showTitle()
+									})
+									removeProfileButton = button(text: 'Remove Profile', actionPerformed: { if (MessageBox.AreYouSure("Remove Profile", "Are you sure you want to remove the $props.profile profile?")) removeProfile()}, enabled: false)
+								}
+								panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Player'), constraints: 'wrap,spanx,growx') {
+									field('Your name: ', 'name', 'span 2, growx')
+									field('Team/Guild: ', 'guild')
+								}
+								panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Peer'), constraints: 'wrap,spanx,growx') {
+									check('Verbose Log', 'verbose_log', 'Turn on verbose logging')
+									label(text: "Node id: ")
+									nodeIdLabel = label(text: props.nodeId ?: "none", constraints: 'wrap, growx')
+									field('Pastry port: ', 'pastry_port')
+									label('External IP: ')
+									panel(layout: new MigLayout('fill, ins 0'), constraints: 'wrap, growx, spanx') {
+										field('', 'external_ip', 'growx', false)
+										button(text: "Discover", toolTipText: 'Discover your external IP.', actionPerformed: { props.external_ip = testConnectivity().address; showprop('external_ip')})
+										field('Port: ', 'external_port', 'width 64px,wrap')
+									}
+									check('Use UPnP', 'upnp', 'If checked, make sure UPnP is enabled on your router')
+								}
+								panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Boot Peer'), constraints: 'wrap,spanx,growx') {
+									label('Pastry boot host: ')
+									panel(layout: new MigLayout('fill, ins 0'), constraints: 'wrap, growx, spanx') {
+										field('', 'pastry_boot_host', 'growx', false)
+										field('Port: ', 'pastry_boot_port', 'width 64px')
+									}
+								}
+								panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Sauerbraten'), constraints: 'wrap,spanx,growx') {
+									field('Sauer cmd: ', 'sauer_cmd')
+									field('Sauer port: ', 'sauer_port')
+									label(text: 'Launch sauer: ')
+									sauerButton = checkBox(text: 'If checked, it will auto start the Plexus custom Sauerbraten', actionPerformed: { evt -> props.sauer_mode = evt.source.selected ? 'launch' : 'noLaunch' }, constraints: 'wrap' )
+								}
+								panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
+									button(text: "Start", toolTipText: 'Press to start Plexus', actionPerformed: {propsWindow.dispose(); propsWindow = null; finished(true)})
+									button(text: "Save and Exit", toolTipText: 'Save your changes and exit', actionPerformed: {propsWindow.dispose(); propsWindow = null; finished(false)} )
+									button(text: "Exit", toolTipText: 'Exit without saving your changes', actionPerformed: { System.exit(0) } )
+								}
+								button(text: 'Clear P2P Cache', toolTipText: 'Clear the p2p file cache for the current profile', actionPerformed: { clearCache() } )
+							}
+						}
+					}
+					panel(name: 'Diagnostics', layout: new MigLayout('fill')) {
+						button(text: 'Test connectivity', actionPerformed: {println testConnectivity()}, constraints: 'wrap,top')
+					}
+				}
+				label(minimumSize: [24,24], text: ' ', foregroundPainter: makeTitlePainter('Copyright (C) 2008, TEAM CTHULHU', GlossPainter.GlossPosition.BOTTOM), constraints: 'growx, height 24, id footer')
 			}
 			update()
 			chooseProfile(props.last_profile)
-			f.setLocation(200, 200)
-			f.size = [500, (int)f.size.height] as Dimension
+			showTitle()
+			scroll.verticalScrollBar.unitIncrement = 16
 		}
+		if (System.properties['os.name'] != 'Linux') {
+			com.sun.awt.AWTUtilities.setWindowOpacity(propsWindow, 1)
+			com.sun.awt.AWTUtilities.setWindowOpaque(propsWindow, false)
+		}
+	}
+	def static testConnectivity(listen = true) {
+		if (conProps?.status != 'success') {
+			def sock = listen ? new ServerSocket(Integer.parseInt(props.pastry_port)) : null
+			def con = new URL("http://plubble.com/p2p.php?port=$props.external_port").openConnection()
+			def input = con.getInputStream()
+
+			conProps = [:] as Properties
+			conProps.load(input)
+			input.close()
+			if (sock) {
+				sock.close()
+			}
+		}
+		return conProps
 	}
 	def static clearCache() {
 		def dir = new File('fred').getAbsoluteFile().getParent()
@@ -291,14 +376,14 @@ public class Prep {
 		if (prof) {
 			if (props.addProfile(prof)) {
 				props.setProfile(prof)
-				initProps()
+				props.initProps()
 			}
 		}
 		chooseProfile(prof)
 	}
 	def static chooseProfile(item) {
 		props.setLastProfile(item)
-		println ("setting last_profile to $props.last_profile")
+		println ("setting last_profile to '$props.last_profile'")
 		props.setProfile(item)
 		removeProfileButton.enabled = !!props.profile
 		fields.each {

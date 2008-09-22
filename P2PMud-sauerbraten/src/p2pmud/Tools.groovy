@@ -1,17 +1,40 @@
 package p2pmud
 
-import org.bouncycastle.crypto.digests.SHA1Digest
 import rice.p2p.util.SecurityUtils
 import rice.pastry.Id
 import org.codehaus.groovy.runtime.StackTraceUtils
 import java.util.zip.ZipFile
-import rice.Continuationimport rice.Continuation.MultiContinuation
-public class Tools {
-	def static digest = new SHA1Digest()
+import rice.Continuation
+import rice.Continuation.MultiContinuation
+import java.security.MessageDigest
 
+public class Tools {
+	def static digest = MessageDigest.getInstance("SHA-1")
+
+    def static addSanitizedStackTrace(t, lines) {
+        if (t.getCause()) {
+        	addSanitizedStackTrace(t.getCause(), lines)
+        	lines.add(0, "caused by: $t")
+        }
+        t = StackTraceUtils.sanitize(t);
+        StackTraceElement[] trace = t.getStackTrace();
+        for (int i = 0; i < trace.length; i++) {
+            StackTraceElement stackTraceElement = trace[i];
+            lines.add(i, "\tat "+stackTraceElement.getClassName()
+            	+"["+ stackTraceElement.getMethodName()+"] ("
+            	+ stackTraceElement.getFileName() + ":"+stackTraceElement.getLineNumber()+")");
+        }
+    }
 	def static stackTrace(ex) {
-		ex.printStackTrace()
-		StackTraceUtils.printSanitizedStackTrace(ex)
+//		ex.printStackTrace()
+		def w = new PrintWriter(System.err)
+		w.println(ex)
+		def lines = []
+		addSanitizedStackTrace(ex, lines)
+		lines.each {
+			w.println it
+		}
+		w.flush()
 	}
 	def static deleteAll(file) {
 		def f = file as File
@@ -56,6 +79,7 @@ public class Tools {
 	def static copyAll(from, to) {
 		from = from as File
 		to = to as File
+		if (!from.exists()) return
 		if (from.isFile()) {
 			copyFile(from, to);
 		} else {
@@ -123,7 +147,8 @@ public class Tools {
 		bytes.encodeBase64()
 	}
 	def static contentId(byte[] bytes) {
-		Id.build(SecurityUtils.hash(bytes))
+//		Id.build(SecurityUtils.hash(bytes))
+		Id.build(digest.digest(bytes))
 	}
 	def static guard(block) {
 		return {r->
@@ -177,5 +202,9 @@ public class Tools {
 		items.each {
 			block(it, multi.getSubContinuation(counter++))
 		}
+	}
+	
+	def static getCwd() {
+		return new File('').getAbsoluteFile()
 	}
 }

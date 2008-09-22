@@ -1,5 +1,7 @@
 package p2pmud;
 
+import groovy.lang.Closure;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -76,6 +78,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	public static String node_interface;
 	public static boolean verboseLogging = false;
 	public static File logFile = null;
+	public static File sauerLogFile = null;
 	
 	public static void main(P2PMudCommandHandler handler, Runnable neighborChangeBlock, String args[]) throws Exception {
 		cmdHandler = handler;
@@ -197,7 +200,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 										File base = new File(new File(System.getProperty("sauerdir")), "/packages/p2pmud");
 
 										Thread.sleep(5000);
-										test.wimpyGetFile(rice.pastry.Id.build(savedCmds.get(i)), base, new Continuation<ArrayList<?>, Exception>() {
+										test.wimpyGetFile(rice.pastry.Id.build(savedCmds.get(i)), base, new Closure(this) {}, new Continuation<ArrayList<?>, Exception>() {
 											public void receiveResult(ArrayList<?> result) {
 												if (((Collection)result.get(1)).isEmpty()) {
 													System.out.println("Loaded file: " + result.get(0));
@@ -241,9 +244,9 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 										final String dstDir = savedCmds.get(++i);
 										String id = savedCmds.get(++i);
 
-										test.wimpyGetFile(rice.pastry.Id.build(id), new File(cacheDir), new Continuation<ArrayList<?>, Exception>() {
+										test.wimpyGetFile(rice.pastry.Id.build(id), new File(cacheDir), new Closure(this) {}, new Continuation<ArrayList<?>, Exception>() {
 											public void receiveResult(ArrayList<?> result) {
-												P2PMudFile.fetchDirFromProperties(cacheDir, result.get(3), Tools.properties(result.get(0)), dstDir, new Continuation() {
+												P2PMudFile.fetchDirFromProperties(cacheDir, result.get(3), Tools.properties(result.get(0)), dstDir, 0, new Closure(this) {}, new Continuation() {
 													public void receiveResult(Object result) {
 														System.out.println("STORED");
 													}
@@ -487,15 +490,20 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	/**
 	 * sends the P2PMudFile to cont
 	 */
-	public void wimpyStoreFile(final File cacheDir, final Object filename, final Continuation<P2PMudFile, Exception> cont, boolean mutable, final boolean cacheOverride) {
+int count;
+	public void wimpyStoreFile(final File cacheDir, final Object filename, final Closure callback, final Continuation<P2PMudFile, Exception> cont, boolean mutable, final boolean cacheOverride) {
 		final ArrayList<PastContent> chunks = P2PMudFile.create(cacheDir, filename, mutable, cacheOverride);
 
 		if (!cacheOverride && chunks.size() == 1) {
 			System.out.println("FILE ALREADY CACHED: " + (filename instanceof byte[] ? "<data>" : filename) + " because it is already cached");
+			for (int i = 0; i < ((P2PMudFile) chunks.get(0)).chunks.size(); i++) {
+				callback.call();
+			}
 			cont.receiveResult((P2PMudFile) chunks.get(0));
 		} else {
 			System.out.println("STORING FILE: " + chunks.get(0) + (cacheOverride ? " [overriding cache]" : ""));
-			storeChunks((P2PMudFile)chunks.get(0), new Continuation<P2PMudFile, Exception>() {
+count = 0;
+			storeChunks((P2PMudFile)chunks.get(0), callback, new Continuation<P2PMudFile, Exception>() {
 				public void receiveResult(P2PMudFile result) {
 					File dest = result.filename(cacheDir);
 
@@ -514,7 +522,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 			}, chunks, chunkBatch);
 		}
 	}
-	protected void storeChunks(final P2PMudFile mudFile, final Continuation<P2PMudFile, Exception> cont, final ArrayList<PastContent> chunks, final int attempts) {
+	protected void storeChunks(final P2PMudFile mudFile, final Closure callback, final Continuation<P2PMudFile, Exception> cont, final ArrayList<PastContent> chunks, final int attempts) {
 		int contCount = 0;
 		int stored = Math.min(chunkBatch, chunks.size());
 		MultiContinuation multi = new MultiContinuation(new Continuation<Object[], Exception>() {
@@ -533,7 +541,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 				} else if (attempts == 0) {
 					cont.receiveException(new RuntimeException("Failed to store chunks: " + chunks));
 				} else {
-					storeChunks(mudFile, cont, chunks, failureCount == result.length ? attempts - 1 : chunkBatch);
+					storeChunks(mudFile, callback, cont, chunks, failureCount == result.length ? attempts - 1 : chunkBatch);
 				}
 			}
 			public void receiveException(Exception exception) {
@@ -542,10 +550,19 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		}, stored);
 
 		for (PastContent content : chunks) {
+			final Continuation<Object, Exception> sub = multi.getSubContinuation(contCount++);
+
 			if (content instanceof P2PMudFileChunk) {
 				System.out.println("INSERTING CHUNK: " + ((P2PMudFileChunk)content).offset);
 			}
-			past.insert(content, multi.getSubContinuation(contCount++));
+final int c = count++;
+			past.insert(content, new Continuation.StandardContinuation(sub) {
+				public void receiveResult(Object result) {
+					System.out.println("CALLBACK #" + c);
+					callback.call();
+					sub.receiveResult(result);
+				}
+			});
 			if (contCount >= stored) {
 				break;
 			}
@@ -554,7 +571,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	/**
 	 * Sends {filename, missingChunks, P2PMudFile, id} to handler
 	 */
-	public void wimpyGetFile(final Id id, final File cacheDir, final Continuation handler) {
+	public void wimpyGetFile(final Id id, final File cacheDir, final Closure callback, final Continuation cont) {
 		System.out.println("LOOKING UP: " + id.toStringFull());
 		cacheDir.mkdirs();
 		if (P2PMudFile.filename(cacheDir, id).exists()) {
@@ -564,7 +581,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 			l.add(null);
 			l.add(null);
 			l.add(id);
-			handler.receiveResult(l);
+			cont.receiveResult(l);
 		} else {
 			past.lookup(id, new Continuation<P2PMudFile, Exception>() {
 				public void receiveResult(final P2PMudFile file) {
@@ -572,18 +589,18 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 						String data[] = new String[file.chunks.size()];
 
 						System.out.println("RETRIEVED FILE OBJECT: " + file + ", getting chunks");
-						getChunks(cacheDir, handler, file, file.chunks, data, 0);
+						getChunks(cacheDir, callback, cont, file, file.chunks, data, 0);
 					} else {
-						handler.receiveException(new FileNotFoundException("No file found for " + id.toStringFull()));
+						cont.receiveException(new FileNotFoundException("No file found for " + id.toStringFull()));
 					}
 				}
 				public void receiveException(Exception exception) {
-					handler.receiveException(exception);
+					cont.receiveException(exception);
 				}
 			});
 		}
 	}
-	protected void getChunks(final File cacheDir, final Continuation handler, final P2PMudFile file, final ArrayList<Id> chunks, final String data[], final int attempt) {
+	protected void getChunks(final File cacheDir, final Closure callback, final Continuation handler, final P2PMudFile file, final ArrayList<Id> chunks, final String data[], final int attempt) {
 		if (attempt > chunkBatch) {
 			//maybe pass the missing chunks in this exception
 			handler.receiveException(new RuntimeException("Made " + attempt + " attempts to get file without receiving any new data"));
@@ -629,7 +646,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 						value.add(file.getId());
 						handler.receiveResult(value);
 					} else {
-						getChunks(cacheDir, handler, file, missing, data, !any ? attempt + 1 : 0);
+						getChunks(cacheDir, callback, handler, file, missing, data, !any ? attempt + 1 : 0);
 					}
 				} catch (Exception ex) {
 					handler.receiveException(ex);
@@ -642,8 +659,15 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 
 		for (int i = 0; i < chunks.size(); i++) {
 			if (i < count) {
+				final Continuation<Object, Exception> sub = cont.getSubContinuation(i);
+
 				System.out.println("LOOKING UP CHUNK: " + chunks.get(i).toStringFull());
-				past.lookup(chunks.get(i), cont.getSubContinuation(i));
+				past.lookup(chunks.get(i), new Continuation.StandardContinuation(sub) {
+					public void receiveResult(Object result) {
+						callback.call(file.chunks.size());
+						sub.receiveResult(result);
+					}
+				});
 			} else {
 				missing.add(chunks.get(i));
 			}
