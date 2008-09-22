@@ -223,9 +223,7 @@ public class Prep {
 				offsetX = loc.x - e.getXOnScreen()
 				offsetY = loc.y - e.getYOnScreen()
 			},
-			mouseDragged: {e->
-				propsWindow.setLocation((int)(e.getXOnScreen() + offsetX), (int)(e.getYOnScreen() + offsetY))
-			}
+			mouseDragged: {e-> propsWindow.setLocation((int)(e.getXOnScreen() + offsetX), (int)(e.getYOnScreen() + offsetY))}
 		) {
 			def field = {lbl, key, constraints = 'span 2, wrap, growx', useLabel = true ->
 				if (useLabel) {
@@ -255,13 +253,6 @@ public class Prep {
 				}
 	        }
 			topPanel = panel(backgroundPainter: new MattePainter(new Color(0,0,0,127)), border: new DropShadowBorder(Color.BLACK, 15), layout: new MigLayout('fill, ins 0, gap 0 0')) {
-				panel(layout: new MigLayout('fill, ins 0'), constraints: 'growx,wrap') {
-					def killbox = panel(constraints: 'width 16, height 16, pos container.x2-16 container.y', background: new Color(255, 255, 255, 0), backgroundPainter: new ImagePainter(Prep.getResource('/tinyCthulhu.png')),
-						mousePressed: {e -> System.exit(0)}
-					)
-					killbox.backgroundPainter.scaleToFit = true
-					label(minimumSize: [24,24], text: ' ', foregroundPainter: makeTitlePainter('Properties For PLEXUS: Killer App of the Future - Here Today!', GlossPainter.GlossPosition.TOP), constraints: 'growx, height 24,wrap')
-				}
 				widget(new PlexusImagePanel(Prep.getResource('/tentacles.png')), constraints: 'width 48, height 32, pos footer.x2-48 footer.y2-32', background: new Color(255, 255, 255, 0),
 					mousePressed: {e ->
     					def sz = propsWindow.size
@@ -269,14 +260,15 @@ public class Prep {
     					offsetX = sz.width - e.getXOnScreen()
     					offsetY = sz.height - e.getYOnScreen()
 					},
-					mouseDragged: {e->
-		        		propsWindow.setSize((int)(e.getXOnScreen() + offsetX), (int)(e.getYOnScreen() + offsetY))
-					}
+					mouseDragged: {e-> propsWindow.setSize((int)(e.getXOnScreen() + offsetX), (int)(e.getYOnScreen() + offsetY))}
 				)
-				tabbedPane(constraints: 'grow,wrap') {
+				def killbox = panel(constraints: 'pos label.x2-32 0, width 32, height 32', background: new Color(255, 255, 255, 0), backgroundPainter: new ImagePainter(Prep.getResource('/tinyCthulhu.png')), mousePressed: {e -> System.exit(0)})
+				killbox.backgroundPainter.scaleToFit = true
+				label(minimumSize: [24,24], text: ' ', foregroundPainter: makeTitlePainter('Properties For PLEXUS: Killer App of the Future - Here Today!', GlossPainter.GlossPosition.TOP), constraints: 'id label, width 100%-15, height 24, pos 0 0')
+				tabbedPane(constraints: 'width 100%-15, height 100%-48-15, pos 0 24') {
 					scroll = scrollPane(name: 'Settings', border: null, verticalScrollBarPolicy: ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, horizontalScrollBarPolicy: ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED) {
 						box() {
-							panel(layout: new MigLayout('fillx,ins 0')) {
+							panel(layout: new MigLayout('fillx,ins 0,nocache')) {
 								panel(layout: new MigLayout(''), constraints: 'wrap,spanx,growx') {
 									label(text: 'Active Profile:')
 									profilesCombo = comboBox(editable: true, actionPerformed: {
@@ -328,12 +320,12 @@ public class Prep {
 						button(text: 'Test connectivity', actionPerformed: {println testConnectivity()}, constraints: 'wrap,top')
 					}
 				}
-				label(minimumSize: [24,24], text: ' ', foregroundPainter: makeTitlePainter('Copyright (C) 2008, TEAM CTHULHU', GlossPainter.GlossPosition.BOTTOM), constraints: 'growx, height 24, id footer')
+				label(minimumSize: [24,24], text: ' ', foregroundPainter: makeTitlePainter('Copyright (C) 2008, TEAM CTHULHU', GlossPainter.GlossPosition.BOTTOM), constraints: 'id footer, height 24, width 100%-15, pos 0 visual.h-24-15')
 			}
 			topPanel.opaque = false
 			update()
 			chooseProfile(props.last_profile)
-			showTitle()
+//			showTitle()
 			scroll.verticalScrollBar.unitIncrement = 16
 		}
 		if (System.properties['os.name'] != 'Linux') {

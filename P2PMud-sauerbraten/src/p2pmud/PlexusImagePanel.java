@@ -6,6 +6,7 @@ import java.awt.image.Raster;
 import java.net.URL;
 import org.jdesktop.swingx.JXImagePanel;
 
+@SuppressWarnings("serial")
 public class PlexusImagePanel extends JXImagePanel {
 	public Raster raster;
 	public int sample[];
@@ -15,15 +16,14 @@ public class PlexusImagePanel extends JXImagePanel {
 		super(url);
 	}
 	public boolean contains(int x, int y) {
-		if (!super.contains(x, y)) {
-			return false;
-		}
-		if (imageBounds == null) {
-			imageBounds = getRaster().getBounds();
-		}
-		if (imageBounds.contains(x, y)) {
-			sample = getRaster().getPixel(x, y, sample);
-			return sample[3] != 0;
+		if (super.contains(x, y)) {
+			if (imageBounds == null) {
+				imageBounds = getRaster().getBounds();
+			}
+			if (imageBounds.contains(x, y)) {
+				sample = getRaster().getPixel(x, y, sample);
+				return sample[3] != 0;
+			}
 		}
 		return false;
 	}
