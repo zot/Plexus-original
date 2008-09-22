@@ -3,6 +3,10 @@
 #include "pch.h"
 #include "engine.h"
 
+#ifdef TC
+#include "../remote/tc.h"
+#endif
+
 header hdr;
 int worldscale;
 
@@ -1081,7 +1085,7 @@ COMMAND(mapname, "");
 void mappath()
 {
 	char path[256];
-	_snprintf(path, sizeof(path), "packages%c%s", PATHDIV, cl->getclientmap());
+	snprintf(path, sizeof(path), "packages%c%s", PATHDIV, cl->getclientmap());
 	char *mapogz = strstr(path, "/map");
 	if (!mapogz) mapogz = strstr(path, "\\map");
 	if (mapogz) *mapogz = '\0';

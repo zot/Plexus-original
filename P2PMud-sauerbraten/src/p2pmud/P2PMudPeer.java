@@ -78,6 +78,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	public static String node_interface;
 	public static boolean verboseLogging = false;
 	public static File logFile = null;
+	public static File sauerLogFile = null;
 	
 	public static void main(P2PMudCommandHandler handler, Runnable neighborChangeBlock, String args[]) throws Exception {
 		cmdHandler = handler;

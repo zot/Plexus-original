@@ -6,6 +6,10 @@
 #include "pch.h"
 #include "engine.h"
 
+#ifdef TC
+#include "../remote/tc.h"
+#endif
+
 #include "textedit.h"
 
 static bool layoutpass, actionon = false;
@@ -500,7 +504,7 @@ struct gui : g3d_gui
 #ifdef TC
 			char buf[256];
 			extern char *tc_guipath;
-			_snprintf(buf, sizeof(buf), "%s%cguioverlay.png", (tc_guipath == NULL || *tc_guipath == '\0') ? "data" : tc_guipath, PATHDIV);
+			snprintf(buf, sizeof(buf), "%s%cguioverlay.png", (tc_guipath == NULL || *tc_guipath == '\0') ? "data" : tc_guipath, PATHDIV);
             if(!overlaytex || 0 != strcmp(buf, overlaytex->name)) overlaytex = textureload(buf);
 #else
             if(!overlaytex) overlaytex = textureload("data/guioverlay.png");
@@ -520,7 +524,7 @@ struct gui : g3d_gui
 #ifdef TC
 			char buf[256];
 			extern char *tc_guipath;
-			_snprintf(buf, sizeof(buf), "%s%cguislider.png", (tc_guipath == NULL || *tc_guipath == '\0') ? "data" : tc_guipath, PATHDIV);
+			snprintf(buf, sizeof(buf), "%s%cguislider.png", (tc_guipath == NULL || *tc_guipath == '\0') ? "data" : tc_guipath, PATHDIV);
             if(!slidertex || 0 != strcmp(buf, slidertex->name)) slidertex = textureload(buf);
 #else
             if(!slidertex) slidertex = textureload("data/guislider.png");
@@ -566,7 +570,7 @@ struct gui : g3d_gui
 #ifdef TC
 				char tname[256];
 				extern char *tc_guipath;
-				_snprintf(tname, sizeof(tname), "%s%cicons%c%s.jpg", (tc_guipath == NULL || *tc_guipath == '\0') ? "packages" : tc_guipath, PATHDIV, PATHDIV, icon);
+				snprintf(tname, sizeof(tname), "%s%cicons%c%s.jpg", (tc_guipath == NULL || *tc_guipath == '\0') ? "packages" : tc_guipath, PATHDIV, PATHDIV, icon);
 #else
                 s_sprintfd(tname)("packages/icons/%s.jpg", icon);
 #endif
@@ -588,7 +592,7 @@ struct gui : g3d_gui
 #ifdef TC
 		char buf[256];
 		extern char *tc_guipath;
-		_snprintf(buf, sizeof(buf), "%s%cguiskin.png", (tc_guipath == NULL || *tc_guipath == '\0') ? "data" : tc_guipath, PATHDIV);
+		snprintf(buf, sizeof(buf), "%s%cguiskin.png", (tc_guipath == NULL || *tc_guipath == '\0') ? "data" : tc_guipath, PATHDIV);
         if(!skintex || 0 != strcmp(buf, skintex->name)) skintex = textureload(buf);
 #else
         if(!skintex) skintex = textureload("data/guiskin.png");
