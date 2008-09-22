@@ -260,6 +260,17 @@ public class Prep {
 					killbox.backgroundPainter.scaleToFit = true
 					label(minimumSize: [24,24], text: ' ', foregroundPainter: makeTitlePainter('Properties For PLEXUS: Killer App of the Future - Here Today!', GlossPainter.GlossPosition.BOTTOM), constraints: 'growx, height 24,wrap')
 				}
+				panel(constraints: 'width 48, height 32, pos footer.x2-48 footer.y2-32', background: new Color(255, 255, 255, 0), backgroundPainter: new ImagePainter(Prep.getResource('/tentacles.png')),
+					mousePressed: {e ->
+	    				def sz = propsWindow.size
+		
+	    				offsetX = sz.width - e.getXOnScreen()
+	    				offsetY = sz.height - e.getYOnScreen()
+					},
+					mouseDragged: {e->
+		        		propsWindow.setSize((int)(e.getXOnScreen() + offsetX), (int)(e.getYOnScreen() + offsetY))
+					}
+				)
 				tabbedPane(constraints: 'grow,wrap') {
 					scroll = scrollPane(name: 'Settings', border: null, verticalScrollBarPolicy: ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, horizontalScrollBarPolicy: ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED) {
 						box() {
@@ -315,20 +326,7 @@ public class Prep {
 						button(text: 'Test connectivity', actionPerformed: {println testConnectivity()}, constraints: 'wrap,top')
 					}
 				}
-				panel(layout: new MigLayout('fill, ins 0'), constraints: 'growx,wrap') {
-					panel(constraints: 'width 16, height 16, pos container.x2-16 container.y2-16', background: new Color(255, 255, 255, 0), backgroundPainter: new ImagePainter(Prep.getResource('/resizeHandle.png')),
-						mousePressed: {e ->
-		    				def sz = propsWindow.size
-		
-		    				offsetX = sz.width - e.getXOnScreen()
-		    				offsetY = sz.height - e.getYOnScreen()
-						},
-						mouseDragged: {e->
-			        		propsWindow.setSize((int)(e.getXOnScreen() + offsetX), (int)(e.getYOnScreen() + offsetY))
-						}
-					)
-					label(minimumSize: [24,24], text: ' ', foregroundPainter: makeTitlePainter('Copyright (C) 2008, TEAM CTHULHU', GlossPainter.GlossPosition.BOTTOM), constraints: 'growx, height 24')
-				}
+				label(minimumSize: [24,24], text: ' ', foregroundPainter: makeTitlePainter('Copyright (C) 2008, TEAM CTHULHU', GlossPainter.GlossPosition.BOTTOM), constraints: 'growx, height 24, id footer')
 			}
 			update()
 			chooseProfile(props.last_profile)
