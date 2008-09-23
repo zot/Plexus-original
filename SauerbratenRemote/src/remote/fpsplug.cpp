@@ -17,7 +17,8 @@ char idbuf[1024];
 void dynent::renderplayer(fpsclient &cl, const char *mdlname, void *attachments, int attack, int attackdelay, int lastaction, int lastpain, float sink) {
 	fpsent *ent = (fpsent *)this;
 	if(ent->state!=CS_DEAD) {
-		if (!mdlname) mdlname = "mrfixit";
+		mdlname = ent->modelname;
+		if (!mdlname || *mdlname == '\0') mdlname = "mrfixit";
 
 		attachments = NULL;		// this will turn off all weapons
         renderclient(ent, mdlname, (modelattach *) attachments, attack, attackdelay, lastaction, lastpain, sink);
