@@ -1,13 +1,16 @@
 package p2pmud;
 
+import groovy.security.GroovyCodeSourcePermission;
+import groovy.util.GroovyScriptEngine;
 import java.io.File;
 import java.io.FilePermission;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.security.AccessControlException;
 import java.security.Permission;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.PropertyPermission;
 import javolution.util.FastSet;
 import sun.security.util.SecurityConstants;
 
@@ -18,26 +21,34 @@ public class PlexusSecurityManager extends SecurityManager {
 	private FastSet<Permission> permissions = new FastSet<Permission>(new HashSet<Permission>(Arrays.asList(allowed)));
 
 	private static final Permission allowed[] = {
-		SecurityConstants.CHECK_MEMBER_ACCESS_PERMISSION
+		new RuntimePermission("accessClassInPackage.sun.reflect"),
+		SecurityConstants.CHECK_MEMBER_ACCESS_PERMISSION,
+		new GroovyCodeSourcePermission("/groovy/script"),
+		new GroovyCodeSourcePermission("/groovy/shell"),
+		SecurityConstants.CREATE_CLASSLOADER_PERMISSION,
+		new PropertyPermission("groovyjarjarantlr.ast", SecurityConstants.PROPERTY_READ_ACTION),
+		new PropertyPermission("groovy.ast", SecurityConstants.PROPERTY_READ_ACTION),
 	};
 	public static final PlexusSecurityManager soleInstance = new PlexusSecurityManager();
-	private static final String filePath;
-	static {
-		URI clUrl;
-		String val = null;
-		try {
-			clUrl = PlexusSecurityManager.class.getResource("/Props.class").toURI();
-			if (clUrl.getScheme().equals("file")) {
-				val = new File(clUrl).getParent();
-				System.out.println("PLEXUS PATH: " + val);
-			}
-		} catch (URISyntaxException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		filePath = val;
-	}
+	private static final String fileReadPrefixes[] = {
+		new File(filePath(PlexusSecurityManager.class.getResource("/Props.class"))).getParent(),
+		filePath(GroovyScriptEngine.class.getResource("GroovyScriptEngine.class")),
+		"/groovy/script",
+		"/groovy/shell",
+	};
 
+	public static String filePath(URL url) {
+		if (url.getProtocol().equals("jar")) {
+			String pref;
+			try {
+				pref = filePath(new URL(url.getPath()));
+				return pref.substring(0, pref.indexOf('!'));
+			} catch (MalformedURLException e) {
+				throw new RuntimeException("Couldn't get path from URL", e);
+			}
+		}
+		return url.getPath();
+	}
 	public static void main(String[] args) {
 		install();
 		uninstall(soleInstance.key);
@@ -114,8 +125,12 @@ public class PlexusSecurityManager extends SecurityManager {
 		if (perm instanceof FilePermission) {
 			FilePermission p = (FilePermission) perm;
 			
-			if (p.getActions().equals("read") && p.getName().startsWith(filePath)) {
-				return true;
+			if (p.getActions().equals("read")) {
+				for (String path : fileReadPrefixes) {
+					if (p.getName().startsWith(path)) {
+						return true;
+					}
+				}
 			}
 		}
 		return false;
@@ -130,6 +145,8 @@ public class PlexusSecurityManager extends SecurityManager {
 		if (!isAuthorized() && !isOk(perm)) {
 //			new Exception("BORK: " + perm).printStackTrace();
 			super.checkPermission(perm);
+//		} else {
+//			System.out.println("AUTHORIZED: " + perm);
 		}
 	}
 }
