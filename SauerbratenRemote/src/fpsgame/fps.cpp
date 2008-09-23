@@ -18,6 +18,29 @@
 
 
 	vector<hudimageinfo *> tc_hudimages;
+
+char *tc_gethudcommand(SDL_Surface *screen, int x, int y) {
+	int w = screen->w, h = screen->h;
+	int x2 = x * screen->w / 1800, y2 = y * screen->h / 1800;
+	loopvrev(tc_hudimages) {
+		hudimageinfo *hi = tc_hudimages[i];
+		char *txt = executeret(hi->tc_var);
+		if (txt && *txt) {
+			if (hi->type[0] == 'i') {
+				int left = (hi->x >= 0) ? hi->x : w + hi->x, top = (hi->y >= 0) ? hi->y : h + hi->y;
+				int width = (hi->w > 0) ? hi->w : w + hi->w, height = (hi->h > 0) ? hi->h : h + hi->h; 
+				if (x >= left && x <= left + width && y >= top && y <= top + height) return hi->clicked;
+
+			} else if (hi->type[0] == 't') {
+				int left = (hi->x >= 0) ? hi->x : w + hi->x, top = (hi->y >= 0) ? hi->y : h + hi->y;
+				int width = (hi->w > 0) ? hi->w : w + hi->w, height = (hi->h > 0) ? hi->h : h + hi->h; 
+				if (x2 >= left && x2 <= left + width && y2 >= top && y2 <= top + height) return hi->clicked;
+			}
+		}
+	}
+	return NULL;
+}
+
 #endif
 
 #ifndef STANDALONE
@@ -869,6 +892,7 @@ struct fpsclient : igameclient
 			}
 		}
 	}
+
 #else
     void gameplayhud(int w, int h)
     {

@@ -3,6 +3,7 @@
 #include "pch.h"
 #include "engine.h"
 
+
 void cleanup()
 {
     cleanupserver();
@@ -741,6 +742,18 @@ void checkinput()
 							SDL_WarpMouse(restoreX, restoreY);
 							tc_setcursorpos(grabbedX, grabbedY); 
 							//fprintf(stderr, "releasing mouse\n");
+						}
+					}
+				}
+				static char *hud_command = NULL;
+				extern char *tc_gethudcommand(SDL_Surface *screen, int x, int y);
+				if (event.button.button == 1) {
+					if (event.type == SDL_MOUSEBUTTONDOWN) {
+						hud_command = tc_gethudcommand(screen, event.motion.x, event.motion.y);
+					} else if (event.type == SDL_MOUSEBUTTONUP) {
+						char *foo = tc_gethudcommand(screen, event.motion.x, event.motion.y);
+						if (foo != NULL && *foo != '\0' && foo == hud_command) {
+							executeret(hud_command);
 						}
 					}
 				}

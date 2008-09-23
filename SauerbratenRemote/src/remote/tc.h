@@ -16,7 +16,7 @@
 #define __HUDIMAGEINFO__
 	class hudimageinfo {
 	public:
-		char type[32], tc_var[256];
+		char type[32], tc_var[256], clicked[256];
 		int x, y, w, h;
 	};
 #endif
