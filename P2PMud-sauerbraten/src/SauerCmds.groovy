@@ -155,4 +155,7 @@ public class SauerCmds extends Cmds {
 		main.sauer('p2p', conProps?.status == 'success' ? "showgui [P2P Success]" : "showgui [P2P Failure]")
 		main.dumpCommands()
 	}
+	def showgui() {
+		// popup the groovy gui
+	}
 }
