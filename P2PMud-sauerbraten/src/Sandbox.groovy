@@ -1,0 +1,3 @@
+import p2pmud.PlexusSecurityManagerpublic class Sandbox {
+	private static Object key = PlexusSecurityManager.getKey()		public static void main(String[] args) {		PlexusSecurityManager.install()//		println readFile('/tmp/duh')		println(('/tmp/duh' as File).text)	}	def static readFile(file) {		def result		PlexusSecurityManager.runAuthorized(key) {			result = (file as File).text		}		return result	}
+}
