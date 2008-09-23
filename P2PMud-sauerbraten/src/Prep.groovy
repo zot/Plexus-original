@@ -1,4 +1,4 @@
-import java.awt.BorderLayout
+import javax.imageio.ImageIOimport java.awt.BorderLayout
 import org.jdesktop.swingx.JXFrame
 import javax.swing.JFrame
 import com.sun.awt.AWTUtilities
@@ -264,8 +264,7 @@ public class Prep {
 				}
 			}
 		}
-		propsWindow = config ? new JFrame(config) : new JXFrame()
-		swing.widget(propsWindow, title: 'Plexus Configuration', size: [800, 700], location: [200, 300], windowClosing: {System.exit(0)}, undecorated: true,
+		propsWindow = config ? new JFrame(config) : new JXFrame()		swing.widget(propsWindow, iconImage: ImageIO.read(Prep.getResource('/tinyCthulhu.png')), title: 'Plexus Configuration', size: [800, 700], location: [200, 300], windowClosing: {System.exit(0)}, undecorated: true,
 			mousePressed: {e ->
 				def loc = propsWindow.getLocation()
 
@@ -275,8 +274,8 @@ public class Prep {
 			mouseDragged: {e-> propsWindow.setLocation((int)(e.getXOnScreen() + offsetX), (int)(e.getYOnScreen() + offsetY))}
 		)
 		propsWindow.contentPane = swing.panel(layout: new BorderLayout()) {
-			topPanel = panel(opaque: false, background: new Color(0, 0, 0, 0), border: new DropShadowBorder(Color.BLACK, 15), layout: new MigLayout('fill, ins 0, gap 0 0')) {
-				widget(new PlexusImagePanel(Prep.getResource('/tentacles.png')), constraints: 'width 48, height 32, pos footer.x2-48 footer.y2-32', background: new Color(255, 255, 255, 0),
+			topPanel = panel(opaque: false, doubleBuffered: false, background: new Color(0, 0, 0, 0), border: new DropShadowBorder(Color.BLACK, 15), layout: new MigLayout('fill, ins 0, gap 0 0')) {
+				widget(new PlexusImagePanel(Prep.getResource('/tentacles.png')), doubleBuffered: false, constraints: 'width 48, height 32, pos footer.x2-48 footer.y2-32', background: new Color(255, 255, 255, 0),
 					mousePressed: {e ->
     					def sz = propsWindow.size
 		
@@ -285,62 +284,64 @@ public class Prep {
 					},
 					mouseDragged: {e-> propsWindow.setSize((int)(e.getXOnScreen() + offsetX), (int)(e.getYOnScreen() + offsetY))}
 				)
-				def killbox = panel(constraints: 'pos label.x2-32 0, width 32, height 32', background: new Color(255, 255, 255, 0), backgroundPainter: new ImagePainter(Prep.getResource('/tinyCthulhu.png')), mousePressed: {e -> System.exit(0)})
+				def killbox = panel(constraints: 'pos label.x2-32 0, width 32, height 32', doubleBuffered: false, background: new Color(255, 255, 255, 0), backgroundPainter: new ImagePainter(Prep.getResource('/tinyCthulhu.png')), mousePressed: {e -> System.exit(0)})
 				killbox.backgroundPainter.scaleToFit = true
 				label(minimumSize: [24,24], text: ' ', foregroundPainter: makeTitlePainter('Properties For PLEXUS: Killer App of the Future - Here Today!', GlossPainter.GlossPosition.TOP), constraints: 'id label, width 100%-15, height 24, pos 0 0')
-				tabbedPane(constraints: 'width 100%-15, height 100%-48-15, pos 0 24') {
-					scroll = scrollPane(name: 'Settings', border: null, verticalScrollBarPolicy: ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, horizontalScrollBarPolicy: ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED) {
-						box() {
-							panel(layout: new MigLayout('fillx,ins 0,nocache')) {
-								panel(layout: new MigLayout(''), constraints: 'wrap,spanx,growx') {
-									label(text: 'Active Profile:')
-									profilesCombo = comboBox(editable: true, actionPerformed: {
-										if (profilesCombo) addProfile(profilesCombo?.editor?.item)
-//										showTitle()
-									})
-									removeProfileButton = button(text: 'Remove Profile', actionPerformed: { if (MessageBox.AreYouSure("Remove Profile", "Are you sure you want to remove the $props.profile profile?")) removeProfile()}, enabled: false)
-								}
-								panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Player'), constraints: 'wrap,spanx,growx') {
-									field('Your name: ', 'name', 'span 2, growx')
-									field('Team/Guild: ', 'guild')
-								}
-								panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Peer'), constraints: 'wrap,spanx,growx') {
-									check('Verbose Log', 'verbose_log', 'Turn on verbose logging')
-									label(text: "Node id: ")
-									nodeIdLabel = label(text: props.nodeId ?: "none", constraints: 'wrap, growx')
-									field('Pastry port: ', 'pastry_port')
-									label('External IP: ')
-									panel(layout: new MigLayout('fill, ins 0'), constraints: 'wrap, growx, spanx') {
-										field('', 'external_ip', 'growx', false)
-										button(text: "Discover", toolTipText: 'Discover your external IP.', actionPerformed: { props.external_ip = testConnectivity().address; showprop('external_ip')})
-										field('Port: ', 'external_port', 'width 64px,wrap')
+				panel(layout: new BorderLayout(), constraints: 'width 100%-15, height 100%-48-15, pos 0 24') {
+					tabbedPane() {
+						scroll = scrollPane(name: 'Settings', border: null, verticalScrollBarPolicy: ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, horizontalScrollBarPolicy: ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED) {
+							box() {
+								panel(layout: new MigLayout('fillx,ins 0,nocache')) {
+									panel(layout: new MigLayout(''), constraints: 'wrap,spanx,growx') {
+										label(text: 'Active Profile:')
+										profilesCombo = comboBox(editable: true, actionPerformed: {
+											if (profilesCombo) addProfile(profilesCombo?.editor?.item)
+	//										showTitle()
+										})
+										removeProfileButton = button(text: 'Remove Profile', actionPerformed: { if (MessageBox.AreYouSure("Remove Profile", "Are you sure you want to remove the $props.profile profile?")) removeProfile()}, enabled: false)
 									}
-									check('Use UPnP', 'upnp', 'If checked, make sure UPnP is enabled on your router')
-								}
-								panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Boot Peer'), constraints: 'wrap,spanx,growx') {
-									label('Pastry boot host: ')
-									panel(layout: new MigLayout('fill, ins 0'), constraints: 'wrap, growx, spanx') {
-										field('', 'pastry_boot_host', 'growx', false)
-										field('Port: ', 'pastry_boot_port', 'width 64px')
+									panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Player'), constraints: 'wrap,spanx,growx') {
+										field('Your name: ', 'name', 'span 2, growx')
+										field('Team/Guild: ', 'guild')
 									}
+									panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Peer'), constraints: 'wrap,spanx,growx') {
+										check('Verbose Log', 'verbose_log', 'Turn on verbose logging')
+										label(text: "Node id: ")
+										nodeIdLabel = label(text: props.nodeId ?: "none", constraints: 'wrap, growx')
+										field('Pastry port: ', 'pastry_port')
+										label('External IP: ')
+										panel(layout: new MigLayout('fill, ins 0'), constraints: 'wrap, growx, spanx') {
+											field('', 'external_ip', 'growx', false)
+											button(text: "Discover", toolTipText: 'Discover your external IP.', actionPerformed: { props.external_ip = testConnectivity().address; showprop('external_ip')})
+											field('Port: ', 'external_port', 'width 64px,wrap')
+										}
+										check('Use UPnP', 'upnp', 'If checked, make sure UPnP is enabled on your router')
+									}
+									panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Boot Peer'), constraints: 'wrap,spanx,growx') {
+										label('Pastry boot host: ')
+										panel(layout: new MigLayout('fill, ins 0'), constraints: 'wrap, growx, spanx') {
+											field('', 'pastry_boot_host', 'growx', false)
+											field('Port: ', 'pastry_boot_port', 'width 64px')
+										}
+									}
+									panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Sauerbraten'), constraints: 'wrap,spanx,growx') {
+										field('Sauer cmd: ', 'sauer_cmd')
+										field('Sauer port: ', 'sauer_port')
+										label(text: 'Launch sauer: ')
+										sauerButton = checkBox(text: 'If checked, it will auto start the Plexus custom Sauerbraten', actionPerformed: { evt -> props.sauer_mode = evt.source.selected ? 'launch' : 'noLaunch' }, constraints: 'wrap' )
+									}
+									panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
+										button(text: "Start", toolTipText: 'Press to start Plexus', actionPerformed: {propsWindow.dispose(); propsWindow = null; finished(true)})
+										button(text: "Save and Exit", toolTipText: 'Save your changes and exit', actionPerformed: {propsWindow.dispose(); propsWindow = null; finished(false)} )
+										button(text: "Exit", toolTipText: 'Exit without saving your changes', actionPerformed: { System.exit(0) } )
+									}
+									button(text: 'Clear P2P Cache', toolTipText: 'Clear the p2p file cache for the current profile', actionPerformed: { clearCache() } )
 								}
-								panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Sauerbraten'), constraints: 'wrap,spanx,growx') {
-									field('Sauer cmd: ', 'sauer_cmd')
-									field('Sauer port: ', 'sauer_port')
-									label(text: 'Launch sauer: ')
-									sauerButton = checkBox(text: 'If checked, it will auto start the Plexus custom Sauerbraten', actionPerformed: { evt -> props.sauer_mode = evt.source.selected ? 'launch' : 'noLaunch' }, constraints: 'wrap' )
-								}
-								panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
-									button(text: "Start", toolTipText: 'Press to start Plexus', actionPerformed: {propsWindow.dispose(); propsWindow = null; finished(true)})
-									button(text: "Save and Exit", toolTipText: 'Save your changes and exit', actionPerformed: {propsWindow.dispose(); propsWindow = null; finished(false)} )
-									button(text: "Exit", toolTipText: 'Exit without saving your changes', actionPerformed: { System.exit(0) } )
-								}
-								button(text: 'Clear P2P Cache', toolTipText: 'Clear the p2p file cache for the current profile', actionPerformed: { clearCache() } )
 							}
 						}
-					}
-					panel(name: 'Diagnostics', layout: new MigLayout('fill')) {
-						button(text: 'Test connectivity', actionPerformed: {println testConnectivity()}, constraints: 'wrap,top')
+						panel(name: 'Diagnostics', layout: new MigLayout('fill')) {
+							button(text: 'Test connectivity', actionPerformed: {println testConnectivity()}, constraints: 'wrap,top')
+						}
 					}
 				}
 				label(minimumSize: [24,24], text: ' ', foregroundPainter: makeTitlePainter('Copyright (C) 2008, TEAM CTHULHU', GlossPainter.GlossPosition.BOTTOM), constraints: 'id footer, height 24, width 100%-15, pos 0 visual.h-24-15')
