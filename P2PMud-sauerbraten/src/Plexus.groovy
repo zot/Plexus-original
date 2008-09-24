@@ -979,30 +979,20 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	def updatePlayerList() {
 		if (!peer?.nodeId) return
 		synchronized (presenceLock) {
-			def PlayerGui = 'newgui Players [\n'
-			def cnt = 1
-			def mapCnt = 0
-			def id = peer.nodeId.toStringFull()
-			def mname = "Limbo"
-			def myMap = mapTopic ? getMap(mapTopic.getId().toStringFull()) : null
-			def mapTab = ''
-			def newMapPlayers = []
-
 			updateMapGui()
-			mapCnt = 1
+
+			def id = peer.nodeId.toStringFull()
+			def myMap = mapTopic ? getMap(mapTopic.getId().toStringFull()) : [name: 'Limbo', id: '0']
+			def allPlayers = [], newMapPlayers = []
+
 			cloudProperties.each('player/(..*)') {key, value, match ->
 				def pid = match.group(1)
 
 				if (pid != id) {
 					def who = getPlayer(pid)
-					def map = (!who.map || who.map == 'none') ? 'none' : getMap(who.map)?.name ?: 'unknown map'
-
-					PlayerGui += "guibutton [$who.name ($map)] [alias tc_whisper $who.id; alias selected_player [$who.name]; alias mapIsPrivate $mapIsPrivate; showgui Player]\n"
-					++cnt
+					allPlayers.add(who)
 					if (myMap?.id == who.map) {
-						mapTab += "guibutton [$who.name] [echo $who.id]\n"
 						newMapPlayers.add(who)
-						++mapCnt
 					}
 				}
 			}
@@ -1017,18 +1007,59 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 					}
 				}
 			}
-			if (cnt == 1) PlayerGui += 'guitext "Sorry, no players are online!"\n'
-			PlayerGui += "guibar\n guibutton Close [cleargui]\n"
-			if (myMap) {
-				PlayerGui += "guitab $myMap.name\n$mapTab\n"
-				if (mapCnt == 1) PlayerGui += "guitext [Sorry, no players are connected to $myMap.name!]\n"
-				println "MAPCNT: $mapCnt"
-				PlayerGui += "guibar\n guibutton Close [cleargui]\n"
-			}
-			PlayerGui += "]; peers $cnt; tc_mapcount $mapCnt; tc_loadmsg ${myMap ? myMap.name : 'none'}"
-			sauer('Player', cvtNewlines(PlayerGui))
-			dumpCommands()
+			
+			dumpPlayersMenu(myMap, allPlayers)
 		}
+	}
+	def dumpPlayersMenu(myMap, allPlayers) {
+		println "DUMPING PLAYERS TO SAUER"
+		def PlayerGui = 'alias showpcostume [ guibar; guiimage (concatword "packages/plexus/models/thumbs/" (get $pcostumenames [[@@guirollovername]])) $guirolloveraction 4 1 "packages/plexus/dist/tc_logo.jpg"];'
+		PlayerGui += "alias pcostumenames ["
+		allPlayers.each( {who -> PlayerGui += " [$who.id] $who.costume" 	} )
+		PlayerGui += " ];"
+		
+		PlayerGui += 'newgui Players [ \n guilist [ \n   guilist [ \n'
+		def i = 0, needClose = true, last = allPlayers.size()
+		def wrapAfter = 12
+		def cnt = 0
+		def mapCnt = 0
+		def mapTab = ''
+		def mymapid = myMap?.id
+				
+		allPlayers.each( {who -> 
+				def map = (!who.map || who.map == 'none') ? 'none' : getMap(who.map)?.name ?: 'unknown map'
+
+				PlayerGui += "guibutton [$who.name ($map)] [alias tc_whisper $who.id; alias selected_player [$who.name]; alias mapIsPrivate $mapIsPrivate; showgui Player]\n"
+				++cnt
+				if (++i % wrapAfter == 0) {
+					PlayerGui += '] \n showpcostume \n ] \n'
+					needClose = false
+					if (i != last) {
+						def s = Math.min(i, last - 1), e = Math.min(i + wrapAfter, last - 1)
+						s = Character.toUpperCase((allPlayers[s].name[0]) as char)
+						e = Character.toUpperCase((allPlayers[e].name[0]) as char)
+						PlayerGui += " guitab [More $s-$e] \n guilist [ \n   guilist [ \n"; needClose = true
+					}
+				}
+				
+				if (mymapid == who.map) {
+					mapTab += "guibutton [$who.name] [echo $who.id]\n"
+					++mapCnt
+				}
+		} )
+		if (cnt == 0) PlayerGui += 'guitext "Sorry, no players are online!"\n'
+		PlayerGui += "guibar\n guibutton Close [cleargui]\n"
+		if (needClose) PlayerGui += '] \n   showpcostume  \n     ] \n'
+		
+		if (mymapid) {
+			PlayerGui += "guitab $myMap.name\n$mapTab\n"
+			if (mapCnt == 0) PlayerGui += "guitext [Sorry, no players are connected to $myMap.name!]\n"
+			println "MAPCNT: $mapCnt"
+			//PlayerGui += "guibar\n guibutton Close [cleargui]\n"
+		}
+		PlayerGui += "]; peers $cnt; tc_mapcount $mapCnt; tc_loadmsg ${allPlayers ? myMap.name : 'none'}"
+		sauer('Player', cvtNewlines(PlayerGui))
+		dumpCommands()
 	}
 	def shareMap(id) {
 		def key = "privateMap/${mapTopic.getId().toStringFull()}"
@@ -1218,7 +1249,6 @@ println "COSTUME SELS: $triples"
 		guitext += 'alias showcostume [ guibar; guiimage (concatword "packages/plexus/models/thumbs/" (get $costumenames [[@@guirollovername]])) $guirolloveraction 4 1 "packages/plexus/dist/tc_logo.jpg"];'
 		guitext += "alias costumenames ["
 		for (trip in triples) {
-//			guitext += " [$i: ${trip[0]}] [${trip[1] ?: ''}]"
 			guitext += " [${trip[0]}] ${trip[1]}"
 		}
 		guitext += " ];"
