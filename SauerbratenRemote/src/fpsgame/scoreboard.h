@@ -179,7 +179,12 @@ struct scoreboard : g3d_callback
         g.start(menustart, 0.03f, NULL, false);
    
         int gamemode = cl.gamemode;
-        s_sprintfd(modemapstr)("%s: %s", fpsserver::modestr(gamemode), cl.getclientmap()[0] ? cl.getclientmap() : "[new map]");
+#ifdef TC
+		extern char *tc_loadmsg;
+        s_sprintfd(modemapstr)("%s: %s", fpsserver::modestr(gamemode), tc_loadmsg[0] ? tc_loadmsg : "[new map]");
+#else
+		s_sprintfd(modemapstr)("%s: %s", fpsserver::modestr(gamemode), cl.getclientmap()[0] ? cl.getclientmap() : "[new map]");
+#endif
         if((gamemode>1 || (gamemode==0 && (multiplayer(false) || cl.cc.demoplayback))) && cl.minremain >= 0)
         {
             if(!cl.minremain) s_strcat(modemapstr, ", intermission");

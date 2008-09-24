@@ -1048,14 +1048,14 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 				}
 		} )
 		if (cnt == 0) PlayerGui += 'guitext "Sorry, no players are online!"\n'
-		PlayerGui += "guibar\n guibutton Close [cleargui]\n"
+		//PlayerGui += "guibar\n guibutton Close [cleargui]\n"
 		if (needClose) PlayerGui += '] \n   showpcostume  \n     ] \n'
 		
 		if (mymapid) {
 			PlayerGui += "guitab $myMap.name\n$mapTab\n"
 			if (mapCnt == 0) PlayerGui += "guitext [Sorry, no players are connected to $myMap.name!]\n"
 			println "MAPCNT: $mapCnt"
-			//PlayerGui += "guibar\n guibutton Close [cleargui]\n"
+			PlayerGui += "guibar\n guibutton Close [cleargui]\n"
 		}
 		PlayerGui += "]; peers $cnt; tc_mapcount $mapCnt; tc_loadmsg ${allPlayers ? myMap.name : 'none'}"
 		sauer('Player', cvtNewlines(PlayerGui))
