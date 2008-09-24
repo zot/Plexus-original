@@ -2,13 +2,12 @@ import p2pmud.PlexusSecurityManager
 
 public class Sandbox {
 	private static key = PlexusSecurityManager.getKey()
-	private static engine = new GroovyScriptEngine(["file:///tmp/"] as String[])
+	private static engine = new GroovyScriptEngine([new File(Sandbox.getResource('Sandbox.class').toURI()).parentFile] as String[])
 	private static loader = PlexusClassLoader.create(engine, Sandbox.classLoader, key)
 	private static binding = new Binding()
 	
 	public static void main(String[] args) {
 		try {
-			binding.setVariable("Sandbox", this)
 			eval("println 'init'")
 			PlexusSecurityManager.install()
 			PlexusSecurityManager.soleInstance.addSuspiciousThread(Thread.currentThread(), key)
@@ -16,11 +15,10 @@ public class Sandbox {
 			eval("println 'script'")
 			eval("println 'script2'")
 			println readFile('/tmp/duh')
-			eval("def Sandbox; println Sandbox")
+			eval("Sandbox.eval('println \"doy!\"')")
 			PlexusSecurityManager.runAuthorized(key) {
 				eval("println(('/tmp/duh' as File).text)")
 			}
-//			println(('/tmp/duh' as File).text)
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
