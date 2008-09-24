@@ -235,7 +235,7 @@ public class Plexus {
 				removePlayerFromSauerMap(key.substring('player/'.length()))
 			}
 			cloudProperties.changedPropertyHooks.add {
-				updateFriendList()
+				updatePlayerList()
 				updateMapGui()
 				updateCostumeGui()
 			}
@@ -701,7 +701,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			'echo INIT'
 		].join(';'))
 	 	dumpCommands()
-	 	updateFriendList()
+	 	updatePlayerList()
 	 	updateMapGui()
 	 	updateCostumeGui()
 	}
@@ -976,10 +976,10 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		sauer('prep', "echo [Welcome player $name to this world.]; createplayer $id $name")
 		loadCostume(who)
 	}
-	def updateFriendList() {
+	def updatePlayerList() {
 		if (!peer?.nodeId) return
 		synchronized (presenceLock) {
-			def friendGui = 'newgui Friends [\n'
+			def PlayerGui = 'newgui Players [\n'
 			def cnt = 1
 			def mapCnt = 0
 			def id = peer.nodeId.toStringFull()
@@ -997,7 +997,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 					def who = getPlayer(pid)
 					def map = (!who.map || who.map == 'none') ? 'none' : getMap(who.map)?.name ?: 'unknown map'
 
-					friendGui += "guibutton [$who.name ($map)] [alias tc_whisper $who.id; alias selected_friend [$who.name]; alias mapIsPrivate $mapIsPrivate; showgui Friend]\n"
+					PlayerGui += "guibutton [$who.name ($map)] [alias tc_whisper $who.id; alias selected_player [$who.name]; alias mapIsPrivate $mapIsPrivate; showgui Player]\n"
 					++cnt
 					if (myMap?.id == who.map) {
 						mapTab += "guibutton [$who.name] [echo $who.id]\n"
@@ -1017,16 +1017,16 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 					}
 				}
 			}
-			if (cnt == 1) friendGui += 'guitext "Sorry, no friends are online!"\n'
-			friendGui += "guibar\n guibutton Close [cleargui]\n"
+			if (cnt == 1) PlayerGui += 'guitext "Sorry, no players are online!"\n'
+			PlayerGui += "guibar\n guibutton Close [cleargui]\n"
 			if (myMap) {
-				friendGui += "guitab $myMap.name\n$mapTab\n"
-				if (mapCnt == 1) friendGui += "guitext [Sorry, no friends are connected to $myMap.name!]\n"
+				PlayerGui += "guitab $myMap.name\n$mapTab\n"
+				if (mapCnt == 1) PlayerGui += "guitext [Sorry, no players are connected to $myMap.name!]\n"
 				println "MAPCNT: $mapCnt"
-				friendGui += "guibar\n guibutton Close [cleargui]\n"
+				PlayerGui += "guibar\n guibutton Close [cleargui]\n"
 			}
-			friendGui += "]; peers $cnt; tc_mapcount $mapCnt; tc_loadmsg ${myMap ? myMap.name : 'none'}"
-			sauer('friend', cvtNewlines(friendGui))
+			PlayerGui += "]; peers $cnt; tc_mapcount $mapCnt; tc_loadmsg ${myMap ? myMap.name : 'none'}"
+			sauer('Player', cvtNewlines(PlayerGui))
 			dumpCommands()
 		}
 	}
@@ -1212,7 +1212,6 @@ println "STORED COSTUME, adding"
 	 */
 	def dumpCostumeSelections(triples) {
 		def guitext = ''
-		def i = 0
 
 println "COSTUME SELS: $triples"
 		guitext += 'showcostumesgui = [showgui Costumes];'
@@ -1224,12 +1223,23 @@ println "COSTUME SELS: $triples"
 		}
 		guitext += " ];"
 		guitext += 'newgui Costumes [ \n guilist [ \n   guilist [ \n'
-		i = 0
+		def i = 0, needClose = true, last = triples.size()
+		def wrapAfter = 12
 		for (trip in triples) {
-//			guitext += "guibutton [$i: ${trip[0]}] [remotesend useCostume ${trip[0]} ${trip[2]}];"
 			guitext += "guibutton [${trip[0]}] [remotesend useCostume ${trip[0]} ${trip[2]}];"
+			if (++i % wrapAfter == 0) {
+				guitext += '] \n showcostume \n ] \n'
+				needClose = false
+				if (i != last) {
+					def s = Math.min(i, last - 1), e = Math.min(i + wrapAfter, last - 1)
+					s = Character.toUpperCase((triples[s][0]) as char)
+					e = Character.toUpperCase((triples[e][0]) as char)
+					guitext += " guitab [More $s-$e] \n guilist [ \n   guilist [ \n"; needClose = true
+				}
+			}
 		}
-		guitext += '] \n   showcostume  \n     ] \n guitab "Upload"; guifield costume_push_name [] \n guibutton [Import Costume] [remotesend pushCostume $costume_push_name]] '
+		if (needClose) guitext += '] \n   showcostume  \n     ] \n'
+		guitext += 'guitab "Upload"; guifield costume_push_name [] \n guibutton [Import Costume] [remotesend pushCostume $costume_push_name] \n ] '
 		sauer('gui', cvtNewlines(guitext))
 		dumpCommands()
 	}
