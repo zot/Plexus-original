@@ -646,8 +646,9 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 					try {it.shutdownInput()} catch (Exception ex) {}
 					try {it.shutdownOutput()} catch (Exception ex) {}
 					swing.edt {
-						main.gui.extendedState = main.gui.extendedState & ~Frame.ICONIFIED
 						gui.visible = true
+						gui.extendedState = Frame.NORMAL
+						gui.requestFocus()
 					}
 					println "Disconnect"
 				};

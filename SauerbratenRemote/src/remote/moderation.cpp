@@ -864,6 +864,6 @@ ICOMMAND(addhuditem, "sssssss", (char *type, char *exp, char *clicked, char *x, 
 		hi->w = atoi(w);
 		hi->h = atoi(h);
 		tc_hudimages.add(hi);
-		printf("%s\n", hi->clicked);
+		//printf("%s\n", hi->clicked);
 	}
 });
