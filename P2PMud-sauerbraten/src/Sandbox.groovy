@@ -8,6 +8,7 @@ public class Sandbox {
 	private engine = new GroovyScriptEngine(['/tmp/scripts'] as String[], Sandbox.classLoader)
 	private binding = new Binding()
 	private counter = 0
+	private main
 
 	public static void main(String[] args) {
 		try {
@@ -36,9 +37,11 @@ public class Sandbox {
 			ex.printStackTrace();
 		}
 	}
-	def Sandbox(main, dir) {
-		engine = new GroovyScriptEngine([dir] as String[], Sandbox.classLoader)
+	def Sandbox(main, dirs) {
+		this.main = main
+		engine = new GroovyScriptEngine(dirs as String[], Sandbox.classLoader)
 		binding.setVariable('sandbox', this)
+		binding.setVariable('mapProps', main.mapProps)
 		def output = ('/tmp/policy' as File).newOutputStream()
 		def perms = """	permission java.lang.RuntimePermission "accessClassInPackage.sun.reflect";
 	permission java.lang.RuntimePermission "accessDeclaredMembers";

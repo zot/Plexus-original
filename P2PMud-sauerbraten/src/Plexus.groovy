@@ -70,6 +70,7 @@ public class Plexus {
 	def mapname
 	def costume
 	def mapTopic
+	def mapProps = [:]
 	def mapIsPrivate
 	/** cloudProperties is the shared properties object for Plexus
 	 * its keys are path-strings, representing information organized in
@@ -744,10 +745,10 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		fetchDir(id, dir, receiveResult: {result ->
 			def mapPath = subpath(new File(sauerDir, "packages"), dir)
 
+			if (cont) {cont.receiveResult(result)}
 			println "Retrieved map from PAST: $dir, executing: map [$mapPath/map]"
 			sauer('load', "echo loading new map: [$mapPath/map]; tc_loadmsg [$name]; map [$mapPath/map]")
 			dumpCommands()
-			if (cont) {cont.receiveResult(result)}
 		}, receiveException: {ex ->
 			if (cont) {
 				cont.receiveException(ex)
@@ -971,8 +972,13 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			}
 		}
 		if (runScript) {
-			sandbox = new Sandbox(this, groovyScript.parent)
-			sandbox.exec(groovyScript.name)
+			sandbox = new Sandbox(this, [groovyScript.parent])
+			try {
+				sandbox.exec(groovyScript.name)
+			} catch (Exception ex) {
+				System.err.println "Error while executing map script..."
+				ex.printStackTrace()
+			}
 		}
 	}
 	def updateMyPlayerInfo() {
