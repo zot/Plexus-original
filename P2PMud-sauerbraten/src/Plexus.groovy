@@ -1157,14 +1157,14 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		if (who.costume) {
 println "loading costume: $who.costume"
 			def costume = getCostume(who.costume)
-			def costumeFile = new File(plexusDir, "models/$costume.id")
+			def costumeFile = new File(plexusDir, "models/$who.costume")
 
 			if (costumeFile.exists()) {
-				clothe(who, costume.id)
+				clothe(who, who.costume)
 			} else {
-				fetchDir(costume.id, new File(plexusDir, "models/$costume.id"), receiveResult: {r ->
-					clothe(who, costume.id)
-				}, receiveException: {ex -> err("Could not fetch data for costume: $costume.id", ex)})
+				fetchDir(who.costume, new File(plexusDir, "models/$who.costume"), receiveResult: {r ->
+					clothe(who, who.costume)
+				}, receiveException: {ex -> err("Could not fetch data for costume: $who.costume", ex)})
 			}
 		}
 	}
