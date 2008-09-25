@@ -1,3 +1,5 @@
+import org.stringtree.json.JSONWriter
+import org.stringtree.json.JSONReader
 import javax.swing.border.BevelBorder
 import org.jdesktop.swingx.JXStatusBar
 import javax.swing.plaf.FontUIResource
@@ -261,7 +263,7 @@ public class Plexus {
 				def costume = getCostume(key.substring('costume/'.length()))
 
 				println "RECEIVED MAP NOTIFICATION, DOWNLODING..."
-				fetchAndSave("costume", key, costume.dir, "costumes/$costume.dir")
+				fetchAndSave("costume", key, costume.id, "costumes/$costume.id")
 			}
 		}
 		P2PMudPeer.verboseLogging = LaunchPlexus.props.verbose_log == '1'
@@ -383,7 +385,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 												if (tumesCombo.selectedIndex) {
 													def tume = tumes[tumesCombo.selectedIndex - 1]
 			
-													useCostume(tume.name, tume.dir)
+													useCostume(tume.name, tume.id)
 												}
 											}
 										}
@@ -888,6 +890,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	}
 	def getMap(id, entry = null) {
 		checkExec()
+		def map
 		def privateMap = false
 		
 		if (!entry) {
@@ -898,48 +901,59 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			privateMap = true
 		}
 		if (entry) {
-			entry = entry.split(' ')
+			map = new JSONReader().read(entry)
+			map.id = id
+			map.privateMap = privateMap
+			/*
 			return [
 				id: id,
 				dir: entry[0],
 				name: entry[1..-1].join(' '),
 				privateMap: privateMap
 			]
+			 */
 		}
-		return null
+		return map
 	}
 	def getPlayer(id, entry = null) {
+		checkExec()
 		def pl
 
 		entry = entry ?: cloudProperties["player/$id"]
 		if (entry) {
-			entry = entry.split(' ')
+			pl = new JSONReader().read(entry)
+			pl.id = id
+			/*
 			pl = [
 				id: id,
 				map: entry[0] == 'none' ? null : entry[0],
 				costume: entry[1] == 'none' ? null : entry[1],
 				name: entry[2..-1].join(' ')
 			]
-
-			if (pl.map == 'none') {
-				pl.map = null
-			}
+			*/
 		}
 		return pl
 	}
 	def getCostume(id, entry = null) {
+		checkExec()
+		def costume
 		if (!entry) {
 			entry = cloudProperties["costume/$id"]
 		}
 		if (entry) {
-			entry = entry.split(' ')
+			costume = new JSONReader().read(entry)
+			costume.id = id
+			return costume
+			/*
 			return [
-				dir: id,
+				id: id,
 				thumb: entry[0] == 'none' ? null : entry[0],
 				type: entry[1],
 				name: entry[2..-1].join(' ')
 			]
+			*/
 		}
+		return costume
 	}
 	def updateMyPlayerInfo() {
 		if (!headless) {
@@ -949,7 +963,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	//		after we get the players list, send ourselves out
 			def node = peer.nodeId.toStringFull()
 	//TODO put tume in here and persist in props
-			transmitSetCloudProperty("player/$node", "${id ?: 'none'} ${costume ?: 'none'} $name")
+			transmitSetCloudProperty("player/$node", new JSONWriter().write([map: id, costume: costume, name: name]))
 		}
 	}
 	def removePlayerFromSauerMap(node) {
@@ -1143,14 +1157,14 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		if (who.costume) {
 println "loading costume: $who.costume"
 			def costume = getCostume(who.costume)
-			def costumeFile = new File(plexusDir, "models/$costume.dir")
+			def costumeFile = new File(plexusDir, "models/$costume.id")
 
 			if (costumeFile.exists()) {
-				clothe(who, costume.dir)
+				clothe(who, costume.id)
 			} else {
-				fetchDir(costume.dir, new File(plexusDir, "models/$costume.dir"), receiveResult: {r ->
-					clothe(who, costume.dir)
-				}, receiveException: {ex -> err("Could not fetch data for costume: $costume.dir", ex)})
+				fetchDir(costume.id, new File(plexusDir, "models/$costume.id"), receiveResult: {r ->
+					clothe(who, costume.id)
+				}, receiveException: {ex -> err("Could not fetch data for costume: $costume.id", ex)})
 			}
 		}
 	}
@@ -1181,7 +1195,7 @@ println "STORING COSTUME"
 				}
 				try {
 println "STORED COSTUME, adding"
-					transmitSetCloudProperty("costume/$fileId", "$thumb ${thumb ? type : 'none'} $name")
+					transmitSetCloudProperty("costume/$fileId", new JSONWriter().write([thumb: thumb, type: thumb ? type : null, name: name]))
 				} catch (Exception ex) {
 					err("Error pushing costume", ex)
 				}
@@ -1197,7 +1211,7 @@ println "STORED COSTUME, adding"
 			def tume = getCostume(match.group(1))
 
 			tumes.add(tume)
-			if (tume.thumb && !new File(costumesDir, "thumbs/${tume.dir}.$tume.type").exists()) {
+			if (tume.thumb && !new File(costumesDir, "thumbs/${tume.id}.$tume.type").exists()) {
 				needed.add(tume)
 			}
 		}
@@ -1211,7 +1225,7 @@ println "STORED COSTUME, adding"
 						System.err.println "Error fetching thumb for costume: ${needed[i].name}..."
 						files[i].printStackTrace()
 					} else {
-						def thumbFile = new File(costumesDir, "thumbs/${needed[i].dir}.${needed[i].type}")
+						def thumbFile = new File(costumesDir, "thumbs/${needed[i].id}.${needed[i].type}")
 
 						thumbFile.getParentFile().mkdirs()
 						copyFile(files[i][0], thumbFile)
@@ -1240,7 +1254,7 @@ println "STORED COSTUME, adding"
 				}
 			}
 		}
-		tumes.each {c-> trips.add([c.name, c.thumb ? "${c.dir}.$c.type" : '', c.dir])}
+		tumes.each {c-> trips.add([c.name, c.thumb ? "${c.id}.$c.type" : '', c.id])}
 		dumpCostumeSelections(trips)
 	}
 	//varval = [do [result $@arg1]]
@@ -1353,7 +1367,7 @@ println "pushMap: [$nameArgs]"
 				def topic = newMap ? peer.randomId().toStringFull() : map.id
 				def id = result.file.getId().toStringFull()
 
-				transmitSetCloudProperty("${privateMap == '1' ? 'privateMap' : 'map'}/$topic", "$id $name")
+				transmitSetCloudProperty("${privateMap == '1' ? 'privateMap' : 'map'}/$topic", new JSONWriter().write([dir: id, name: name]))
 			},
 			receiveException: {ex -> exec {err("Error pushing map", ex)}})
 
