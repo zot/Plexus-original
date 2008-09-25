@@ -41,29 +41,34 @@ public class CloudProperties {
 		}
 	}
 	def getAt(String key) {
-		properties[key as String]
+		key = key as String
+		properties[key]
 	}
 	def putAt(String key, value) {
+		key = key as String
+		value = value as String
 		def old = properties[key]
 
-		properties[key as String] = value as String
+		properties[key] = value
 		setPropertyHooks.each {key ==~ it.key && it.value(key, value, old)}
 		propertiesChanged(key)
 	}
 	def removeProperty(key) {
+		key = key as String
 		properties.remove(key)
 		removePropertyHooks.each {key ==~ it.key && it.value(key, properties[key])}
 		propertiesChanged(key)
 	}
 	def propertiesChanged(key) {
+		key = key as String
 		if (!key || (persistentPropertyPattern && key ==~ persistentPropertyPattern)) {
 			save()
 		}
-		changedPropertyHooks.each {it()}
 		println "NEW PROPERTIES"
 		properties.each {
 			println "$it.key: $it.value"
 		}
+		changedPropertyHooks.each {it()}
 	}
 	def setProperties(props, saveProps) {
 		properties = props
