@@ -164,6 +164,7 @@ public class Plexus {
 			executorThread = Thread.currentThread()
 		}
 		soleInstance = this
+		Sandbox.initialize(this)
 		name = args[1]
 		headless = LaunchPlexus.props.headless == '1'
 		if (!headless) {

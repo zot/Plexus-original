@@ -3,33 +3,48 @@ import sun.security.provider.PolicyFile
 import java.security.ProtectionDomain
 import java.security.PrivilegedAction
 import java.security.AccessController
-import p2pmud.PlexusSecurityManager
 
 public class Sandbox {
 	private static engine = new GroovyScriptEngine(['/tmp/scripts'] as String[], Sandbox.classLoader)
 	private static binding = new Binding()
 	private static counter = 0
-	
+
 	public static void main(String[] args) {
 		try {
-			installPolicy()
-			eval('println "Context: ${java.security.AccessController.context}"')
-			eval("println 'init'")
-			eval("new File('/tmp/blorfl') << 'george'")
+			initialize(null)
+			binding.setVariable('value', 10)
+			ev('println "value: $value"')
+			ev('println "Context: ${java.security.AccessController.context}"')
+			ev("println 'init'")
+			def block = ev("return {new File('/tmp/blorfl') << 'george'}")
+			block()
 			System.setSecurityManager(new SecurityManager())
-			eval('println Sandbox')
-			eval("class bubba {static {println(('/tmp/duh' as File).text)}}")
-			eval("println 'script'")
-			eval("println Sandbox.readFile('/tmp/duh')")
-			eval("Sandbox.eval('println \"doy!\"')")
-			eval("new Duh().run()")
-			eval("println(('/tmp/duh' as File).text)")
-			eval("new File('/tmp/floop') << 'fred'")
+			block()
+			ev('println Sandbox')
+			ev("class bubba {static {println(('/tmp/duh' as File).text)}}")
+			ev("println 'script'")
+			ev("println Sandbox.readFile('/tmp/duh')")
+			ev("Sandbox.evalExpr('println \"doy!\"')")
+			ev("new Duh().run()")
+			ev("println(('/tmp/duh' as File).text)")
+			ev("new File('/tmp/floop') << 'fred'")
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
 	}
-	def static installPolicy() {
+	def static ev(expr) {
+		try {
+			return evalExpr(expr)
+		} catch (Exception ex) {
+			System.err.println("Exception evaluating expression: $expr")
+			ex.printStackTrace()
+		} catch (Error err) {
+			System.err.println("Error evaluating expression: $expr")
+			err.printStackTrace()
+		}
+	}
+	def static initialize(main) {
+		binding.setVariable('main', main)
 		def output = ('/tmp/policy' as File).newOutputStream()
 		def perms = """	permission java.lang.RuntimePermission "accessClassInPackage.sun.reflect";
 	permission java.lang.RuntimePermission "accessDeclaredMembers";
@@ -53,37 +68,27 @@ public class Sandbox {
 		output.close()
 		Policy.setPolicy(new PolicyFile(new URL("file:/tmp/policy")))
 	}
-	def static eval(String str) {
-		try {
-			def name = "tmp_${counter++}.groovy"
-			def file = "/tmp/scripts/$name" as File
+	def static evalExpr(exp) {
+		def name = "tmp_${counter++}.groovy"
+		def file = "/tmp/scripts/$name" as File
 
-			java.security.AccessController.doPrivileged({
-				if (file.exists()) {
-					file.delete()
-				}
-				file << str
-				println "WRITING $str"
-				return null;
-			} as java.security.PrivilegedAction);
-			def obj
-			java.security.AccessController.doPrivileged({
-				obj = engine.createScript(name, binding)
-			} as java.security.PrivilegedAction);
-			obj.run()
-		} catch (Error ex) {
-			println "ERROR DURING EVAL OF [$str]..."
-			System.out.flush()
-			ex.printStackTrace()
-			System.err.flush()
-		} catch (Exception ex) {
-			println "ERROR DURING EVAL OF [$str]..."
-			System.out.flush()
-			ex.printStackTrace()
-			System.err.flush()
-		}
-//		System.out.flush()
-//		System.err.flush()
+		java.security.AccessController.doPrivileged({
+			if (file.exists()) {
+				file.delete()
+			}
+			file << exp
+			println "WRITING $exp"
+			return null;
+		} as java.security.PrivilegedAction);
+		eval(name)
+	}
+	def static eval(file) {
+		def obj
+
+		java.security.AccessController.doPrivileged({
+			obj = engine.createScript(file as String, binding)
+		} as java.security.PrivilegedAction);
+		obj.run()
 	}
 	def static readFile(file) {
 		def result
