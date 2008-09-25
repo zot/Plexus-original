@@ -85,11 +85,6 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		neighborChange = neighborChangeBlock;
 		main(args);
 	}
-	/**
-	 * Usage: 
-	 * java [-cp FreePastry-<version>.jar] rice.tutorial.lesson1.DistTutorial localbindport bootIP bootPort
-	 * example java rice.tutorial.DistTutorial 9001 pokey.cs.almamater.edu 9001
-	 */
 	public static void main(final String[] args) throws Exception {
 		try {
 			// the port to use locally
@@ -271,10 +266,6 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 				}.start();
 			}
 		} catch (Exception e) {
-			// remind user how to use
-			System.out.println("Usage:"); 
-			System.out.println("java [-cp FreePastry-<version>.jar] rice.tutorial.lesson1.DistTutorial localbindport bootIP bootPort");
-			System.out.println("example java rice.tutorial.DistTutorial 9001 pokey.cs.almamater.edu 9001");
 			throw e; 
 		}
 	}

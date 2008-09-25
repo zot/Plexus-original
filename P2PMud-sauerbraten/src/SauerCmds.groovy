@@ -1,3 +1,4 @@
+import java.awt.Frame
 public class SauerCmds extends Cmds {
 	def currentPosition
 	def positionLock = new Object()
@@ -156,6 +157,14 @@ public class SauerCmds extends Cmds {
 		main.dumpCommands()
 	}
 	def showgui() {
-		main.gui.setVisible(!main.gui.isVisible())
+		println "iconified: ${Frame.ICONIFIED}, state: ${main.gui.extendedState}"
+		main.swing.edt {
+			if (main.gui.extendedState & Frame.ICONIFIED) {
+				main.gui.extendedState = main.gui.extendedState & ~Frame.ICONIFIED
+				main.gui.visible = true
+			} else {
+				main.gui.visible = !main.gui.visible
+			}
+		}
 	}
 }
