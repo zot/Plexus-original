@@ -65,6 +65,7 @@ public class Plexus {
 	def cacheDir
 	def mapDir
 	def mapPrefix = 'packages/dist/storage'
+	def sandbox
 	def peer
 	def mapname
 	def costume
@@ -109,7 +110,6 @@ public class Plexus {
 	def cloudFields = [:]
 
 	def static sauerExec
-	def static soleInstance
 	def static TIME_STAMP = new SimpleDateFormat("yyyyMMdd-HHmmsszzz")
 	def static final PLEXUS_KEY = "Plexus: main"
 	def static final WORLDS_KEY = "Plexus: worlds"
@@ -166,8 +166,6 @@ public class Plexus {
 		exec {
 			executorThread = Thread.currentThread()
 		}
-		soleInstance = this
-		Sandbox.initialize(this)
 		name = args[1]
 		headless = LaunchPlexus.props.headless == '1'
 		if (!headless) {
@@ -954,6 +952,28 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			*/
 		}
 		return costume
+	}
+	def newMapHook(name) {
+		println "newmap: $name"
+		sauer("delp", "deleteallplayers")
+		dumpCommands()
+		mapname = name
+		updateMyPlayerInfo()
+		def groovyScript = name ==~ '[^/]*' ? new File(sauerDir, "packages/base/${name}.groovy") : new File(sauerDir, "packages/${name}.groovy")
+		def runScript = false
+		if (groovyScript.exists()) {
+			if (mapTopic) {
+				def map = getMap(mapTopic.getId().toStringFull())
+
+				runScript = name ==~ ".*/$map.dir/map"
+			} else {
+				runScript = name ==~ '.*/limbo/map(.ogz)?'
+			}
+		}
+		if (runScript) {
+			sandbox = new Sandbox(this, groovyScript.parent)
+			sandbox.exec(groovyScript.name)
+		}
 	}
 	def updateMyPlayerInfo() {
 		if (!headless) {

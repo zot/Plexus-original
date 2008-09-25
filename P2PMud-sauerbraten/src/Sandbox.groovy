@@ -5,46 +5,40 @@ import java.security.PrivilegedAction
 import java.security.AccessController
 
 public class Sandbox {
-	private static engine = new GroovyScriptEngine(['/tmp/scripts'] as String[], Sandbox.classLoader)
-	private static binding = new Binding()
-	private static counter = 0
+	private engine = new GroovyScriptEngine(['/tmp/scripts'] as String[], Sandbox.classLoader)
+	private binding = new Binding()
+	private counter = 0
 
 	public static void main(String[] args) {
 		try {
-			initialize(null)
-			binding.setVariable('value', 10)
-			ev('println "value: $value"')
-			ev('println "Context: ${java.security.AccessController.context}"')
-			ev("println 'init'")
-			def block = ev("return {new File('/tmp/blorfl') << 'george'}")
+			def box = new Sandbox(null, '/tmp/scripts')
+			box.binding.setVariable('value', 10)
+			box.ev('println "value: $value"')
+			box.ev('println "Context: ${java.security.AccessController.context}"')
+			box.ev("println 'init'")
+			def block = box.ev("return {new File('/tmp/blorfl') << 'george'}")
 			block()
 			System.setSecurityManager(new SecurityManager())
-			block()
-			ev('println Sandbox')
-			ev("class bubba {static {println(('/tmp/duh' as File).text)}}")
-			ev("println 'script'")
-			ev("println Sandbox.readFile('/tmp/duh')")
-			ev("Sandbox.evalExpr('println \"doy!\"')")
-			ev("new Duh().run()")
-			ev("println(('/tmp/duh' as File).text)")
-			ev("new File('/tmp/floop') << 'fred'")
+			try {
+				block()
+			} catch (Exception ex) {
+				ex.printStackTrace()
+			}
+			box.ev('println Sandbox')
+			box.ev("class bubba {static {println(('/tmp/duh' as File).text)}}")
+			box.ev("println 'script'")
+			box.ev("println sandbox.readFile('/tmp/duh')")
+			box.ev("sandbox.eval('println \"doy!\"')")
+			box.ev("new Duh().run()")
+			box.ev("println(('/tmp/duh' as File).text)")
+			box.ev("new File('/tmp/floop') << 'fred'")
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
 	}
-	def static ev(expr) {
-		try {
-			return evalExpr(expr)
-		} catch (Exception ex) {
-			System.err.println("Exception evaluating expression: $expr")
-			ex.printStackTrace()
-		} catch (Error err) {
-			System.err.println("Error evaluating expression: $expr")
-			err.printStackTrace()
-		}
-	}
-	def static initialize(main) {
-		binding.setVariable('main', main)
+	def Sandbox(main, dir) {
+		engine = new GroovyScriptEngine([dir] as String[], Sandbox.classLoader)
+		binding.setVariable('sandbox', this)
 		def output = ('/tmp/policy' as File).newOutputStream()
 		def perms = """	permission java.lang.RuntimePermission "accessClassInPackage.sun.reflect";
 	permission java.lang.RuntimePermission "accessDeclaredMembers";
@@ -68,7 +62,18 @@ public class Sandbox {
 		output.close()
 		Policy.setPolicy(new PolicyFile(new URL("file:/tmp/policy")))
 	}
-	def static evalExpr(exp) {
+	def ev(expr) {
+		try {
+			return eval(expr)
+		} catch (Exception ex) {
+			System.err.println("Exception evaluating expression: $expr")
+			ex.printStackTrace()
+		} catch (Error err) {
+			System.err.println("Error evaluating expression: $expr")
+			err.printStackTrace()
+		}
+	}
+	def eval(exp) {
 		def name = "tmp_${counter++}.groovy"
 		def file = "/tmp/scripts/$name" as File
 
@@ -80,9 +85,9 @@ public class Sandbox {
 			println "WRITING $exp"
 			return null;
 		} as java.security.PrivilegedAction);
-		eval(name)
+		exec(name)
 	}
-	def static eval(file) {
+	def exec(file) {
 		def obj
 
 		java.security.AccessController.doPrivileged({
@@ -90,7 +95,7 @@ public class Sandbox {
 		} as java.security.PrivilegedAction);
 		obj.run()
 	}
-	def static readFile(file) {
+	def readFile(file) {
 		def result
 
 		java.security.AccessController.doPrivileged({

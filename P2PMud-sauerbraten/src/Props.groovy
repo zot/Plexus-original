@@ -29,7 +29,7 @@ class Props {
 		} else {
 			this.sauer_cmd = 'packages/plexus/dist/sauerbraten_plexus_windows.exe -t'
 		}
-		this.sauer_cmd += " -lplexus/dist/limbo/map.ogz"
+		this.sauer_cmd += " -lplexus/dist/limbo/map"
 	}
 	
 	def setProfile(prof) {
