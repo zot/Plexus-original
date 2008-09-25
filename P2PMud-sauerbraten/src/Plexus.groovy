@@ -52,6 +52,7 @@ public class Plexus {
 	def queueRunTime = Long.MAX_VALUE
 	def queueBatchPeriod = 200
 	def swing
+	def gui
 	def fields = [:]
 	def runs = 0
 	def pastryCmd
@@ -331,7 +332,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	}
 	def buildPlexusGui() {
 		swing = new SwingXBuilder()
-		def f = swing.frame(title: "PLEXUS [${LaunchPlexus.props.name}]", size: [500, 500], windowClosing: {System.exit(0)}, pack: true, show: true) {
+		gui = swing.frame(title: "PLEXUS [${LaunchPlexus.props.name}]", size: [500, 500], windowClosing: {System.exit(0)}, pack: true, show: true) {
 			def makeTitlePainter = {label, pos = null ->
 				compoundPainter() {
 		            mattePainter(fillPaint: new Color(0x28, 0x26, 0x19))
@@ -1359,12 +1360,17 @@ println "pushMap: [$nameArgs]"
 				storeDir(cont, mapdir)
 			} else {
 				println "sauer"
-				def prefix = (new File(mapname).getParent() ? new File(sauerDir, "packages/$mapname") : new File(sauerDir, "packages/base/$mapname")).getAbsolutePath()
+				def prefix = (new File(mapname).parent ? new File(sauerDir, "packages/$mapname") : new File(sauerDir, "packages/base/$mapname")).getAbsolutePath()
 				def dirmap = ['map.ogz': new File(prefix + ".ogz")]
 				def thumbJpg = new File(prefix + ".jpg")
 				def thumbPng = new File(prefix + ".png")
 				def cfg = new File(prefix + ".cfg")
+				def groovyPfx = "${mapname}."
 
+				new File(prefix).parentFile.eachFileMatch(~"$mapname\\..*groovy") {
+					println "FOUND GROOVY FILE: $it"
+					dirmap["map.${it.name.substring(groovyPfx.length())}"] = it
+				}
 				if (thumbJpg.exists()) {
 					dirmap['map.jpg'] = thumbJpg
 				}

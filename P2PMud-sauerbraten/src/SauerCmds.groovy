@@ -156,6 +156,6 @@ public class SauerCmds extends Cmds {
 		main.dumpCommands()
 	}
 	def showgui() {
-		// popup the groovy gui
+		main.gui.setVisible(!main.gui.isVisible())
 	}
 }
