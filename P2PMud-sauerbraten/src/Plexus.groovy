@@ -1137,7 +1137,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 				playerCount[player.map]++
 			}
 		}
-		def mapsGui = "newgui Worlds [ \n guilist [ \n   guilist [ \n"
+
 		def newMaps = []
 		cloudProperties.each('map/(.*)') {key, value, match ->
 			def map = getMap(match.group(1))
@@ -1145,9 +1145,17 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			ents.add([map.name, map.id, playerCount[map.id]])
 			newMaps.add(map)
 		}
+		ents.sort {a, b -> a[0].compareTo(b[0])}
+		
+		def mapsGui = 'alias showmapthumb [ guibar; guiimage (concatword "packages/plexus/dist/" (get $mapthumbs [[@@guirollovername]])) $guirolloveraction 4 1 "packages/plexus/dist/tc_logo.jpg"];'
+		mapsGui += "alias mapthumbs ["
+		for (trip in ents) {
+			mapsGui += " [${trip[0]}] ${trip[1]}"
+		}
+		mapsGui += " ];"
+		mapsGui += "newgui Worlds [ \n guilist [ \n   guilist [ \n"
 		def i = 0, needClose = true, last = ents.size()
 		def wrapAfter = 12
-		ents.sort {a, b -> a[0].compareTo(b[0])}
 		for (world in ents) {
 			mapsGui += "guibutton [${world[0]} (${world[2]})] [remotesend connectWorld ${world[1]}]\n"
 			if (++i % wrapAfter == 0) {
