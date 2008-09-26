@@ -1,3 +1,6 @@
+import javax.swing.text.html.HTMLEditorKit
+import javolution.util.FastTable
+import p2pmud.NoWrapEditorKit
 import org.stringtree.json.JSONWriter
 import org.stringtree.json.JSONReader
 import javax.swing.border.BevelBorder
@@ -242,8 +245,16 @@ public class Plexus {
 				updatePlayerList()
 				updateMapGui()
 				updateCostumeGui()
+				def buf = "<html><body>" << "CURRENT CLOUD PROPERTIES AS OF ${new Date()}<br><table>"
+				def props = cloudProperties.properties
+				def count = 0
+				new ArrayList(props.keySet()).sort().each {
+					buf << "<tr${count & 1 ? '' : ' style="background-color: rgb(192,255,192)"'}><td><div><b>$it</b></div></td><td><div>${props[it]}</div></td></tr>\n"
+					count++
+				}
+				buf << "</table></body></html>"
 				swing.edt {
-					cloudFields.properties.text = cloudProperties.text
+					cloudFields.properties.text = buf.toString()
 				}
 			}
 			if ((LaunchPlexus.props.sauer_mode ?: 'launch') == 'launch') launchSauer();
@@ -453,7 +464,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 							cloudFields.neighbors = label(constraints: 'growx,wrap')
 							label(text: 'Cloud Properties', constraints: 'growx,spanx,wrap')
 							scrollPane(constraints: 'grow,span,wrap', border: null) {
-								cloudFields.properties = textPane(editable: false)
+								cloudFields.properties = textPane(editable: false, editorKit: new NoWrapEditorKit())
 							}
 						}
 					}
@@ -982,7 +993,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 				sandbox.exec(groovyScript.name)
 			} catch (Exception ex) {
 				System.err.println "Error while executing map script..."
-				ex.printStackTrace()
+				stackTrace(ex)
 			}
 		}
 	}
