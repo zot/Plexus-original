@@ -242,6 +242,9 @@ public class Plexus {
 				updatePlayerList()
 				updateMapGui()
 				updateCostumeGui()
+				swing.edt {
+					cloudFields.properties.text = cloudProperties.text
+				}
 			}
 			if ((LaunchPlexus.props.sauer_mode ?: 'launch') == 'launch') launchSauer();
 			//PlasticLookAndFeel.setPlasticTheme(new DesertBlue());
@@ -450,7 +453,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 							cloudFields.neighbors = label(constraints: 'growx,wrap')
 							label(text: 'Cloud Properties', constraints: 'growx,spanx,wrap')
 							scrollPane(constraints: 'grow,span,wrap', border: null) {
-								cloudFields.properties = textPane()
+								cloudFields.properties = textPane(editable: false)
 							}
 						}
 					}
