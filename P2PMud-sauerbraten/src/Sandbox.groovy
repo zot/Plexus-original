@@ -42,6 +42,7 @@ public class Sandbox {
 		engine = new GroovyScriptEngine(dirs as String[], Sandbox.classLoader)
 		binding.setVariable('sandbox', this)
 		binding.setVariable('mapProps', main.mapProps)
+		binding.setVariable('globalProps', main.globalProps)
 		def output = ('/tmp/policy' as File).newOutputStream()
 		def perms = """	permission java.lang.RuntimePermission "accessClassInPackage.sun.reflect";
 	permission java.lang.RuntimePermission "accessDeclaredMembers";

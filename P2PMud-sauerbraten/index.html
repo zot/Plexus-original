@@ -704,41 +704,45 @@ You can even see a reference to TEAM CTHULHU in the CREDITS file of [[LPMud|http
 #Fall 2005, we commission Steven Missal to create Lovecraftian art
 #Spring 2008, we switch to Sauerbraten, Groovy, and Pastry (on top of Java)</pre>
 </div>
-<div title="RoadMap" modifier="BillBurdick" created="200806191122" modified="200809250753" changecount="170">
+<div title="RoadMap" modifier="BillBurdick" created="200806191122" modified="200809252030" changecount="184">
 <pre>!Milestones
 *~TinyPlexus
+**map/costume export
+**remote guild names not showing
+**groovy libraries in the cloud
 **responsibility allocation doc for each world allocates responsibilities among the peers of a world
 ***when responsibilities or peers join or leave, the topic master reallocates them
 ***we can store doc in PAST
 ***probably need a world-ping
 **cleanup connecting to existing sauer
-*** DONE Missing player problem -- when loading map, players clear out of sauer but not out of plexus id/name tables
+***allow user to restart plexus from sauer
 **incoming cloud change notification to user
 **plexus props editor in sauer
-**port prober in groovy window (and other tools in a diagnostics tab)
+**show feedback for unsuccessful port back-connection during discovery
 **test 0 byte file uploading
 **set CPPFLAGS -DTC in src/Makefile's call to src/enet/configure
-**remote guild names not showing
 **taunt bug
 **Pastry reconnect business (multiple root peers?)
 **camera rotation problem on Linux
 **UI
-***Save menu choice (which calls saveGroovyData())
+***Save hook defined in map.groovy
+***Save menu choice (which calls map's save hook)
 ***Finish tutorial menus
 **World Building
 ***clean up obsolete maps
 ***fix bug in saveGroovyData()
-**Plubble Peer
-***Test
+***persist JSON object as groovy file in map dir for metadata map development
 **Simple game
 ***use crosshairs for aiming when they are visible
 ***register sauer cmds for hit effects based on shooter and/or target
 ***show bio when you shoot someone with an examination gun
 ***DONE allow turning off recoil for shots
+----
+** DONE Missing player problem -- when loading map, players clear out of sauer but not out of plexus id/name tables
 ** DONE Groovy version of build script
 **DONE JSON format for cloud properties
 **DONE (fluke?) on find map, couldn't find map with tume id instead of map id
-**DONEupload/download progress notification
+**DONE upload/download progress notification
 **DONE notification of droppage
 **DONE testing peer
 **DONE Clean button in prep gui
@@ -794,6 +798,8 @@ You can even see a reference to TEAM CTHULHU in the CREDITS file of [[LPMud|http
 **DONE HUD
 ***DONE Current map
 ***DONE Map connection count
+**DONE Plubble Peer
+***DONE Test
 *Next
 **Authentication
 ***Groups

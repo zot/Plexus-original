@@ -71,6 +71,7 @@ public class Plexus {
 	def costume
 	def mapTopic
 	def mapProps = [:]
+	def globalProps = [:]
 	def mapIsPrivate
 	/** cloudProperties is the shared properties object for Plexus
 	 * its keys are path-strings, representing information organized in
@@ -972,6 +973,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			}
 		}
 		if (runScript) {
+			mapProps = [:]
 			sandbox = new Sandbox(this, [groovyScript.parent])
 			try {
 				sandbox.exec(groovyScript.name)
