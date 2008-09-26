@@ -94,4 +94,10 @@ public class CloudProperties {
 		saving.each {output << "$it\n"}
 		output.close()
 	}
+	def getText() {
+		def w = new StringWriter()
+
+		properties.store(w, "CURRENT CLOUD PROPERTIES")
+		w.toString()
+	}
 }
