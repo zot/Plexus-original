@@ -991,7 +991,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	//		after we get the players list, send ourselves out
 			def node = peer.nodeId.toStringFull()
 	//TODO put tume in here and persist in props
-			transmitSetCloudProperty("player/$node", new JSONWriter().write([map: id, costume: costume, name: name]))
+			transmitSetCloudProperty("player/$node", new JSONWriter().write([map: id, costume: costume, name: name, guild: LaunchPlexus.props.guild]))
 		}
 	}
 	def removePlayerFromSauerMap(node) {
@@ -1198,8 +1198,8 @@ println "loading costume: $who.costume"
 	}
 	def clothe(who, costumeDir) {
 println "Clothing $who.id with costume: $costumeDir"
-println "SENDING: playerinfo ${ids[who.id]} [] $costumeDir"
-		sauer('clothe', "playerinfo ${ids[who.id]} [] $costumeDir")
+println "SENDING: playerinfo ${ids[who.id]} [${who.guild ?: ''}] $costumeDir"
+		sauer('clothe', "playerinfo ${ids[who.id]} [${who.guild ?: ''}] $costumeDir")
 dumpCommands()
 	}
 	def pushCostume(name) {
