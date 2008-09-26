@@ -542,7 +542,7 @@ count = 0;
 				if (chunks.isEmpty()) {
 					cont.receiveResult(mudFile);
 				} else if (attempts == 0) {
-					cont.receiveException(new RuntimeException("Failed to store chunks: " + chunks));
+					cont.receiveException(new RuntimeException("Timed out storing chunks: " + chunks));
 				} else {
 					storeChunks(mudFile, callback, cont, chunks, failureCount == result.length ? attempts - 1 : chunkBatch);
 				}

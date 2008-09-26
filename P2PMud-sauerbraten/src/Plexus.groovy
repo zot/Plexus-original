@@ -365,7 +365,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 								panel(layout: new MigLayout('fillx')) {
 									label(text: 'Generation')
 									panel(layout: new MigLayout('fill, ins 0'), constraints: 'growx,wrap') {
-										button(text: "Launch 3D", actionPerformed: {launchSauer()})
+										button(text: "Launch Sauerbraten", actionPerformed: {launchSauer()})
 										button(text: "Generate Dungeon", actionPerformed: {generateDungeon()})
 										button(text: "Load DF Map", actionPerformed: {loadDFMap()})
 										panel(constraints: 'growx,wrap')
@@ -1225,7 +1225,8 @@ println "STORING COSTUME"
 println "STORED COSTUME, adding"
 					transmitSetCloudProperty("costume/$fileId", new JSONWriter().write([thumb: thumb, type: thumb ? type : null, name: name]))
 				} catch (Exception ex) {
-					err("Error pushing costume", ex)
+					System.err.println "Error pushing costume..."
+					ex.printStackTrace()
 				}
 			}, receiveException: {ex -> err("Couldn't store costume in cloud: $path", ex)})
 		}
@@ -1397,7 +1398,12 @@ println "pushMap: [$nameArgs]"
 
 				transmitSetCloudProperty("${privateMap == '1' ? 'privateMap' : 'map'}/$topic", new JSONWriter().write([dir: id, name: name]))
 			},
-			receiveException: {ex -> exec {err("Error pushing map", ex)}})
+			receiveException: {ex ->
+				exec {
+					System.err.println "Error pushing map..."
+					ex.printStackTrace()
+				}
+			})
 
 			if (mapname ==~ 'plexus/.*/map') {
 				println "plexus"
