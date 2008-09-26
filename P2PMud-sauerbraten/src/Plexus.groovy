@@ -1065,9 +1065,14 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	}
 	def dumpPlayersMenu(myMap, allPlayers) {
 		println "DUMPING PLAYERS TO SAUER"
-		def PlayerGui = 'alias showpcostume [ guibar; guiimage (concatword "packages/plexus/models/thumbs/" (get $pcostumenames [[@@guirollovername]])) $guirolloveraction 4 1 "packages/plexus/dist/tc_logo.jpg"];'
+		def PlayerGui = 'alias showpcostume [ guibar; guiimage (concatword "packages/plexus/models/thumbs/" (get $pcostumenames $guirollovername)) $guirolloveraction 4 1 "packages/plexus/dist/tc_logo.jpg"];'
 		PlayerGui += "alias pcostumenames ["
-		allPlayers.each( {who -> PlayerGui += " [$who.id] $who.costume" 	} )
+		allPlayers.each( {who ->
+			def c = getCostume(who.costume)
+			def ct = (c != null && c.thumb) ? "${c.id}.$c.type" : ''
+			def map = (!who.map || who.map == 'none') ? 'none' : getMap(who.map)?.name ?: 'unknown map'
+			PlayerGui += " \"$who.name ($map)\" $ct" 	
+		} )
 		PlayerGui += " ];"
 		
 		PlayerGui += 'newgui Players [ \n guilist [ \n   guilist [ \n'
@@ -1144,23 +1149,23 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		def newMaps = []
 		cloudProperties.each('map/(.*)') {key, value, match ->
 			def map = getMap(match.group(1))
-
-			ents.add([map.name, map.id, playerCount[map.id]])
+			def cnt = playerCount[map.id]
+			ents.add([map.name + " ($cnt)", map.id, cnt, map.dir])
 			newMaps.add(map)
 		}
 		ents.sort {a, b -> a[0].compareTo(b[0])}
 		
-		def mapsGui = 'alias showmapthumb [ guibar; guiimage (concatword "packages/plexus/dist/" (get $mapthumbs [[@@guirollovername]])) $guirolloveraction 4 1 "packages/plexus/dist/tc_logo.jpg"];'
+		def mapsGui = 'alias showmapthumb [ guibar; guiimage (concatword "packages/plexus/cache/' + name + '/maps/" (get $mapthumbs $guirollovername) "/map.jpg") $guirolloveraction 4 1 "packages/plexus/dist/tc_logo.jpg"];'
 		mapsGui += "alias mapthumbs ["
 		for (trip in ents) {
-			mapsGui += " [${trip[0]}] ${trip[1]}"
+			mapsGui += " \"${trip[0]}\" ${trip[3]}"
 		}
 		mapsGui += " ];"
 		mapsGui += "newgui Worlds [ \n guilist [ \n   guilist [ \n"
 		def i = 0, needClose = true, last = ents.size()
 		def wrapAfter = 12
 		for (world in ents) {
-			mapsGui += "guibutton [${world[0]} (${world[2]})] [remotesend connectWorld ${world[1]}]\n"
+			mapsGui += "guibutton [${world[0]}] [remotesend connectWorld ${world[1]}]\n"
 			if (++i % wrapAfter == 0) {
 				mapsGui += '] \n showmapthumb \n ] \n'
 				needClose = false
