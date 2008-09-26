@@ -1,3 +1,4 @@
+import java.awt.Frame
 public class SauerCmds extends Cmds {
 	def currentPosition
 	def positionLock = new Object()
@@ -39,11 +40,7 @@ public class SauerCmds extends Cmds {
 		])
 	}
 	def tc_newmap(String name) {
-		println "newmap: $name"
-		main.sauer("delp", "deleteallplayers")
-		main.dumpCommands()
-		main.mapname = name
-		main.updateMyPlayerInfo()
+		main.newMapHook(name)
 	}
 	def levelTrigger(trigger) {
 		main.levelTrigger(trigger)
@@ -154,5 +151,16 @@ public class SauerCmds extends Cmds {
 		
 		main.sauer('p2p', conProps?.status == 'success' ? "showgui [P2P Success]" : "showgui [P2P Failure]")
 		main.dumpCommands()
+	}
+	def showgui() {
+		println "iconified: ${Frame.ICONIFIED}, state: ${main.gui.extendedState}"
+		main.swing.edt {
+			if (main.gui.extendedState & Frame.ICONIFIED) {
+				main.gui.extendedState = main.gui.extendedState & ~Frame.ICONIFIED
+				main.gui.visible = true
+			} else {
+				main.gui.visible = !main.gui.visible
+			}
+		}
 	}
 }

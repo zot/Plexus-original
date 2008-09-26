@@ -85,11 +85,6 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		neighborChange = neighborChangeBlock;
 		main(args);
 	}
-	/**
-	 * Usage: 
-	 * java [-cp FreePastry-<version>.jar] rice.tutorial.lesson1.DistTutorial localbindport bootIP bootPort
-	 * example java rice.tutorial.DistTutorial 9001 pokey.cs.almamater.edu 9001
-	 */
 	public static void main(final String[] args) throws Exception {
 		try {
 			// the port to use locally
@@ -271,10 +266,6 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 				}.start();
 			}
 		} catch (Exception e) {
-			// remind user how to use
-			System.out.println("Usage:"); 
-			System.out.println("java [-cp FreePastry-<version>.jar] rice.tutorial.lesson1.DistTutorial localbindport bootIP bootPort");
-			System.out.println("example java rice.tutorial.DistTutorial 9001 pokey.cs.almamater.edu 9001");
 			throw e; 
 		}
 	}
@@ -324,12 +315,24 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		}
 		SocketPastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, outgoingAddress, bindport, env);
 		nodeId = nodeIdString != null ? rice.pastry.Id.build(nodeIdString) : nidFactory.generateNodeId();
+		System.out.println("Using boot address: " + bootaddress);
+		for (int i = 0; i < 5 && !attemptConnect(bootaddress, probes, factory); i++) {
+			if (i > 0) {
+				System.out.println("TRYING AGAIN TO JOIN RING.  ATTEMPT NUMBER " + i);
+			}
+		}
+		if (node.joinFailed()) {
+			throw new IOException("Could not join the FreePastry ring.  Reason:" + node.joinFailedReason());
+		}
+		System.out.println("Finished creating new node " + node + ", count: " + node.getLeafSet().getUniqueCount());
+		startPast();
+	}
+	protected boolean attemptConnect(InetSocketAddress bootaddress, FastTable<InetSocketAddress> probes, SocketPastryNodeFactory factory) throws InterruptedException, IOException {
 		if (probes.isEmpty()) {
 			node = factory.newNode(nodeId);
 		} else {
 			node = factory.newNode(nodeId, probes.get(0));
 		}
-		System.out.println("Using boot address: " + bootaddress);
 		node.boot(bootaddress);
 		idFactory = new PastryIdFactory(node.getEnvironment());
 		endpoint = node.buildEndpoint(this, "myinstance");
@@ -343,12 +346,12 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 				node.wait(500);
 				// abort if can't join
 				if (node.joinFailed()) {
-					throw new IOException("Could not join the FreePastry ring.  Reason:" + node.joinFailedReason());
+					node.destroy();
+					return false;
 				}
 			}
 		}
-		System.out.println("Finished creating new node " + node + ", count: " + node.getLeafSet().getUniqueCount());
-		startPast();
+		return true;
 	}
 	private void getOther() {
 		if (other == null) {
@@ -539,7 +542,7 @@ count = 0;
 				if (chunks.isEmpty()) {
 					cont.receiveResult(mudFile);
 				} else if (attempts == 0) {
-					cont.receiveException(new RuntimeException("Failed to store chunks: " + chunks));
+					cont.receiveException(new RuntimeException("Timed out storing chunks: " + chunks));
 				} else {
 					storeChunks(mudFile, callback, cont, chunks, failureCount == result.length ? attempts - 1 : chunkBatch);
 				}

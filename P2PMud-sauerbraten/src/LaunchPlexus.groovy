@@ -14,7 +14,7 @@ public class LaunchPlexus {
 		try {
 			System.properties["sun.java2d.d3d"] = "false"
 			if (System.properties['os.name'] != 'Linux') {
-				System.properties["sun.java2d.opengl"] = "true"
+				//System.properties["sun.java2d.opengl"] = "true"
 			}
 			Prep.main()
 			args = Prep.mainArgs

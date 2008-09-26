@@ -3,6 +3,7 @@
 #include "pch.h"
 #include "engine.h"
 
+
 void cleanup()
 {
     cleanupserver();
@@ -687,9 +688,10 @@ void checkinput()
 							g3d_resetcursor();
                 		} else {
 							// not grabbing? freely move the cursor, but not the player/camera
-							extern void tc_copycamera(int dx, int dy);
-							int dx = event.motion.x - (screen->w/2), dy = event.motion.y - (screen->h/2); 
-							tc_copycamera(dx, dy);
+							extern void tc_copycamera(float dx, float dy);
+							//int dx = event.motion.x - (screen->w/2), dy = event.motion.y - (screen->h/2); 
+							//tc_copycamera(dx, dy);
+							tc_copycamera(event.motion.x / (float)screen->w, event.motion.y/ (float) screen->h);
                 			tc_movecursor(event.motion.x, event.motion.y, false);
                 		}
                 	} else {
@@ -740,6 +742,18 @@ void checkinput()
 							SDL_WarpMouse(restoreX, restoreY);
 							tc_setcursorpos(grabbedX, grabbedY); 
 							//fprintf(stderr, "releasing mouse\n");
+						}
+					}
+				}
+				static char *hud_command = NULL;
+				extern char *tc_gethudcommand(SDL_Surface *screen, int x, int y);
+				if (event.button.button == 1) {
+					if (event.type == SDL_MOUSEBUTTONDOWN) {
+						hud_command = tc_gethudcommand(screen, event.motion.x, event.motion.y);
+					} else if (event.type == SDL_MOUSEBUTTONUP) {
+						char *foo = tc_gethudcommand(screen, event.motion.x, event.motion.y);
+						if (foo != NULL && *foo != '\0' && foo == hud_command) {
+							executeret(hud_command);
 						}
 					}
 				}

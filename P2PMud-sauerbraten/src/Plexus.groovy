@@ -1,3 +1,8 @@
+import javax.swing.text.html.HTMLEditorKit
+import javolution.util.FastTable
+import p2pmud.NoWrapEditorKit
+import org.stringtree.json.JSONWriter
+import org.stringtree.json.JSONReader
 import javax.swing.border.BevelBorder
 import org.jdesktop.swingx.JXStatusBar
 import javax.swing.plaf.FontUIResource
@@ -52,6 +57,7 @@ public class Plexus {
 	def queueRunTime = Long.MAX_VALUE
 	def queueBatchPeriod = 200
 	def swing
+	def gui
 	def fields = [:]
 	def runs = 0
 	def pastryCmd
@@ -62,10 +68,13 @@ public class Plexus {
 	def cacheDir
 	def mapDir
 	def mapPrefix = 'packages/dist/storage'
+	def sandbox
 	def peer
 	def mapname
 	def costume
 	def mapTopic
+	def mapProps = [:]
+	def globalProps = [:]
 	def mapIsPrivate
 	/** cloudProperties is the shared properties object for Plexus
 	 * its keys are path-strings, representing information organized in
@@ -106,7 +115,6 @@ public class Plexus {
 	def cloudFields = [:]
 
 	def static sauerExec
-	def static soleInstance
 	def static TIME_STAMP = new SimpleDateFormat("yyyyMMdd-HHmmsszzz")
 	def static final PLEXUS_KEY = "Plexus: main"
 	def static final WORLDS_KEY = "Plexus: worlds"
@@ -163,7 +171,6 @@ public class Plexus {
 		exec {
 			executorThread = Thread.currentThread()
 		}
-		soleInstance = this
 		name = args[1]
 		headless = LaunchPlexus.props.headless == '1'
 		if (!headless) {
@@ -235,9 +242,20 @@ public class Plexus {
 				removePlayerFromSauerMap(key.substring('player/'.length()))
 			}
 			cloudProperties.changedPropertyHooks.add {
-				updateFriendList()
+				updatePlayerList()
 				updateMapGui()
 				updateCostumeGui()
+				def buf = "<html><body>" << "CURRENT CLOUD PROPERTIES AS OF ${new Date()}<br><table>"
+				def props = cloudProperties.properties
+				def count = 0
+				new ArrayList(props.keySet()).sort().each {
+					buf << "<tr${count & 1 ? '' : ' style="background-color: rgb(192,255,192)"'}><td><div><b>$it</b></div></td><td><div>${props[it]}</div></td></tr>\n"
+					count++
+				}
+				buf << "</table></body></html>"
+				swing.edt {
+					cloudFields.properties.text = buf.toString()
+				}
 			}
 			if ((LaunchPlexus.props.sauer_mode ?: 'launch') == 'launch') launchSauer();
 			//PlasticLookAndFeel.setPlasticTheme(new DesertBlue());
@@ -259,7 +277,7 @@ public class Plexus {
 				def costume = getCostume(key.substring('costume/'.length()))
 
 				println "RECEIVED MAP NOTIFICATION, DOWNLODING..."
-				fetchAndSave("costume", key, costume.dir, "costumes/$costume.dir")
+				fetchAndSave("costume", key, costume.id, "costumes/$costume.id")
 			}
 		}
 		P2PMudPeer.verboseLogging = LaunchPlexus.props.verbose_log == '1'
@@ -330,7 +348,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	}
 	def buildPlexusGui() {
 		swing = new SwingXBuilder()
-		def f = swing.frame(title: "PLEXUS [${LaunchPlexus.props.name}]", size: [500, 500], windowClosing: {System.exit(0)}, pack: true, show: true) {
+		gui = swing.frame(title: "PLEXUS [${LaunchPlexus.props.name}]", size: [500, 500], windowClosing: {System.exit(0)}, pack: true, show: true) {
 			def makeTitlePainter = {label, pos = null ->
 				compoundPainter() {
 		            mattePainter(fillPaint: new Color(0x28, 0x26, 0x19))
@@ -361,7 +379,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 								panel(layout: new MigLayout('fillx')) {
 									label(text: 'Generation')
 									panel(layout: new MigLayout('fill, ins 0'), constraints: 'growx,wrap') {
-										button(text: "Launch 3D", actionPerformed: {launchSauer()})
+										button(text: "Launch Sauerbraten", actionPerformed: {launchSauer()})
 										button(text: "Generate Dungeon", actionPerformed: {generateDungeon()})
 										button(text: "Load DF Map", actionPerformed: {loadDFMap()})
 										panel(constraints: 'growx,wrap')
@@ -381,7 +399,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 												if (tumesCombo.selectedIndex) {
 													def tume = tumes[tumesCombo.selectedIndex - 1]
 			
-													useCostume(tume.name, tume.dir)
+													useCostume(tume.name, tume.id)
 												}
 											}
 										}
@@ -446,7 +464,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 							cloudFields.neighbors = label(constraints: 'growx,wrap')
 							label(text: 'Cloud Properties', constraints: 'growx,spanx,wrap')
 							scrollPane(constraints: 'grow,span,wrap', border: null) {
-								cloudFields.properties = textPane()
+								cloudFields.properties = textPane(editable: false, editorKit: new NoWrapEditorKit())
 							}
 						}
 					}
@@ -643,6 +661,11 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 					} catch (Exception ex) {}
 					try {it.shutdownInput()} catch (Exception ex) {}
 					try {it.shutdownOutput()} catch (Exception ex) {}
+					swing.edt {
+						gui.visible = true
+						gui.extendedState = Frame.NORMAL
+						gui.requestFocus()
+					}
 					println "Disconnect"
 				};
 			}
@@ -701,7 +724,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			'echo INIT'
 		].join(';'))
 	 	dumpCommands()
-	 	updateFriendList()
+	 	updatePlayerList()
 	 	updateMapGui()
 	 	updateCostumeGui()
 	}
@@ -737,10 +760,10 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		fetchDir(id, dir, receiveResult: {result ->
 			def mapPath = subpath(new File(sauerDir, "packages"), dir)
 
+			if (cont) {cont.receiveResult(result)}
 			println "Retrieved map from PAST: $dir, executing: map [$mapPath/map]"
 			sauer('load', "echo loading new map: [$mapPath/map]; tc_loadmsg [$name]; map [$mapPath/map]")
 			dumpCommands()
-			if (cont) {cont.receiveResult(result)}
 		}, receiveException: {ex ->
 			if (cont) {
 				cont.receiveException(ex)
@@ -881,6 +904,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	}
 	def getMap(id, entry = null) {
 		checkExec()
+		def map
 		def privateMap = false
 		
 		if (!entry) {
@@ -891,47 +915,86 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			privateMap = true
 		}
 		if (entry) {
-			entry = entry.split(' ')
+			map = new JSONReader().read(entry)
+			map.id = id
+			map.privateMap = privateMap
+			/*
 			return [
 				id: id,
 				dir: entry[0],
 				name: entry[1..-1].join(' '),
 				privateMap: privateMap
 			]
+			 */
 		}
-		return null
+		return map
 	}
 	def getPlayer(id, entry = null) {
+		checkExec()
 		def pl
 
 		entry = entry ?: cloudProperties["player/$id"]
 		if (entry) {
-			entry = entry.split(' ')
+			pl = new JSONReader().read(entry)
+			pl.id = id
+			/*
 			pl = [
 				id: id,
 				map: entry[0] == 'none' ? null : entry[0],
 				costume: entry[1] == 'none' ? null : entry[1],
 				name: entry[2..-1].join(' ')
 			]
-
-			if (pl.map == 'none') {
-				pl.map = null
-			}
+			*/
 		}
 		return pl
 	}
 	def getCostume(id, entry = null) {
+		checkExec()
+		def costume
 		if (!entry) {
 			entry = cloudProperties["costume/$id"]
 		}
 		if (entry) {
-			entry = entry.split(' ')
+			costume = new JSONReader().read(entry)
+			costume.id = id
+			return costume
+			/*
 			return [
-				dir: id,
+				id: id,
 				thumb: entry[0] == 'none' ? null : entry[0],
 				type: entry[1],
 				name: entry[2..-1].join(' ')
 			]
+			*/
+		}
+		return costume
+	}
+	def newMapHook(name) {
+		println "newmap: $name"
+		sauer("delp", "deleteallplayers")
+		dumpCommands()
+		mapname = name
+		updateMyPlayerInfo()
+		def groovyScript = name ==~ '[^/]*' ? new File(sauerDir, "packages/base/${name}.groovy") : new File(sauerDir, "packages/${name}.groovy")
+		def runScript = false
+		if (groovyScript.exists()) {
+			if (mapTopic) {
+				def map = getMap(mapTopic.getId().toStringFull())
+
+				runScript = name ==~ ".*/$map.dir/map"
+			} else {
+				runScript = name ==~ '.*/limbo/map(.ogz)?'
+			}
+		}
+		if (runScript) {
+			mapProps = [:]
+			sandbox = new Sandbox(this, [groovyScript.parent])
+			try {
+				sandbox.exec(groovyScript.name)
+			} catch (Exception ex) {
+				System.err.println "Error while executing map script..."
+				stackTrace(ex)
+			}
 		}
 	}
 	def updateMyPlayerInfo() {
@@ -942,7 +1005,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	//		after we get the players list, send ourselves out
 			def node = peer.nodeId.toStringFull()
 	//TODO put tume in here and persist in props
-			transmitSetCloudProperty("player/$node", "${id ?: 'none'} ${costume ?: 'none'} $name")
+			transmitSetCloudProperty("player/$node", new JSONWriter().write([map: id, costume: costume, name: name, guild: LaunchPlexus.props.guild]))
 		}
 	}
 	def removePlayerFromSauerMap(node) {
@@ -976,33 +1039,23 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		sauer('prep', "echo [Welcome player $name to this world.]; createplayer $id $name")
 		loadCostume(who)
 	}
-	def updateFriendList() {
+	def updatePlayerList() {
 		if (!peer?.nodeId) return
 		synchronized (presenceLock) {
-			def friendGui = 'newgui Friends [\n'
-			def cnt = 1
-			def mapCnt = 0
-			def id = peer.nodeId.toStringFull()
-			def mname = "Limbo"
-			def myMap = mapTopic ? getMap(mapTopic.getId().toStringFull()) : null
-			def mapTab = ''
-			def newMapPlayers = []
-
 			updateMapGui()
-			mapCnt = 1
+
+			def id = peer.nodeId.toStringFull()
+			def myMap = mapTopic ? getMap(mapTopic.getId().toStringFull()) : [name: 'Limbo', id: '0']
+			def allPlayers = [], newMapPlayers = []
+
 			cloudProperties.each('player/(..*)') {key, value, match ->
 				def pid = match.group(1)
 
 				if (pid != id) {
 					def who = getPlayer(pid)
-					def map = (!who.map || who.map == 'none') ? 'none' : getMap(who.map)?.name ?: 'unknown map'
-
-					friendGui += "guibutton [$who.name ($map)] [alias tc_whisper $who.id; alias selected_friend [$who.name]; alias mapIsPrivate $mapIsPrivate; showgui Friend]\n"
-					++cnt
+					allPlayers.add(who)
 					if (myMap?.id == who.map) {
-						mapTab += "guibutton [$who.name] [echo $who.id]\n"
 						newMapPlayers.add(who)
-						++mapCnt
 					}
 				}
 			}
@@ -1017,18 +1070,67 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 					}
 				}
 			}
-			if (cnt == 1) friendGui += 'guitext "Sorry, no friends are online!"\n'
-			friendGui += "guibar\n guibutton Close [cleargui]\n"
-			if (myMap) {
-				friendGui += "guitab $myMap.name\n$mapTab\n"
-				if (mapCnt == 1) friendGui += "guitext [Sorry, no friends are connected to $myMap.name!]\n"
-				println "MAPCNT: $mapCnt"
-				friendGui += "guibar\n guibutton Close [cleargui]\n"
-			}
-			friendGui += "]; peers $cnt; tc_mapcount $mapCnt; tc_loadmsg ${myMap ? myMap.name : 'none'}"
-			sauer('friend', cvtNewlines(friendGui))
-			dumpCommands()
+			
+			dumpPlayersMenu(myMap, allPlayers)
 		}
+	}
+	def dumpPlayersMenu(myMap, allPlayers) {
+		println "DUMPING PLAYERS TO SAUER"
+		def PlayerGui = 'alias showpcostume [ guibar; guiimage (concatword "packages/plexus/models/thumbs/" (get $pcostumenames $guirollovername)) $guirolloveraction 4 1 "packages/plexus/dist/tc_logo.jpg"];'
+		PlayerGui += "alias pcostumenames ["
+		allPlayers.each( {who ->
+			def c = getCostume(who.costume)
+			def ct = (c != null && c.thumb) ? "${c.id}.$c.type" : ''
+			def map = (!who.map || who.map == 'none') ? 'none' : getMap(who.map)?.name ?: 'unknown map'
+			PlayerGui += " \"$who.name ($map)\" $ct" 	
+		} )
+		PlayerGui += " ];"
+		
+		PlayerGui += 'newgui Players [ \n guilist [ \n   guilist [ \n'
+		def i = 0, needClose = true, last = allPlayers.size()
+		def wrapAfter = 12
+		def cnt = 0
+		def mapCnt = 0
+		def mapTab = ''
+		def mymapid = myMap?.id
+				
+		allPlayers.each( {who -> 
+				def map = (!who.map || who.map == 'none') ? 'none' : getMap(who.map)?.name ?: 'unknown map'
+
+				PlayerGui += "guibutton [$who.name ($map)] [alias tc_whisper $who.id; alias selected_player [$who.name]; alias mapIsPrivate $mapIsPrivate; showgui Player]\n"
+				++cnt
+				if (++i % wrapAfter == 0) {
+					PlayerGui += '] \n showpcostume \n ] \n'
+					needClose = false
+					if (i != last) {
+						def s = Math.min(i, last - 1), e = Math.min(i + wrapAfter, last - 1)
+						s = Character.toUpperCase((allPlayers[s].name[0]) as char)
+						e = Character.toUpperCase((allPlayers[e].name[0]) as char)
+						PlayerGui += " guitab [More $s-$e] \n guilist [ \n   guilist [ \n"; needClose = true
+					}
+				}
+				
+				if (mymapid == who.map) {
+					mapTab += "guibutton [$who.name] [echo $who.id]\n"
+					++mapCnt
+				}
+		} )
+		if (cnt == 0) PlayerGui += 'guitext "Sorry, no players are online!"\n'
+		//PlayerGui += "guibar\n guibutton Close [cleargui]\n"
+		if (needClose) PlayerGui += '] \n   showpcostume  \n     ] \n'
+		
+		if (mymapid) {
+			PlayerGui += "guitab $myMap.name\n$mapTab\n"
+			if (mapCnt == 0) PlayerGui += "guitext [Sorry, no players are connected to $myMap.name!]\n"
+			println "MAPCNT: $mapCnt"
+			PlayerGui += "guibar\n guibutton Close [cleargui]\n"
+		}
+		// bump counts to include ourself
+		++cnt
+		++mapCnt
+		PlayerGui += "]; peers $cnt; tc_mapcount $mapCnt; tc_loadmsg ${allPlayers ? myMap.name : 'none'}"
+		sauer('Player', cvtNewlines(PlayerGui))
+		dumpCommands()
 	}
 	def shareMap(id) {
 		def key = "privateMap/${mapTopic.getId().toStringFull()}"
@@ -1054,18 +1156,39 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 				playerCount[player.map]++
 			}
 		}
-		def mapsGui = "newgui Worlds ["
+
 		def newMaps = []
 		cloudProperties.each('map/(.*)') {key, value, match ->
 			def map = getMap(match.group(1))
-
-			ents.add([map.name, map.id, playerCount[map.id]])
+			def cnt = playerCount[map.id]
+			ents.add([map.name + " ($cnt)", map.id, cnt, map.dir])
 			newMaps.add(map)
 		}
 		ents.sort {a, b -> a[0].compareTo(b[0])}
-		for (world in ents) {
-			mapsGui += "guibutton [${world[0]} (${world[2]})] [remotesend connectWorld ${world[1]}]\n"
+		
+		def mapsGui = 'alias showmapthumb [ guibar; guiimage (concatword "packages/plexus/cache/' + name + '/maps/" (get $mapthumbs $guirollovername) "/map.jpg") $guirolloveraction 4 1 "packages/plexus/dist/tc_logo.jpg"];'
+		mapsGui += "alias mapthumbs ["
+		for (trip in ents) {
+			mapsGui += " \"${trip[0]}\" ${trip[3]}"
 		}
+		mapsGui += " ];"
+		mapsGui += "newgui Worlds [ \n guilist [ \n   guilist [ \n"
+		def i = 0, needClose = true, last = ents.size()
+		def wrapAfter = 12
+		for (world in ents) {
+			mapsGui += "guibutton [${world[0]}] [remotesend connectWorld ${world[1]}]\n"
+			if (++i % wrapAfter == 0) {
+				mapsGui += '] \n showmapthumb \n ] \n'
+				needClose = false
+				if (i != last) {
+					def s = Math.min(i, last - 1), e = Math.min(i + wrapAfter, last - 1)
+					s = Character.toUpperCase((ents[s][0][0]) as char)
+					e = Character.toUpperCase((ents[e][0][0]) as char)
+					mapsGui += " guitab [More $s-$e] \n guilist [ \n   guilist [ \n"; needClose = true
+				}
+			}
+		}
+		if (needClose) mapsGui += '] \n   showmapthumb  \n     ] \n'
 		newMaps.sort {a, b -> a.name.compareTo(b.name)}
 		if (newMaps != maps) {
 			maps = newMaps
@@ -1105,21 +1228,21 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		if (who.costume) {
 println "loading costume: $who.costume"
 			def costume = getCostume(who.costume)
-			def costumeFile = new File(plexusDir, "models/$costume.dir")
+			def costumeFile = new File(plexusDir, "models/$who.costume")
 
 			if (costumeFile.exists()) {
-				clothe(who, costume.dir)
+				clothe(who, who.costume)
 			} else {
-				fetchDir(costume.dir, new File(plexusDir, "models/$costume.dir"), receiveResult: {r ->
-					clothe(who, costume.dir)
-				}, receiveException: {ex -> err("Could not fetch data for costume: $costume.dir", ex)})
+				fetchDir(who.costume, new File(plexusDir, "models/$who.costume"), receiveResult: {r ->
+					clothe(who, who.costume)
+				}, receiveException: {ex -> err("Could not fetch data for costume: $who.costume", ex)})
 			}
 		}
 	}
 	def clothe(who, costumeDir) {
 println "Clothing $who.id with costume: $costumeDir"
-println "SENDING: playerinfo ${ids[who.id]} [] $costumeDir"
-		sauer('clothe', "playerinfo ${ids[who.id]} [] $costumeDir")
+println "SENDING: playerinfo ${ids[who.id]} [${who.guild ?: ''}] $costumeDir"
+		sauer('clothe', "playerinfo ${ids[who.id]} [${who.guild ?: ''}] $costumeDir")
 dumpCommands()
 	}
 	def pushCostume(name) {
@@ -1139,13 +1262,14 @@ println "STORING COSTUME"
 
 				if (!thumb) {
 					type = 'jpg'
-					thumb = result.properties['thumb.jpg'] ?: 'none'
+					thumb = result.properties['thumb.jpg']
 				}
 				try {
 println "STORED COSTUME, adding"
-					transmitSetCloudProperty("costume/$fileId", "$thumb ${thumb ? type : 'none'} $name")
+					transmitSetCloudProperty("costume/$fileId", new JSONWriter().write([thumb: thumb, type: thumb ? type : null, name: name]))
 				} catch (Exception ex) {
-					err("Error pushing costume", ex)
+					System.err.println "Error pushing costume..."
+					ex.printStackTrace()
 				}
 			}, receiveException: {ex -> err("Couldn't store costume in cloud: $path", ex)})
 		}
@@ -1159,7 +1283,7 @@ println "STORED COSTUME, adding"
 			def tume = getCostume(match.group(1))
 
 			tumes.add(tume)
-			if (tume.thumb && !new File(costumesDir, "thumbs/${tume.dir}.$tume.type").exists()) {
+			if (tume.thumb && !new File(costumesDir, "thumbs/${tume.id}.$tume.type").exists()) {
 				needed.add(tume)
 			}
 		}
@@ -1173,7 +1297,7 @@ println "STORED COSTUME, adding"
 						System.err.println "Error fetching thumb for costume: ${needed[i].name}..."
 						files[i].printStackTrace()
 					} else {
-						def thumbFile = new File(costumesDir, "thumbs/${needed[i].dir}.${needed[i].type}")
+						def thumbFile = new File(costumesDir, "thumbs/${needed[i].id}.${needed[i].type}")
 
 						thumbFile.getParentFile().mkdirs()
 						copyFile(files[i][0], thumbFile)
@@ -1202,7 +1326,7 @@ println "STORED COSTUME, adding"
 				}
 			}
 		}
-		tumes.each {c-> trips.add([c.name, c.thumb ? "${c.dir}.$c.type" : '', c.dir])}
+		tumes.each {c-> trips.add([c.name, c.thumb ? "${c.id}.$c.type" : '', c.id])}
 		dumpCostumeSelections(trips)
 	}
 	//varval = [do [result $@arg1]]
@@ -1212,24 +1336,33 @@ println "STORED COSTUME, adding"
 	 */
 	def dumpCostumeSelections(triples) {
 		def guitext = ''
-		def i = 0
 
 println "COSTUME SELS: $triples"
 		guitext += 'showcostumesgui = [showgui Costumes];'
 		guitext += 'alias showcostume [ guibar; guiimage (concatword "packages/plexus/models/thumbs/" (get $costumenames [[@@guirollovername]])) $guirolloveraction 4 1 "packages/plexus/dist/tc_logo.jpg"];'
 		guitext += "alias costumenames ["
 		for (trip in triples) {
-//			guitext += " [$i: ${trip[0]}] [${trip[1] ?: ''}]"
 			guitext += " [${trip[0]}] ${trip[1]}"
 		}
 		guitext += " ];"
 		guitext += 'newgui Costumes [ \n guilist [ \n   guilist [ \n'
-		i = 0
+		def i = 0, needClose = true, last = triples.size()
+		def wrapAfter = 12
 		for (trip in triples) {
-//			guitext += "guibutton [$i: ${trip[0]}] [remotesend useCostume ${trip[0]} ${trip[2]}];"
 			guitext += "guibutton [${trip[0]}] [remotesend useCostume ${trip[0]} ${trip[2]}];"
+			if (++i % wrapAfter == 0) {
+				guitext += '] \n showcostume \n ] \n'
+				needClose = false
+				if (i != last) {
+					def s = Math.min(i, last - 1), e = Math.min(i + wrapAfter, last - 1)
+					s = Character.toUpperCase((triples[s][0]) as char)
+					e = Character.toUpperCase((triples[e][0]) as char)
+					guitext += " guitab [More $s-$e] \n guilist [ \n   guilist [ \n"; needClose = true
+				}
+			}
 		}
-		guitext += '] \n   showcostume  \n     ] \n guitab "Upload"; guifield costume_push_name [] \n guibutton [Import Costume] [remotesend pushCostume $costume_push_name]] '
+		if (needClose) guitext += '] \n   showcostume  \n     ] \n'
+		guitext += 'guitab "Upload"; guifield costume_push_name [] \n guibutton [Import Costume] [remotesend pushCostume $costume_push_name] \n ] '
 		sauer('gui', cvtNewlines(guitext))
 		dumpCommands()
 	}
@@ -1306,9 +1439,14 @@ println "pushMap: [$nameArgs]"
 				def topic = newMap ? peer.randomId().toStringFull() : map.id
 				def id = result.file.getId().toStringFull()
 
-				transmitSetCloudProperty("${privateMap == '1' ? 'privateMap' : 'map'}/$topic", "$id $name")
+				transmitSetCloudProperty("${privateMap == '1' ? 'privateMap' : 'map'}/$topic", new JSONWriter().write([dir: id, name: name]))
 			},
-			receiveException: {ex -> exec {err("Error pushing map", ex)}})
+			receiveException: {ex ->
+				exec {
+					System.err.println "Error pushing map..."
+					ex.printStackTrace()
+				}
+			})
 
 			if (mapname ==~ 'plexus/.*/map') {
 				println "plexus"
@@ -1318,12 +1456,17 @@ println "pushMap: [$nameArgs]"
 				storeDir(cont, mapdir)
 			} else {
 				println "sauer"
-				def prefix = (new File(mapname).getParent() ? new File(sauerDir, "packages/$mapname") : new File(sauerDir, "packages/base/$mapname")).getAbsolutePath()
+				def prefix = (new File(mapname).parent ? new File(sauerDir, "packages/$mapname") : new File(sauerDir, "packages/base/$mapname")).getAbsolutePath()
 				def dirmap = ['map.ogz': new File(prefix + ".ogz")]
 				def thumbJpg = new File(prefix + ".jpg")
 				def thumbPng = new File(prefix + ".png")
 				def cfg = new File(prefix + ".cfg")
+				def groovyPfx = "${mapname}."
 
+				new File(prefix).parentFile.eachFileMatch(~"$mapname\\..*groovy") {
+					println "FOUND GROOVY FILE: $it"
+					dirmap["map.${it.name.substring(groovyPfx.length())}"] = it
+				}
 				if (thumbJpg.exists()) {
 					dirmap['map.jpg'] = thumbJpg
 				}
