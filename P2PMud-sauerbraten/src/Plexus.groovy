@@ -1262,7 +1262,7 @@ println "STORING COSTUME"
 
 				if (!thumb) {
 					type = 'jpg'
-					thumb = result.properties['thumb.jpg'] ?: 'none'
+					thumb = result.properties['thumb.jpg']
 				}
 				try {
 println "STORED COSTUME, adding"
