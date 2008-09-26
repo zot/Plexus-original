@@ -1106,6 +1106,9 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			println "MAPCNT: $mapCnt"
 			PlayerGui += "guibar\n guibutton Close [cleargui]\n"
 		}
+		// bump counts to include ourself
+		++cnt
+		++mapCnt
 		PlayerGui += "]; peers $cnt; tc_mapcount $mapCnt; tc_loadmsg ${allPlayers ? myMap.name : 'none'}"
 		sauer('Player', cvtNewlines(PlayerGui))
 		dumpCommands()
