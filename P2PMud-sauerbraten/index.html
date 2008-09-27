@@ -591,6 +591,16 @@ Interaction
 *MUD (automatic moderation)
 *MudLingua</pre>
 </div>
+<div title="HowToReallyCleanAnEclipseProject" modifier="BillBurdick" created="200809272000" modified="200809272020" changecount="2">
+<pre># select the project in the Package Explorer view
+# uncheck the menu item Project-&gt;Build Automatically
+# choose the menu item Project-&gt;Clean...
+# make sure Clean projects selected below is selected
+# make sure your project is selected in the list
+# click OK
+# recheck Project-&gt;Build Automatically
+# if the project is a groovy project, right-click on it and choose Refresh</pre>
+</div>
 <div title="License" modifier="BillBurdick" created="200808291619" changecount="1">
 <pre>Plexus uses the very friendly, ZLIB open source license (http://www.opensource.org/licenses/zlib-license.php):
 
@@ -835,14 +845,16 @@ You can even see a reference to TEAM CTHULHU in the CREDITS file of [[LPMud|http
 <div title="SiteTitle" modifier="Zot" created="200806171608" modified="200806191146" changecount="9">
 <pre>[img[P2PMud|docs/images/p2pmud.gif]]</pre>
 </div>
-<div title="StartingOut" modifier="WRB" created="200807142041" modified="200807142059" changecount="7">
+<div title="StartingOut" modifier="BillBurdick" created="200807142041" modified="200809272001" changecount="11">
 <pre>*P2PMud is currently based on the Assassin version of Sauerbraten, which you can download [[here|http://sourceforge.net/project/showfiles.php?group_id=102911&amp;package_id=110363&amp;release_id=563483]]
 *This repository is an Eclipse project, so you'll probably want Eclipse and the CDT feature for C/C++
 Once you have the stuff, you need to:
 *Build the project
 *Copy/link sauer_client and scripts/autoexec.cfg into the top level of the sauerbraten directory (in the same directory as server.bat).
 *Start the groovy command server in Eclipse (using the Cmd Server launcher)
-*Start sauer (I find it's much better to start up with the -t option when testing, so it doesn't take over my screen)</pre>
+*Start sauer (I find it's much better to start up with the -t option when testing, so it doesn't take over my screen)
+!&lt;html&gt;&lt;span style=&quot;background: red&quot;&gt;HAVING PROBLEMS?&lt;/span&gt;&lt;/html&gt;
+HowToReallyCleanAnEclipseProject</pre>
 </div>
 <div title="ToDo" modifier="WRB" created="200806171610" modified="200807192045" changecount="5">
 <pre>[[Done]]
