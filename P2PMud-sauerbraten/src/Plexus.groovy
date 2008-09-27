@@ -295,7 +295,7 @@ public class Plexus {
 							println "Going to remove '${ids[id]}' from names"
 							names.remove(ids[id])
 							ids.remove(id)
-							updateMappings()
+							updateMappingDiag()
 						} else {
 							pastryCmd = cmd
 							cmd.msgs.each {line ->
