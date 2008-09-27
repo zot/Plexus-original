@@ -242,6 +242,7 @@ public class Plexus {
 				}
 			}
 			cloudProperties.removePropertyHooks[~'player/..*'] = {key, value ->
+				println "CLOUD PROPERTY REMOVE HOOK"
 				removePlayerFromSauerMap(key.substring('player/'.length()))
 			}
 			cloudProperties.changedPropertyHooks.add {
@@ -293,9 +294,6 @@ public class Plexus {
 							id = id.toStringFull()
 							transmitRemoveCloudProperty("player/$id")
 							println "Going to remove '${ids[id]}' from names"
-							names.remove(ids[id])
-							ids.remove(id)
-							updateMappings()
 						} else {
 							pastryCmd = cmd
 							cmd.msgs.each {line ->
@@ -942,6 +940,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	}
 	def transmitRemoveCloudProperty(key) {
 		checkExec()
+		println "REMOVING CLOUD PROPERTY"
 		cloudProperties.removeProperty(key)
 		if (peer) {
 			peer.broadcastCmds(plexusTopic, ["removeCloudProperty $key"] as String[])
@@ -950,6 +949,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	}
 	def removeCloudProperty(key) {
 		checkExec()
+		println "REMOVING CLOUD PROPERTY"
 		cloudProperties.removeProperty(key)
 	}
 	def receiveCloudProperties(props) {
@@ -1068,22 +1068,23 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			transmitSetCloudProperty("player/$node", new JSONWriter().write([map: id, costume: costume, name: name, guild: LaunchPlexus.props.guild]))
 		}
 	}
-	def removePlayerFromSauerMap(node) {
-		if (ids[node]) {
-			def sauerId = ids[node]
-			
-			def who = getPlayer(names[sauerId])
+	def removePlayerFromSauerMap(peerId) {
+		if (ids[peerId]) {
+			def sauerId = ids[peerId]
+			def who = getPlayer(peerId)
 
 			if (who) {
 				println "Going to remove player $who.name from sauer: $sauerId"
 				sauer('msgplayer', "echo [Player $who.name has left this world.]")
-				ids.remove(node)
 			}
+			ids.remove(peerId)
 			names.remove(sauerId)
 			sauer('delplayer', "deleteplayer $sauerId")
 			updateMapGui()
 			dumpCommands()
 			updateMappingDiag()
+		} else {
+			println "WARNING: can't find id for player: $peerId"
 		}
 	}
 	def newPlayer(name) {
