@@ -535,6 +535,16 @@ UseCases
 <pre>7/18/08 Roy: Upgrade to latest code base (2008 6/19)
 </pre>
 </div>
+<div title="EmergencyWorspaceReconstruction" modifier="BillBurdick" created="200809272113" changecount="1">
+<pre># quit eclipse
+# find your eclipse workspace directory
+# rename .metadata to .metadata.bak
+# restart eclilpse
+# File-&gt;Import...
+# General-&gt;Existing Projects into Workspace
+# select your workspace directory as the root directory
+# import the projects</pre>
+</div>
 <div title="FeatureList" modifier="BillBurdick" created="200809161520" modified="200809241829" changecount="3">
 <pre>Dev Features (copied from Roy's post on the cubedevblog)
 
@@ -714,9 +724,10 @@ You can even see a reference to TEAM CTHULHU in the CREDITS file of [[LPMud|http
 #Fall 2005, we commission Steven Missal to create Lovecraftian art
 #Spring 2008, we switch to Sauerbraten, Groovy, and Pastry (on top of Java)</pre>
 </div>
-<div title="RoadMap" modifier="BillBurdick" created="200806191122" modified="200809270801" changecount="198">
+<div title="RoadMap" modifier="BillBurdick" created="200806191122" modified="200809272327" changecount="201">
 <pre>!Milestones
 *~TinyPlexus
+**if this is a new plexus version, offer to toast the cache
 **broadcast disconnect with shutting down
 **make updateMappingDiag() also display results for dumpents
 **cache player updates for your map so follow can teleport immediately
@@ -752,7 +763,8 @@ You can even see a reference to TEAM CTHULHU in the CREDITS file of [[LPMud|http
 ***show bio when you shoot someone with an examination gun
 ***DONE allow turning off recoil for shots
 ----
-**DONEremote guild names not showing
+**DONE check java version on startup
+**DONE remote guild names not showing
 **DONE incoming cloud change notification to user
 **DONE show feedback for unsuccessful port back-connection during ip discovery
 **DONE Missing player problem -- when loading map, players clear out of sauer but not out of plexus id/name tables
@@ -845,7 +857,7 @@ You can even see a reference to TEAM CTHULHU in the CREDITS file of [[LPMud|http
 <div title="SiteTitle" modifier="Zot" created="200806171608" modified="200806191146" changecount="9">
 <pre>[img[P2PMud|docs/images/p2pmud.gif]]</pre>
 </div>
-<div title="StartingOut" modifier="BillBurdick" created="200807142041" modified="200809272001" changecount="11">
+<div title="StartingOut" modifier="BillBurdick" created="200807142041" modified="200809272113" changecount="12">
 <pre>*P2PMud is currently based on the Assassin version of Sauerbraten, which you can download [[here|http://sourceforge.net/project/showfiles.php?group_id=102911&amp;package_id=110363&amp;release_id=563483]]
 *This repository is an Eclipse project, so you'll probably want Eclipse and the CDT feature for C/C++
 Once you have the stuff, you need to:
@@ -854,7 +866,8 @@ Once you have the stuff, you need to:
 *Start the groovy command server in Eclipse (using the Cmd Server launcher)
 *Start sauer (I find it's much better to start up with the -t option when testing, so it doesn't take over my screen)
 !&lt;html&gt;&lt;span style=&quot;background: red&quot;&gt;HAVING PROBLEMS?&lt;/span&gt;&lt;/html&gt;
-HowToReallyCleanAnEclipseProject</pre>
+HowToReallyCleanAnEclipseProject
+EmergencyWorspaceReconstruction</pre>
 </div>
 <div title="ToDo" modifier="WRB" created="200806171610" modified="200807192045" changecount="5">
 <pre>[[Done]]

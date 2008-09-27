@@ -145,9 +145,9 @@ public class Plexus {
 		return true
 	}
 	def static err(msg, err) {
-		println(msg)
+		System.err.println(msg)
 		stackTrace(err)
-		println "UNSANITIZED STACK TRACE FOLLOWS..."
+		System.err.println "UNSANITIZED STACK TRACE FOLLOWS..."
 		err.printStackTrace()
 		System.exit(1)
 	}
