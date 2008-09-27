@@ -85,7 +85,6 @@ public class Plexus {
 	def plexusTopic
 	def presenceLock = new Lock('presence')
 	def playerCount = [:]
-	def peerToSauerIdMap = [:]
 	def triggerLambdas = [:]
 	def portals = [:]
 	def receivedCloudPropertiesHooks = [
@@ -292,6 +291,10 @@ public class Plexus {
 						if (topic == null && cmd == null) {
 							id = id.toStringFull()
 							transmitRemoveCloudProperty("player/$id")
+							println "Going to remove '${ids[id]}' from names"
+							names.remove(ids[id])
+							ids.remove(id)
+							updateMappings()
 						} else {
 							pastryCmd = cmd
 							cmd.msgs.each {line ->
@@ -1058,37 +1061,37 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		}
 	}
 	def removePlayerFromSauerMap(node) {
-		if (peerToSauerIdMap[node]) {
-			def sauerId = peerToSauerIdMap[node]
+		if (ids[node]) {
+			def sauerId = ids[node]
 			
-			if (sauerId) {
-				def who = sauerId ? getPlayer(names[sauerId]) : null
+			def who = getPlayer(names[sauerId])
 
-				if (who) {
-					println "Going to remove player $who.name from sauer: $sauerId"
-					sauer('msgplayer', "echo [Player $who.name has left this world.]")
-					ids.remove(who.id)
-				}
-				names.remove(sauerId)
-				sauer('delplayer', "deleteplayer $sauerId")
-				updateMapGui()
-				dumpCommands()
-				updateMappings()
+			if (who) {
+				println "Going to remove player $who.name from sauer: $sauerId"
+				sauer('msgplayer', "echo [Player $who.name has left this world.]")
+				ids.remove(node)
 			}
-			peerToSauerIdMap.remove(node)
+			names.remove(sauerId)
+			sauer('delplayer', "deleteplayer $sauerId")
+			updateMapGui()
+			dumpCommands()
+			updateMappings()
 		}
 	}
-	def newPlayer(name, id) {
-		def who = getPlayer(pastryCmd.from.toStringFull())
+	def newPlayer(name) {
+		def node = pastryCmd.from.toStringFull()
+		def who = getPlayer(node)
+		def sauerid = ids[node]
 
-		ids[who.id] = id
+		if (!sauerid) sauerid = "p$id_index" as String
+
+		ids[node] = sauerid
+		names[sauerid] = node
 		++id_index
-		names[id] = who.id
-		peerToSauerIdMap[who.id] = id
-		println peerToSauerIdMap
-		sauer('prep', "echo [Welcome player $name to this world.]; createplayer $id $name; playerinfo $id \"$who.guild\"")
+		sauer('prep', "echo [Welcome player $name to this world.]; createplayer $sauerid $name; playerinfo $sauerid \"$who.guild\"")
 		loadCostume(who)
 		updateMappings()
+		return sauerid
 	}
 	def updateMappings() {
 		def data = []

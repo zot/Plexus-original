@@ -174,11 +174,13 @@ public class Prep {
 			if (con.address != props.external_ip) {
 				warningDialog.externalIp.text = props.external_ip
 			} else {
+				println "going to remove panel"
 				warningDialog.panel.remove(warningDialog.ipBox)
 			}
 			warningDialog.frame.pack()
 			warningDialog.frame.visible = true
 			if (con.address == props.external_ip) {
+				println "readding the panel"
 				warningDialog.panel.add(warningDialog.ipBox, 'growx, spanx, wrap', 1)
 			}
 			warningDialog.buttonPanel.add(buttons, 'growx', buttonPos)
@@ -436,8 +438,13 @@ public class Prep {
 		propsWindow.show()
 	}
 	def static testConnectivity(listen = true) {
+		println conProps
 		if (conProps?.status != 'success') {
+			println props.pastry_port
 			def sock = listen ? new ServerSocket(Integer.parseInt(props.pastry_port)) : null
+			//sock?.setReuseAddress(true)
+			//		println sock
+			//		Thread.sleep(5000)
 			def con = new URL("http://plubble.com/p2p.php?port=$props.external_port").openConnection()
 			def input = con.getInputStream()
 
