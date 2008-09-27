@@ -318,7 +318,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			LaunchPlexus.saveProps()
 		}
 		names = [p0: peerId]
-		ids[peerId] = 'p0'
+		ids = [(peerId): 'p0']
 		plexusTopic = peer.subscribe(peer.buildId(PLEXUS_KEY), null)
 		println "execing init..."
 		exec {
@@ -333,7 +333,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		updateMappings()
 	}
 	def showData(field, header, cols, data) {
-		def buf = "" << "<html><body><table><tr colspan=\"$cols\" style=\"background-color: rgb(192,192,192)\"><td><div>$header</div></td></tr>\n"
+		def buf = ("" << "<html><body><table><tr colspan=\"$cols\" style=\"background-color: rgb(192,192,192)\"><td><div>$header</div></td></tr>\n")
 		def count = 0
 		def pane = field.parent.parent
 
@@ -548,6 +548,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 					env.add("$vars.key=$vars.value")
 				}
 			}
+			sauerExec += " -x\"alias sauerPort $LaunchPlexus.props.sauer_port;alias sauerHost 127.0.0.1\""
 			env = env as String[]
 			println ("Going to exec $sauerExec from $sauerDir with env: $env")
 			Runtime.getRuntime().exec(sauerExec,  env, sauerDir)
@@ -1070,7 +1071,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		names[id] = who.id
 		peerToSauerIdMap[who.id] = id
 		println peerToSauerIdMap
-		sauer('prep', "echo [Welcome player $name to this world.]; createplayer $id $name")
+		sauer('prep', "echo [Welcome player $name to this world.]; createplayer $id $name; playerinfo $id \"$who.guild\"")
 		loadCostume(who)
 		updateMappings()
 	}
@@ -1436,7 +1437,7 @@ println "COSTUME SELS: $triples"
 	def clearPlayers() {
 		//println "Going to clear players"
 		names = [p0: peerId]
-		ids = [peerId: 'p0']
+		ids = [(peerId): 'p0']
 		updateMappings()
 	}
 	def connectWorld(id) {

@@ -867,3 +867,7 @@ ICOMMAND(addhuditem, "sssssss", (char *type, char *exp, char *clicked, char *x, 
 		//printf("%s\n", hi->clicked);
 	}
 });
+
+ICOMMAND(defined, "s", (char *var), {
+	intret((int) var ? identexists(var) : 0);
+});
