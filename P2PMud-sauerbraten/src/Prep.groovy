@@ -1,4 +1,5 @@
-import javax.imageio.ImageIOimport java.awt.BorderLayout
+import javax.imageio.ImageIO
+import java.awt.BorderLayout
 import org.jdesktop.swingx.JXFrame
 import javax.swing.JFrame
 import com.sun.awt.AWTUtilities
@@ -52,8 +53,11 @@ public class Prep {
 	def static sauerDir
 	def static final MARKER = "\n//THIS LINE ADDED BY TEAM CTHULHU'S PLEXUS: PLEASE DO NOT EDIT THIS LINE OR THE NEXT ONE\n"
 	def static swing
+	def static propsWindow
 	def static initialClick = null
-	
+	def static warningDialog = [:]
+	def static successDialog = [:]
+
 	def static verifySauerDir(dir) {
 		while (!Plexus.verifySauerdir(dir)) {
 			def ch = new JFileChooser(dir);
@@ -158,7 +162,41 @@ public class Prep {
 		}
 		mainArgs = mainArgs as String[]
 	}
+	def static connectivityReport(showOk = false, reportSuccess = false) {
+		def con = testConnectivity(true)
+		if (con.status.toLowerCase() != 'success' || con.address != props.external_ip) {
+			def buttons = showOk ? warningDialog.continueButtons : warningDialog.okButton
+			def buttonPos = showOk ? 0 : 1
+
+			warningDialog.plubbleIp.text = con.address
+			warningDialog.externalPort.text = props.external_port
+			warningDialog.buttonPanel.remove(buttons)
+			if (con.address != props.external_ip) {
+				warningDialog.externalIp.text = props.external_ip
+			} else {
+				warningDialog.panel.remove(warningDialog.ipBox)
+			}
+			warningDialog.frame.pack()
+			warningDialog.frame.visible = true
+			if (con.address == props.external_ip) {
+				warningDialog.panel.add(warningDialog.ipBox, 'growx, spanx, wrap', 1)
+			}
+			warningDialog.buttonPanel.add(buttons, 'growx', buttonPos)
+			warningDialog.frame.pack()
+			return warningDialog.continueAnyway
+		} else if (reportSuccess) {
+			successDialog.frame.visible = true
+		}
+		return true
+	}
 	def static finished(start) {
+		if (props.pastry_boot_host != '-' && !props.disable_con_check) {
+			if (!connectivityReport()) {
+				return
+			}
+		}
+		propsWindow.dispose()
+		propsWindow = null
 		saveProps()
 		if (start) {
 			buildMainArgs()
@@ -205,7 +243,6 @@ public class Prep {
 	}
 	def static showPropEditor() {
 		def p = props
-		def propsWindow
 		def topPanel
 		//PlasticLookAndFeel.setPlasticTheme(new DesertBlue());
 		try {
@@ -234,9 +271,9 @@ public class Prep {
 			]
 			tf
 		}
-		def check = {lbl, key, description ->
+		def check = {lbl, key, description, constraints = 'growx, wrap' ->
 			swing.label(text: lbl)
-			def cb = swing.checkBox(text: description, actionPerformed: {evt -> props[key] = evt.source.selected ? '1' : '0' }, constraints: 'wrap' )
+			def cb = swing.checkBox(text: description, actionPerformed: {evt -> props[key] = evt.source.selected ? '1' : '0' }, constraints: constraints )
 			fields[key] = [
 				setText: {value -> cb.selected = value == '1'},
 				getText: {cb.selected ? '1' : '0'}
@@ -264,7 +301,8 @@ public class Prep {
 				}
 			}
 		}
-		propsWindow = config ? new JFrame(config) : new JXFrame()		swing.widget(propsWindow, iconImage: ImageIO.read(Prep.getResource('/tinyCthulhu.png')), title: 'Plexus Configuration', size: [800, 700], location: [200, 300], windowClosing: {System.exit(0)}, undecorated: true,
+		propsWindow = config ? new JFrame(config) : new JXFrame()
+		swing.widget(propsWindow, iconImage: ImageIO.read(Prep.getResource('/tinyCthulhu.png')), title: 'PLEXUS Configuration', size: [800, 700], location: [200, 300], windowClosing: {System.exit(0)}, undecorated: true,
 			mousePressed: {e ->
 				def loc = propsWindow.getLocation()
 
@@ -328,19 +366,20 @@ public class Prep {
 										field('Sauer cmd: ', 'sauer_cmd')
 										field('Sauer port: ', 'sauer_port')
 										label(text: 'Launch sauer: ')
-										sauerButton = checkBox(text: 'If checked, it will auto start the Plexus custom Sauerbraten', actionPerformed: { evt -> props.sauer_mode = evt.source.selected ? 'launch' : 'noLaunch' }, constraints: 'wrap' )
+										sauerButton = checkBox(text: 'If checked, it will auto start the PLEXUS custom Sauerbraten', actionPerformed: { evt -> props.sauer_mode = evt.source.selected ? 'launch' : 'noLaunch' }, constraints: 'wrap' )
+									}
+									panel(layout: new MigLayout('fillx'), constraints: 'growx, spanx, wrap') {
+										check('Disable connectivity check', 'disable_con_check', 'If checked, PLEXUS will not check your connectivity before starting', '')
+										button(text: 'Test Now', actionPerformed: {connectivityReport(true, true)}, constraints: 'pushx')
 									}
 									panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
-										button(text: "Start", toolTipText: 'Press to start Plexus', actionPerformed: {propsWindow.dispose(); propsWindow = null; finished(true)})
-										button(text: "Save and Exit", toolTipText: 'Save your changes and exit', actionPerformed: {propsWindow.dispose(); propsWindow = null; finished(false)} )
+										button(text: "Start", toolTipText: 'Press to start PLEXUS', actionPerformed: {finished(true)})
+										button(text: "Save and Exit", toolTipText: 'Save your changes and exit', actionPerformed: {finished(false)} )
 										button(text: "Exit", toolTipText: 'Exit without saving your changes', actionPerformed: { System.exit(0) } )
 									}
 									button(text: 'Clear P2P Cache', toolTipText: 'Clear the p2p file cache for the current profile', actionPerformed: { clearCache() } )
 								}
 							}
-						}
-						panel(name: 'Diagnostics', layout: new MigLayout('fill')) {
-							button(text: 'Test connectivity', actionPerformed: {println testConnectivity()}, constraints: 'wrap,top')
 						}
 					}
 				}
@@ -350,6 +389,44 @@ public class Prep {
 			chooseProfile(props.last_profile)
 //			showTitle()
 			scroll.verticalScrollBar.unitIncrement = 16
+		}
+		warningDialog.frame = swing.dialog(title: 'Connectivity Warning', modal: true, pack: true) {
+			warningDialog.panel = panel(layout: new MigLayout('fill,ins 0, gap 0')) {
+				panel(border: titledBorder(title: 'Connection Data'), constraints: 'growx, spanx, wrap', layout: new MigLayout('fill')) {
+					label(text: 'No connectivity from Plubble.com to your machine', font: new FontUIResource("SansSerif", Font.BOLD, 12), constraints: 'growx, spanx, wrap')
+					label(text: 'Plubble Reported This External IP: ')
+					warningDialog.plubbleIp = label(constraints: 'pushx, wrap')
+					label(text: 'Your Profile Specified This External Port: ')
+					warningDialog.externalPort = label(constraints: 'pushx, wrap')
+				}
+				warningDialog.ipBox = panel(border: titledBorder(title: 'Inconsistent External IP'), constraints: 'growx, spanx, wrap', layout: new MigLayout('fill')) {
+					label(text: 'Your external address is not consistent with your connection to Plubble', font: new FontUIResource("SansSerif", Font.BOLD, 12), constraints: 'growx, spanx, wrap')
+					label(text: 'Profile External IP: ')
+					warningDialog.externalIp = label(constraints: 'pushx, wrap')
+				}
+				warningDialog.buttonPanel = panel(layout: new MigLayout('fillx, ins 0'), constraints: 'growx,spanx') {
+					warningDialog.continueButtons = panel(constraints: 'growx', layout: new MigLayout('fillx, ins 0')) {
+						button(text: "Don't start yet...", actionPerformed: {warningDialog.continueAnyway = false; warningDialog.frame.visible = false})
+						panel(constraints: 'growx')
+						button(text: 'Start Anyway...', actionPerformed: {warningDialog.continueAnyway = true; warningDialog.frame.visible = false})
+					}
+					warningDialog.okButton = panel(constraints: 'growx', layout: new MigLayout('fillx, ins 0')) {
+						panel(constraints: 'growx')
+						button(text: "OK", actionPerformed: {warningDialog.continueAnyway = false; warningDialog.frame.visible = false})
+						panel(constraints: 'growx')
+					}
+				}
+			}
+		}
+		successDialog.frame = swing.dialog(title: 'Success!', modal: true, pack: true) {
+			warningDialog.panel = panel(layout: new MigLayout('fill,ins 0, gap 0')) {
+				warningDialog.ipBox = panel(border: titledBorder(title: 'Your Settings Appear Correct'), constraints: 'growx, spanx, wrap', layout: new MigLayout('fill')) {
+					label(text: 'Plubble has successfuly connected to your machine.', font: new FontUIResource("SansSerif", Font.BOLD, 12), constraints: 'growx, spanx, wrap')
+				}
+				panel(constraints: 'growx')
+				button(text: "OK", actionPerformed: {successDialog.frame.visible = false})
+				panel(constraints: 'growx')
+			}
 		}
 		if (config) {
 			propsWindow.background = new Color(0, 0, 0, 0)

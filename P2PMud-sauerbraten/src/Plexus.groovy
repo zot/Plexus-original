@@ -76,7 +76,7 @@ public class Plexus {
 	def mapProps = [:]
 	def globalProps = [:]
 	def mapIsPrivate
-	/** cloudProperties is the shared properties object for Plexus
+	/** cloudProperties is the shared properties object for PLEXUS
 	 * its keys are path-strings, representing information organized in
 	 * a tree
 	 */
@@ -1449,7 +1449,7 @@ println "pushMap: [$nameArgs]"
 			})
 
 			if (mapname ==~ 'plexus/.*/map') {
-				println "plexus"
+				println "PLEXUS"
 				def mapdir = new File(sauerDir, "packages/$mapname").getParentFile()
 
 				println "store"
