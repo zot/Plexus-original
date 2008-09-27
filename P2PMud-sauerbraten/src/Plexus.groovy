@@ -113,6 +113,7 @@ public class Plexus {
 	def downloads = 0
 	def headless = false
 	def cloudFields = [:]
+	def mappingFields = [:]
 
 	def static sauerExec
 	def static TIME_STAMP = new SimpleDateFormat("yyyyMMdd-HHmmsszzz")
@@ -143,9 +144,10 @@ public class Plexus {
 		return true
 	}
 	def static err(msg, err) {
-		err.printStackTrace()
 		println(msg)
 		stackTrace(err)
+		println "UNSANITIZED STACK TRACE FOLLOWS..."
+		err.printStackTrace()
 		System.exit(1)
 	}
 
@@ -167,7 +169,7 @@ public class Plexus {
 			}
 		})
 	}
-	def _main(args) {
+	def _main(args) {	
 		exec {
 			executorThread = Thread.currentThread()
 		}
@@ -245,17 +247,13 @@ public class Plexus {
 				updatePlayerList()
 				updateMapGui()
 				updateCostumeGui()
-				def buf = "<html><body>" << "CURRENT CLOUD PROPERTIES AS OF ${new Date()}<br><table>"
 				def props = cloudProperties.properties
-				def count = 0
+				def data = []
+
 				new ArrayList(props.keySet()).sort().each {
-					buf << "<tr${count & 1 ? '' : ' style="background-color: rgb(192,255,192)"'}><td><div><b>$it</b></div></td><td><div>${props[it]}</div></td></tr>\n"
-					count++
+					data << ["<b>$it</b>", props[it]]
 				}
-				buf << "</table></body></html>"
-				swing.edt {
-					cloudFields.properties.text = buf.toString()
-				}
+				showData(cloudFields.properties, "CURRENT CLOUD PROPERTIES: ${new Date()}", 2, data)
 			}
 			if ((LaunchPlexus.props.sauer_mode ?: 'launch') == 'launch') launchSauer();
 			//PlasticLookAndFeel.setPlasticTheme(new DesertBlue());
@@ -330,6 +328,31 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			} else {
 				println "initJoin"
 				initJoin()
+			}
+		}
+		updateMappings()
+	}
+	def showData(field, header, cols, data) {
+		def buf = "" << "<html><body><table><tr colspan=\"$cols\" style=\"background-color: rgb(192,192,192)\"><td><div>$header</div></td></tr>\n"
+		def count = 0
+		def pane = field.parent.parent
+
+		data.each {row ->
+			buf << "<tr${count & 1 ? '' : ' style="background-color: rgb(192,255,192)"'}>"
+			row.each {col -> buf << "<td><div>$col</div></td>"}
+			buf << "</tr>\n"
+			count++
+		}
+		buf << "</table></body></html>"
+		println "buf: $buf"
+		swing.edt {
+			def horiz = pane.horizontalScrollBar.value
+			def vert = pane.verticalScrollBar.value
+
+			field.text = buf.toString()
+			swing.doLater {
+				pane.horizontalScrollBar.value = horiz
+				pane.verticalScrollBar.value = vert
 			}
 		}
 	}
@@ -463,8 +486,16 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 							label(text: 'Neighbors: ')
 							cloudFields.neighbors = label(constraints: 'growx,wrap')
 							label(text: 'Cloud Properties', constraints: 'growx,spanx,wrap')
-							scrollPane(constraints: 'grow,span,wrap', border: null) {
+							cloudFields.scrollPane = scrollPane(constraints: 'grow,span,wrap', border: null) {
 								cloudFields.properties = textPane(editable: false, editorKit: new NoWrapEditorKit())
+							}
+						}
+						panel(name: 'ID Mapping', layout: new MigLayout('fill')) {
+							scrollPane(constraints: 'grow,span,wrap', border: null) {
+								mappingFields.ids = textPane(editable: false, editorKit: new NoWrapEditorKit())
+							}
+							scrollPane(constraints: 'grow,span,wrap', border: null) {
+								mappingFields.names = textPane(editable: false, editorKit: new NoWrapEditorKit())
 							}
 						}
 					}
@@ -890,7 +921,9 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	def transmitRemoveCloudProperty(key) {
 		checkExec()
 		cloudProperties.removeProperty(key)
-		peer.broadcastCmds(plexusTopic, ["removeCloudProperty $key"] as String[])
+		if (peer) {
+			peer.broadcastCmds(plexusTopic, ["removeCloudProperty $key"] as String[])
+		}
 		println "BROADCAST REMOVE PROPERTY: $key"
 	}
 	def removeCloudProperty(key) {
@@ -1024,6 +1057,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 				sauer('delplayer', "deleteplayer $sauerId")
 				updateMapGui()
 				dumpCommands()
+				updateMappings()
 			}
 			peerToSauerIdMap.remove(node)
 		}
@@ -1038,6 +1072,22 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		println peerToSauerIdMap
 		sauer('prep', "echo [Welcome player $name to this world.]; createplayer $id $name")
 		loadCostume(who)
+		updateMappings()
+	}
+	def updateMappings() {
+		def data = []
+
+		ids.each {
+			data << [it.key, it.value]
+		}
+		data.sort {a, b -> a[0].compareTo(b[0])}
+		showData(mappingFields.ids, "IDs", 2, data)
+		data = []
+		names.each {
+			data << [it.key, it.value]
+		}
+		data.sort {a, b -> a[0].compareTo(b[0])}
+		showData(mappingFields.names, "Names", 2, data)
 	}
 	def updatePlayerList() {
 		if (!peer?.nodeId) return
@@ -1387,6 +1437,7 @@ println "COSTUME SELS: $triples"
 		//println "Going to clear players"
 		names = [p0: peerId]
 		ids = [peerId: 'p0']
+		updateMappings()
 	}
 	def connectWorld(id) {
 		if (id) {
