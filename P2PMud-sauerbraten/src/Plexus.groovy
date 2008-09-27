@@ -1037,7 +1037,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		names[id] = who.id
 		peerToSauerIdMap[who.id] = id
 		println peerToSauerIdMap
-		sauer('prep', "echo [Welcome player $name to this world.]; createplayer $id $name")
+		sauer('prep', "echo [Welcome player $name to this world.]; createplayer $id $name; playerinfo $id \"$who.guild\"")
 		loadCostume(who)
 	}
 	def updatePlayerList() {
