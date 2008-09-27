@@ -360,6 +360,9 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 			}
 		}
 	}
+	public Collection<Topic> getTopics() {
+		return myScribe.getTopicsByClient(this);
+	}
 	public Topic subscribe(Id topicId, Continuation<Topic, Exception> cont) {
 		Topic topic = new Topic(topicId);
 

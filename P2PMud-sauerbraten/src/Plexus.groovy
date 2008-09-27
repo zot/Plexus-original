@@ -115,6 +115,7 @@ public class Plexus {
 	def headless = false
 	def cloudFields = [:]
 	def mappingFields = [:]
+	def pastryFields = [:]
 
 	def static sauerExec
 	def static TIME_STAMP = new SimpleDateFormat("yyyyMMdd-HHmmsszzz")
@@ -157,7 +158,7 @@ public class Plexus {
 	}
 	def checkExec() {
 		if (executorThread != Thread.currentThread()) {
-			new Exception("Not running in executor thread").printStackTrace()
+			stackTrace(new Exception("Not running in executor thread"))
 		}
 		assert executorThread == Thread.currentThread()
 	}
@@ -320,7 +321,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		}
 		names = [p0: peerId]
 		ids = [(peerId): 'p0']
-		plexusTopic = peer.subscribe(peer.buildId(PLEXUS_KEY), null)
+		plexusTopic = subscribe(peer.buildId(PLEXUS_KEY), null)
 		println "execing init..."
 		exec {
 			if (peer.node.getLeafSet().getUniqueCount() == 1) {
@@ -330,14 +331,16 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 				println "initJoin"
 				initJoin()
 			}
+			updateMappingDiag()
+			updatePastryDiag()
 		}
-		updateMappings()
 	}
 	def showData(field, header, cols, data) {
 		def buf = ("" << "<html><body><table><tr colspan=\"$cols\" style=\"background-color: rgb(192,192,192)\"><td><div>$header</div></td></tr>\n")
 		def count = 0
 		def pane = field.parent.parent
 
+		data.sort {a, b -> a[0].compareTo(b[0])}
 		data.each {row ->
 			buf << "<tr${count & 1 ? '' : ' style="background-color: rgb(192,255,192)"'}>"
 			row.each {col -> buf << "<td><div>$col</div></td>"}
@@ -497,6 +500,11 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 							}
 							scrollPane(constraints: 'grow,span,wrap', border: null) {
 								mappingFields.names = textPane(editable: false, editorKit: new NoWrapEditorKit())
+							}
+						}
+						panel(name: 'Pastry', layout: new MigLayout('fill')) {
+							scrollPane(constraints: 'grow,span,wrap', border: null) {
+								pastryFields.topics = textPane(editable: false, editorKit: new NoWrapEditorKit())
 							}
 						}
 					}
@@ -1073,7 +1081,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 				sauer('delplayer', "deleteplayer $sauerId")
 				updateMapGui()
 				dumpCommands()
-				updateMappings()
+				updateMappingDiag()
 			}
 			peerToSauerIdMap.remove(node)
 		}
@@ -1088,22 +1096,33 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		println peerToSauerIdMap
 		sauer('prep', "echo [Welcome player $name to this world.]; createplayer $id $name; playerinfo $id \"$who.guild\"")
 		loadCostume(who)
-		updateMappings()
+		updateMappingDiag()
 	}
-	def updateMappings() {
+	def updateMappingDiag() {
 		def data = []
 
 		ids.each {
 			data << [it.key, it.value]
 		}
-		data.sort {a, b -> a[0].compareTo(b[0])}
 		showData(mappingFields.ids, "IDs", 2, data)
 		data = []
 		names.each {
 			data << [it.key, it.value]
 		}
-		data.sort {a, b -> a[0].compareTo(b[0])}
 		showData(mappingFields.names, "Names", 2, data)
+	}
+	def updatePastryDiag() {
+		def data = []
+
+		peer.topics.each {
+			def map = getMap(it.id.toStringFull())
+
+			if (it == plexusTopic) {
+				map = "PLEXUS"
+			}
+			data << [it, map]
+		}
+		showData(pastryFields.topics, "Topics", 2, data)
 	}
 	def updatePlayerList() {
 		if (!peer?.nodeId) return
@@ -1453,7 +1472,21 @@ println "COSTUME SELS: $triples"
 		//println "Going to clear players"
 		names = [p0: peerId]
 		ids = [(peerId): 'p0']
-		updateMappings()
+		updateMappingDiag()
+	}
+	def subscribe(topicId, cont) {
+		def topic = peer.subscribe(topicId, cont)
+
+		exec {
+			updatePastryDiag()
+		}
+		return topic
+	}
+	def unsubscribe(topic) {
+		peer.unsubscribe(topic)
+		exec {
+			updatePastryDiag()
+		}
 	}
 	def connectWorld(id) {
 		if (id) {
@@ -1465,10 +1498,10 @@ println "COSTUME SELS: $triples"
 				println "CONNECTING TO WORLD: $map.name ($map.id)"
 				clearPlayers()
 				if (mapTopic) {
-					peer.unsubscribe(mapTopic)
+					unsubscribe(mapTopic)
 				}
 				loadMap(map.name, map.dir, continuation(receiveResult: {
-					peer.subscribe(Id.build(id), continuation(receiveResult: {topic ->
+					subscribe(Id.build(id), continuation(receiveResult: {topic ->
 						exec {
 							mapTopic = topic
 							mapIsPrivate = map.privateMap
@@ -1482,7 +1515,7 @@ println "COSTUME SELS: $triples"
 			}
 		} else {
 			if (mapTopic) {
-				peer.unsubscribe(mapTopic)
+				unsubscribe(mapTopic)
 				mapTopic = null
 				sauer('limbo', "map plexus/dist/limbo/map")
 				dumpCommands()
