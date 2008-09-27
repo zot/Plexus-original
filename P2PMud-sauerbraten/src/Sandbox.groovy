@@ -1,4 +1,4 @@
-import p2pmud.Seed
+
 import java.security.Policy
 import sun.security.provider.PolicyFile
 import java.security.ProtectionDomain

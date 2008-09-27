@@ -517,6 +517,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 					env.add("$vars.key=$vars.value")
 				}
 			}
+			sauerExec += " -x\"alias sauerPort $LaunchPlexus.props.sauer_port;alias sauerHost 127.0.0.1\""
 			env = env as String[]
 			println ("Going to exec $sauerExec from $sauerDir with env: $env")
 			Runtime.getRuntime().exec(sauerExec,  env, sauerDir)
