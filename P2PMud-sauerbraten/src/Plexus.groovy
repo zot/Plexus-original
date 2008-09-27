@@ -74,6 +74,7 @@ public class Plexus {
 	def costume
 	def mapTopic
 	def mapProps = [:]
+	def newMapHookBlock
 	def globalProps = [:]
 	def mapIsPrivate
 	/** cloudProperties is the shared properties object for PLEXUS
@@ -707,6 +708,9 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		checkExec()
 		pendingCommands[key] = value
 	}
+	def hasSauerConnection() {
+		socket?.isConnected()
+	}
 	def dumpCommands() {
 		checkExec()
 		if (!pendingCommands.isEmpty()) {
@@ -792,10 +796,16 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		fetchDir(id, dir, receiveResult: {result ->
 			def mapPath = subpath(new File(sauerDir, "packages"), dir)
 
-			if (cont) {cont.receiveResult(result)}
-			println "Retrieved map from PAST: $dir, executing: map [$mapPath/map]"
-			sauer('load', "echo loading new map: [$mapPath/map]; tc_loadmsg [$name]; map [$mapPath/map]")
-			dumpCommands()
+			if (cont) {
+				if (hasSauerConnection()) {
+					newMapHookBlock = {cont.receiveResult(result)}
+					println "Retrieved map from PAST: $dir, executing: map [$mapPath/map]"
+					sauer('load', "echo loading new map: [$mapPath/map]; tc_loadmsg [$name]; map [$mapPath/map]")
+					dumpCommands()
+				} else {
+					cont.receiveResult(result)
+				}
+			}
 		}, receiveException: {ex ->
 			if (cont) {
 				cont.receiveException(ex)
@@ -1005,8 +1015,13 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	}
 	def newMapHook(name) {
 		println "newmap: $name"
+		clearPlayers()
 		sauer("delp", "deleteallplayers")
 		dumpCommands()
+		if (newMapHookBlock) {
+			newMapHookBlock()
+			newMapHookBlock = null
+		}
 		mapname = name
 		updateMyPlayerInfo()
 		def groovyScript = name ==~ '[^/]*' ? new File(sauerDir, "packages/base/${name}.groovy") : new File(sauerDir, "packages/${name}.groovy")
