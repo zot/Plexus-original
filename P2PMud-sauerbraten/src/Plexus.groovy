@@ -74,9 +74,10 @@ public class Plexus {
 	def costume
 	def mapTopic
 	def mapProps = [:]
+	def newMapHookBlock
 	def globalProps = [:]
 	def mapIsPrivate
-	/** cloudProperties is the shared properties object for Plexus
+	/** cloudProperties is the shared properties object for PLEXUS
 	 * its keys are path-strings, representing information organized in
 	 * a tree
 	 */
@@ -84,7 +85,6 @@ public class Plexus {
 	def plexusTopic
 	def presenceLock = new Lock('presence')
 	def playerCount = [:]
-	def peerToSauerIdMap = [:]
 	def triggerLambdas = [:]
 	def portals = [:]
 	def receivedCloudPropertiesHooks = [
@@ -113,6 +113,8 @@ public class Plexus {
 	def downloads = 0
 	def headless = false
 	def cloudFields = [:]
+	def mappingFields = [:]
+	def pastryFields = [:]
 
 	def static sauerExec
 	def static TIME_STAMP = new SimpleDateFormat("yyyyMMdd-HHmmsszzz")
@@ -143,9 +145,10 @@ public class Plexus {
 		return true
 	}
 	def static err(msg, err) {
-		err.printStackTrace()
 		println(msg)
 		stackTrace(err)
+		println "UNSANITIZED STACK TRACE FOLLOWS..."
+		err.printStackTrace()
 		System.exit(1)
 	}
 
@@ -154,7 +157,7 @@ public class Plexus {
 	}
 	def checkExec() {
 		if (executorThread != Thread.currentThread()) {
-			new Exception("Not running in executor thread").printStackTrace()
+			stackTrace(new Exception("Not running in executor thread"))
 		}
 		assert executorThread == Thread.currentThread()
 	}
@@ -167,7 +170,7 @@ public class Plexus {
 			}
 		})
 	}
-	def _main(args) {
+	def _main(args) {	
 		exec {
 			executorThread = Thread.currentThread()
 		}
@@ -239,23 +242,20 @@ public class Plexus {
 				}
 			}
 			cloudProperties.removePropertyHooks[~'player/..*'] = {key, value ->
+				println "CLOUD PROPERTY REMOVE HOOK"
 				removePlayerFromSauerMap(key.substring('player/'.length()))
 			}
 			cloudProperties.changedPropertyHooks.add {
 				updatePlayerList()
 				updateMapGui()
 				updateCostumeGui()
-				def buf = "<html><body>" << "CURRENT CLOUD PROPERTIES AS OF ${new Date()}<br><table>"
 				def props = cloudProperties.properties
-				def count = 0
+				def data = []
+
 				new ArrayList(props.keySet()).sort().each {
-					buf << "<tr${count & 1 ? '' : ' style="background-color: rgb(192,255,192)"'}><td><div><b>$it</b></div></td><td><div>${props[it]}</div></td></tr>\n"
-					count++
+					data << ["<b>$it</b>", props[it]]
 				}
-				buf << "</table></body></html>"
-				swing.edt {
-					cloudFields.properties.text = buf.toString()
-				}
+				showData(cloudFields.properties, "CURRENT CLOUD PROPERTIES: ${new Date()}", 2, data)
 			}
 			if ((LaunchPlexus.props.sauer_mode ?: 'launch') == 'launch') launchSauer();
 			//PlasticLookAndFeel.setPlasticTheme(new DesertBlue());
@@ -293,6 +293,7 @@ public class Plexus {
 						if (topic == null && cmd == null) {
 							id = id.toStringFull()
 							transmitRemoveCloudProperty("player/$id")
+							println "Going to remove '${ids[id]}' from names"
 						} else {
 							pastryCmd = cmd
 							cmd.msgs.each {line ->
@@ -320,8 +321,8 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			LaunchPlexus.saveProps()
 		}
 		names = [p0: peerId]
-		ids[peerId] = 'p0'
-		plexusTopic = peer.subscribe(peer.buildId(PLEXUS_KEY), null)
+		ids = [(peerId): 'p0']
+		plexusTopic = subscribe(peer.buildId(PLEXUS_KEY), null)
 		println "execing init..."
 		exec {
 			if (peer.node.getLeafSet().getUniqueCount() == 1) {
@@ -330,6 +331,33 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			} else {
 				println "initJoin"
 				initJoin()
+			}
+			updateMappingDiag()
+			updatePastryDiag()
+		}
+	}
+	def showData(field, header, cols, data) {
+		def buf = ("" << "<html><body><table><tr colspan=\"$cols\" style=\"background-color: rgb(192,192,192)\"><td><div>$header</div></td></tr>\n")
+		def count = 0
+		def pane = field.parent.parent
+
+		data.sort {a, b -> a[0].compareTo(b[0])}
+		data.each {row ->
+			buf << "<tr${count & 1 ? '' : ' style="background-color: rgb(192,255,192)"'}>"
+			row.each {col -> buf << "<td><div>$col</div></td>"}
+			buf << "</tr>\n"
+			count++
+		}
+		buf << "</table></body></html>"
+		println "buf: $buf"
+		swing.edt {
+			def horiz = pane.horizontalScrollBar.value
+			def vert = pane.verticalScrollBar.value
+
+			field.text = buf.toString()
+			swing.doLater {
+				pane.horizontalScrollBar.value = horiz
+				pane.verticalScrollBar.value = vert
 			}
 		}
 	}
@@ -463,8 +491,21 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 							label(text: 'Neighbors: ')
 							cloudFields.neighbors = label(constraints: 'growx,wrap')
 							label(text: 'Cloud Properties', constraints: 'growx,spanx,wrap')
-							scrollPane(constraints: 'grow,span,wrap', border: null) {
+							cloudFields.scrollPane = scrollPane(constraints: 'grow,span,wrap', border: null) {
 								cloudFields.properties = textPane(editable: false, editorKit: new NoWrapEditorKit())
+							}
+						}
+						panel(name: 'ID Mapping', layout: new MigLayout('fill')) {
+							scrollPane(constraints: 'grow,span,wrap', border: null) {
+								mappingFields.ids = textPane(editable: false, editorKit: new NoWrapEditorKit())
+							}
+							scrollPane(constraints: 'grow,span,wrap', border: null) {
+								mappingFields.names = textPane(editable: false, editorKit: new NoWrapEditorKit())
+							}
+						}
+						panel(name: 'Pastry', layout: new MigLayout('fill')) {
+							scrollPane(constraints: 'grow,span,wrap', border: null) {
+								pastryFields.topics = textPane(editable: false, editorKit: new NoWrapEditorKit())
 							}
 						}
 					}
@@ -517,6 +558,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 					env.add("$vars.key=$vars.value")
 				}
 			}
+			sauerExec += " -x\"alias sauerPort $LaunchPlexus.props.sauer_port;alias sauerHost 127.0.0.1\""
 			env = env as String[]
 			println ("Going to exec $sauerExec from $sauerDir with env: $env")
 			Runtime.getRuntime().exec(sauerExec,  env, sauerDir)
@@ -675,6 +717,9 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		checkExec()
 		pendingCommands[key] = value
 	}
+	def hasSauerConnection() {
+		socket?.isConnected()
+	}
 	def dumpCommands() {
 		checkExec()
 		if (!pendingCommands.isEmpty()) {
@@ -760,10 +805,16 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		fetchDir(id, dir, receiveResult: {result ->
 			def mapPath = subpath(new File(sauerDir, "packages"), dir)
 
-			if (cont) {cont.receiveResult(result)}
-			println "Retrieved map from PAST: $dir, executing: map [$mapPath/map]"
-			sauer('load', "echo loading new map: [$mapPath/map]; tc_loadmsg [$name]; map [$mapPath/map]")
-			dumpCommands()
+			if (cont) {
+				if (hasSauerConnection()) {
+					newMapHookBlock = {cont.receiveResult(result)}
+					println "Retrieved map from PAST: $dir, executing: map [$mapPath/map]"
+					sauer('load', "echo loading new map: [$mapPath/map]; tc_loadmsg [$name]; map [$mapPath/map]")
+					dumpCommands()
+				} else {
+					cont.receiveResult(result)
+				}
+			}
 		}, receiveException: {ex ->
 			if (cont) {
 				cont.receiveException(ex)
@@ -889,12 +940,16 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	}
 	def transmitRemoveCloudProperty(key) {
 		checkExec()
+		println "REMOVING CLOUD PROPERTY"
 		cloudProperties.removeProperty(key)
-		peer.broadcastCmds(plexusTopic, ["removeCloudProperty $key"] as String[])
+		if (peer) {
+			peer.broadcastCmds(plexusTopic, ["removeCloudProperty $key"] as String[])
+		}
 		println "BROADCAST REMOVE PROPERTY: $key"
 	}
 	def removeCloudProperty(key) {
 		checkExec()
+		println "REMOVING CLOUD PROPERTY"
 		cloudProperties.removeProperty(key)
 	}
 	def receiveCloudProperties(props) {
@@ -971,8 +1026,13 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	}
 	def newMapHook(name) {
 		println "newmap: $name"
+		clearPlayers()
 		sauer("delp", "deleteallplayers")
 		dumpCommands()
+		if (newMapHookBlock) {
+			newMapHookBlock()
+			newMapHookBlock = null
+		}
 		mapname = name
 		updateMyPlayerInfo()
 		def groovyScript = name ==~ '[^/]*' ? new File(sauerDir, "packages/base/${name}.groovy") : new File(sauerDir, "packages/${name}.groovy")
@@ -1008,36 +1068,65 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			transmitSetCloudProperty("player/$node", new JSONWriter().write([map: id, costume: costume, name: name, guild: LaunchPlexus.props.guild]))
 		}
 	}
-	def removePlayerFromSauerMap(node) {
-		if (peerToSauerIdMap[node]) {
-			def sauerId = peerToSauerIdMap[node]
-			
-			if (sauerId) {
-				def who = sauerId ? getPlayer(names[sauerId]) : null
+	def removePlayerFromSauerMap(peerId) {
+		if (ids[peerId]) {
+			def sauerId = ids[peerId]
+			def who = getPlayer(peerId)
 
-				if (who) {
-					println "Going to remove player $who.name from sauer: $sauerId"
-					sauer('msgplayer', "echo [Player $who.name has left this world.]")
-					ids.remove(who.id)
-				}
-				names.remove(sauerId)
-				sauer('delplayer', "deleteplayer $sauerId")
-				updateMapGui()
-				dumpCommands()
+			if (who) {
+				println "Going to remove player $who.name from sauer: $sauerId"
+				sauer('msgplayer', "echo [Player $who.name has left this world.]")
 			}
-			peerToSauerIdMap.remove(node)
+			ids.remove(peerId)
+			names.remove(sauerId)
+			sauer('delplayer', "deleteplayer $sauerId")
+			updateMapGui()
+			dumpCommands()
+			updateMappingDiag()
+		} else {
+			println "WARNING: can't find id for player: $peerId"
 		}
 	}
-	def newPlayer(name, id) {
-		def who = getPlayer(pastryCmd.from.toStringFull())
+	def newPlayer(name) {
+		def node = pastryCmd.from.toStringFull()
+		def who = getPlayer(node)
+		def sauerid = ids[node]
 
-		ids[who.id] = id
+		if (!sauerid) sauerid = "p$id_index" as String
+
+		ids[node] = sauerid
+		names[sauerid] = node
 		++id_index
-		names[id] = who.id
-		peerToSauerIdMap[who.id] = id
-		println peerToSauerIdMap
-		sauer('prep', "echo [Welcome player $name to this world.]; createplayer $id $name")
+		sauer('prep', "echo [Welcome player $name to this world.]; createplayer $sauerid $name; playerinfo $sauerid \"$who.guild\"")
 		loadCostume(who)
+		updateMappingDiag()
+		return sauerid
+	}
+	def updateMappingDiag() {
+		def data = []
+
+		ids.each {
+			data << [it.key, it.value]
+		}
+		showData(mappingFields.ids, "IDs", 2, data)
+		data = []
+		names.each {
+			data << [it.key, it.value]
+		}
+		showData(mappingFields.names, "Names", 2, data)
+	}
+	def updatePastryDiag() {
+		def data = []
+
+		peer.topics.each {
+			def map = getMap(it.id.toStringFull())
+
+			if (it == plexusTopic) {
+				map = "PLEXUS"
+			}
+			data << [it, map]
+		}
+		showData(pastryFields.topics, "Topics", 2, data)
 	}
 	def updatePlayerList() {
 		if (!peer?.nodeId) return
@@ -1386,7 +1475,22 @@ println "COSTUME SELS: $triples"
 	def clearPlayers() {
 		//println "Going to clear players"
 		names = [p0: peerId]
-		ids = [peerId: 'p0']
+		ids = [(peerId): 'p0']
+		updateMappingDiag()
+	}
+	def subscribe(topicId, cont) {
+		def topic = peer.subscribe(topicId, cont)
+
+		exec {
+			updatePastryDiag()
+		}
+		return topic
+	}
+	def unsubscribe(topic) {
+		peer.unsubscribe(topic)
+		exec {
+			updatePastryDiag()
+		}
 	}
 	def connectWorld(id) {
 		if (id) {
@@ -1398,10 +1502,10 @@ println "COSTUME SELS: $triples"
 				println "CONNECTING TO WORLD: $map.name ($map.id)"
 				clearPlayers()
 				if (mapTopic) {
-					peer.unsubscribe(mapTopic)
+					unsubscribe(mapTopic)
 				}
 				loadMap(map.name, map.dir, continuation(receiveResult: {
-					peer.subscribe(Id.build(id), continuation(receiveResult: {topic ->
+					subscribe(Id.build(id), continuation(receiveResult: {topic ->
 						exec {
 							mapTopic = topic
 							mapIsPrivate = map.privateMap
@@ -1415,7 +1519,7 @@ println "COSTUME SELS: $triples"
 			}
 		} else {
 			if (mapTopic) {
-				peer.unsubscribe(mapTopic)
+				unsubscribe(mapTopic)
 				mapTopic = null
 				sauer('limbo', "map plexus/dist/limbo/map")
 				dumpCommands()
@@ -1449,7 +1553,7 @@ println "pushMap: [$nameArgs]"
 			})
 
 			if (mapname ==~ 'plexus/.*/map') {
-				println "plexus"
+				println "PLEXUS"
 				def mapdir = new File(sauerDir, "packages/$mapname").getParentFile()
 
 				println "store"

@@ -446,7 +446,7 @@ ICOMMAND(playerinfo, "sss", (char *ent, char *team, char *model), {
 		} else {
 			p->team[0] = '\0';
 		}
-		playersetmodel(p, model);
+		if (model && *model) playersetmodel(p, model);
 	}
 });
 

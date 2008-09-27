@@ -1034,6 +1034,9 @@ int main(int argc, char **argv)
     
     initing = INIT_LOAD;
     if(!execfile(cl->savedconfig())) exec(cl->defaultconfig());
+#ifdef TC
+    if(initscript) execute(initscript);
+#endif
     execfile(cl->autoexec());
     initing = NOT_INITING;
 
@@ -1055,8 +1058,9 @@ int main(int argc, char **argv)
 #endif
     cc->changemap(load ? load : cl->defaultmap());
 
+#ifndef TC
     if(initscript) execute(initscript);
-
+#endif
     log("mainloop");
 
     initmumble();

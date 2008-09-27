@@ -11,31 +11,30 @@ import java.security.MessageDigest
 public class Tools {
 	def static digest = MessageDigest.getInstance("SHA-1")
 
-    def static addSanitizedStackTrace(t, lines) {
-        if (t.getCause()) {
-        	addSanitizedStackTrace(t.getCause(), lines)
-        	lines.add(0, "caused by: $t")
-        }
-        t = StackTraceUtils.sanitize(t);
-        StackTraceElement[] trace = t.getStackTrace();
-        for (int i = 0; i < trace.length; i++) {
-            StackTraceElement stackTraceElement = trace[i];
-            lines.add(i, "\tat "+stackTraceElement.getClassName()
-            	+"["+ stackTraceElement.getMethodName()+"] ("
-            	+ stackTraceElement.getFileName() + ":"+stackTraceElement.getLineNumber()+")");
-        }
-    }
 	def static stackTrace(ex) {
-//		ex.printStackTrace()
 		def w = new PrintWriter(System.err)
-		w.println(ex)
 		def lines = []
+
+//		ex.printStackTrace()
+		w.println(ex)
 		addSanitizedStackTrace(ex, lines)
 		lines.each {
 			w.println it
 		}
 		w.flush()
 	}
+    def static addSanitizedStackTrace(t, lines) {
+        if (t.getCause()) {
+        	addSanitizedStackTrace(t.getCause(), lines)
+        	lines.add(0, "caused by: $t")
+        }
+        def trace = StackTraceUtils.sanitize(t).getStackTrace();
+        for (int i = 0; i < trace.length; i++) {
+        	def element = trace[i];
+
+            lines.add(i, "\tat " + element.className + "."+ element.methodName + "(" + element.fileName + ":" + element.lineNumber + ")");
+        }
+    }
 	def static deleteAll(file) {
 		def f = file as File
 	

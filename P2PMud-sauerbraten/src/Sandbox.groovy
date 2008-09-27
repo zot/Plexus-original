@@ -5,25 +5,36 @@ import java.security.PrivilegedAction
 import java.security.AccessController
 
 public class Sandbox {
-	private engine = new GroovyScriptEngine(['/tmp/scripts'] as String[], Sandbox.classLoader)
-	private binding = new Binding()
-	private counter = 0
+	public engine = new GroovyScriptEngine(['/tmp/scripts'] as String[], Sandbox.classLoader)
+	public binding = new Binding()
+	public counter = 0
 	private main
-
+	
 	public static void main(String[] args) {
 		try {
-			def box = new Sandbox(null, '/tmp/scripts')
-			box.binding.setVariable('value', 10)
-			box.ev('println "value: $value"')
-			box.ev('println "Context: ${java.security.AccessController.context}"')
-			box.ev("println 'init'")
-			def block = box.ev("return {new File('/tmp/blorfl') << 'george'}")
-			block()
-			System.setSecurityManager(new SecurityManager())
-			try {
-				block()
-			} catch (Exception ex) {
-				ex.printStackTrace()
+			def box = new Sandbox(null, ['/tmp/scripts'])
+			def block
+
+			java.security.AccessController.doPrivileged({
+				box.binding.setVariable('value', 10)
+				box.ev('println "value: $value"')
+				box.ev('println "Context: ${java.security.AccessController.context}"')
+				box.ev("println 'init'")
+				println(new ArrayList().elementData)
+				block = box.ev("println 'BLORFL'; return {new File('/tmp/blorfl') << 'george'}")
+				try {
+					block()
+				} catch (Exception ex) {
+					ex.printStackTrace()
+				}
+			} as java.security.PrivilegedAction)
+			box.ev("println(new ArrayList().elementData)")
+			if (block) {
+				try {
+					block()
+				} catch (Exception ex) {
+					ex.printStackTrace()
+				}
 			}
 			box.ev('println Sandbox')
 			box.ev("class bubba {static {println(('/tmp/duh' as File).text)}}")
@@ -41,30 +52,20 @@ public class Sandbox {
 		this.main = main
 		engine = new GroovyScriptEngine(dirs as String[], Sandbox.classLoader)
 		binding.setVariable('sandbox', this)
-		binding.setVariable('mapProps', main.mapProps)
-		binding.setVariable('globalProps', main.globalProps)
+		main && binding.setVariable('mapProps', main.mapProps)
+		main && binding.setVariable('globalProps', main.globalProps)
 		def output = ('/tmp/policy' as File).newOutputStream()
-		def perms = """	permission java.lang.RuntimePermission "accessClassInPackage.sun.reflect";
-	permission java.lang.RuntimePermission "accessDeclaredMembers";
-	permission java.lang.RuntimePermission "createClassLoader";
-	permission groovy.security.GroovyCodeSourcePermission "/groovy/script";
-	permission groovy.security.GroovyCodeSourcePermission "/groovy/shell";
-	permission java.util.PropertyPermission "file.encoding", "read";
-	permission java.util.PropertyPermission "groovyjarjarantlr.ast", "read";
-	permission java.util.PropertyPermission "groovy.ast", "read";
-	permission java.io.FilePermission "/tmp/scripts/-", "read, write, delete";
-	permission java.io.FilePermission "/groovy/script", "read";"""
 		def input = Sandbox.getResourceAsStream('/resources/java.policy')
-
+	
 		output << input
 		input.close()
 		output << "\n"
 		Sandbox.classLoader.getURLs().each {
-//			 output << "grant codeBase \"$it\" {\n$perms\n};\n"
-			 output << "grant codeBase \"$it\" {\npermission java.security.AllPermission;\n};\n"
+		 	output << "grant codeBase \"$it\" {\npermission java.security.AllPermission;\n};\n"
 		}
 		output.close()
 		Policy.setPolicy(new PolicyFile(new URL("file:/tmp/policy")))
+		System.setSecurityManager(new SecurityManager())
 	}
 	def ev(expr) {
 		try {
@@ -86,7 +87,7 @@ public class Sandbox {
 				file.delete()
 			}
 			file << exp
-			println "WRITING $exp"
+//			println "WRITING $exp"
 			return null;
 		} as java.security.PrivilegedAction);
 		exec(name)

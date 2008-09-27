@@ -8,11 +8,9 @@ public class PastryCmds extends Cmds {
 		update(name, *args)
 	}
 	def update(name, String... args) {
-		def id = main.ids[main.pastryCmd.from.toStringFull()]
-
-		if (!id) {
-			id = "p$main.id_index"
-			main.newPlayer(name, id)
+		def id = main.ids[main.pastryCmd.from.toStringFull()] 
+		if (!id ) {		
+			id = main.newPlayer(name)
 		}
 		main.sauer("${id}.update", "tc_setinfo $id " + args.join(' '))
 		main.dumpCommands()

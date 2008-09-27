@@ -56,22 +56,22 @@ ICOMMAND(remotedisable, "", (),
 	initialized = NOT_ALLOWED;
 );
 
-static char *remoteallow(char *host, int *port) {
+static char *remoteallow(char *host, int port) {
 	if (host == 0) {
 		conoutf("REMOTE ERROR: host is NULL for remote connect");
 	} else if (strlen(host) == 0) {
 		conoutf("REMOTE ERROR: host is empty for remote connect");
 	} else if (port == 0) {
 		conoutf("REMOTE ERROR: No port given for remote connect");
-	} else if (*port < 0) {
-		conoutf("REMOTE ERROR: Invalid port for remote connect: %d", *port);
+	} else if (port < 0) {
+		conoutf("REMOTE ERROR: Invalid port for remote connect: %d", port);
 	} else {
 		switch (initialized) {
 		case SET:
 			if (strcmp(host, remoteHost)) {
 				conoutf("REMOTE SECURITY VIOLATION: attempt to change allowed remote host from: %s to %s.", remoteHost, host);
 				break;
-			} else if (*port != remotePort) {
+			} else if (port != remotePort) {
 				conoutf("REMOTE SECURITY VIOLATION: attempt to change allowed remote port from: %d to %d.", remotePort, port);
 				break;
 			}
@@ -83,14 +83,14 @@ static char *remoteallow(char *host, int *port) {
 			initialized = SET;
 			enet_initialize();
 			remoteHost = newstring(host);
-			remotePort = *port;
+			remotePort = port;
 			conoutf("Allowing remote connections to %s:%d", remoteHost, remotePort);
 			break;
 		}
 	}
 	return NULL;
 }
-ICOMMAND(remoteallow, "si", (char *host, int *port), remoteallow(host, port););
+ICOMMAND(remoteallow, "si", (char *host, int *port), remoteallow(host, port ? *port : 0););
 
 static char *remoteconnect() {
 	if (mysocket != -1) {
