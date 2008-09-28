@@ -282,35 +282,41 @@ public class Plexus {
 		}
 		P2PMudPeer.verboseLogging = LaunchPlexus.props.verbose_log == '1'
 		P2PMudPeer.logFile = new File(plexusDir, "cache/$name/plexus.log")
-		if (P2PMudPeer.verboseLogging) {
-			P2PMudPeer.sauerLogFile = new File(plexusDir, "cache/$name/sauer.log")
-			if (P2PMudPeer.sauerLogFile.exists()) P2PMudPeer.sauerLogFile.delete()
-		}
-		P2PMudPeer.main(
-			{id, topic, cmd ->
-				try {
-					exec {
-						if (topic == null && cmd == null) {
-							id = id.toStringFull()
-							transmitRemoveCloudProperty("player/$id")
-							println "Going to remove '${ids[id]}' from names"
-						} else {
-							pastryCmd = cmd
-							cmd.msgs.each {line ->
-								pastryCmds.invoke(line)
+			if (P2PMudPeer.verboseLogging) {
+				P2PMudPeer.sauerLogFile = new File(plexusDir, "cache/$name/sauer.log")
+				if (P2PMudPeer.sauerLogFile.exists()) P2PMudPeer.sauerLogFile.delete()
+			}
+			try {
+			P2PMudPeer.main(
+				{id, topic, cmd ->
+					try {
+						exec {
+							if (topic == null && cmd == null) {
+								id = id.toStringFull()
+								transmitRemoveCloudProperty("player/$id")
+								println "Going to remove '${ids[id]}' from names"
+							} else {
+								pastryCmd = cmd
+								cmd.msgs.each {line ->
+									pastryCmds.invoke(line)
+								}
+								pastryCmd = null
 							}
-							pastryCmd = null
 						}
+					} catch (Exception ex) {
+						err("Problem executing command: " + cmd, ex)
 					}
-				} catch (Exception ex) {
-					err("Problem executing command: " + cmd, ex)
-				}
-			} as P2PMudCommandHandler,
-			{
-				//sauer('peers', "peers ${peer.getNeighborCount()}")
-				//dumpCommands()
-			},
-			args[2..-1] as String[])
+				} as P2PMudCommandHandler,
+				{
+					//sauer('peers', "peers ${peer.getNeighborCount()}")
+					//dumpCommands()
+				},
+				args[2..-1] as String[])
+		} catch (Exception ex) {
+			System.err.println("PROBLEMS CONNECTING TO THE CLOUD.  PEER STATE...")
+			System.err.println(P2PMudPeer.test.routeState())
+			err("Could not connect...", ex)
+		}
 		peer = P2PMudPeer.test
 		peerId = peer.nodeId.toStringFull()
 //		println "Node ID: $peerId}"
