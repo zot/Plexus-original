@@ -42,6 +42,7 @@ public class LaunchPlexus {
 	public static saveProps() {
 		Prep.saveProps()
 	}
+	//No SwingBuilder here in case we're using JRE 1.5
 	public static checkJavaVersion() {
 		def version = System.properties['java.version']
 		if (!version.startsWith('1.6.0_10')) {

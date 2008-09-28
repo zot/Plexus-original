@@ -374,9 +374,32 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			}
 		}, receiveException: {ex -> err("Could not fetch data for $type: $id -> ${new File(plexusDir, "cache/$name/$location")}", ex)})
 	}
+	def die() {
+		exec {
+			swing.edt {
+				gui.visible = false
+			}
+			if (plexusTopic) {
+				def node = peer.nodeId.toStringFull()
+
+				transmitRemoveCloudProperty("player/$node")
+				Thread.sleep(1000)
+				if (mapTopic) {
+					unsubscribe(mapTopic)
+				}
+				unsubscribe(plexusTopic)
+				Thread.sleep(1000)
+				peer.destroy()
+			}
+			Thread.start {
+				Thread.sleep(1000)
+				System.exit(0)
+			}
+		}
+	}
 	def buildPlexusGui() {
 		swing = new SwingXBuilder()
-		gui = swing.frame(title: "PLEXUS [${LaunchPlexus.props.name}]", size: [500, 500], windowClosing: {System.exit(0)}, pack: true, show: true) {
+		gui = swing.frame(title: "PLEXUS [${LaunchPlexus.props.name}]", size: [500, 500], windowClosing: {die()}, pack: true, show: true) {
 			def makeTitlePainter = {label, pos = null ->
 				compoundPainter() {
 		            mattePainter(fillPaint: new Color(0x28, 0x26, 0x19))
