@@ -44,26 +44,27 @@ public class DFMapBuilder {
 		def remipCount = 0
 		def ir = 0
 		def h = 0; //Math.round(i / rows) //sets height
-		def linestore = 0
+		def oldlinestore = [ 0:'0'] //will store previous line's data
+		def currentlinestore = [ 0:'0'] //will store current line's data
 		for (def i = 1; i < totalrows; ++i ){
 			def dfmapcol = dfmaprow.get(i)
 			ir ++;
 			//def ir = Math.round(i - (h * rows)) //resets row
 			def dfmapcolarray = dfmapcol.split()
 			def rle = 0, cols = dfmapcolarray.length
-			if (cols < 3){
+			oldlinestore == currentlinestore //turns current line into previous line?
+			if (cols < 10){
 				println "i: $i, New layer found: " + dfmapcolarray.toString()
 				ir = 0;
 				h++;
-				z = 4096 + h * cubesize;//3072
-				linestore ++
+				z = 4096 + h * cubesize;//3072				
 			} else {
 				//println "cols: $cols, line: $dfmapcol"
 				for (def j = 0; j < cols; j += rle) {
 					// get chunks of identical letters to process them all the same
 					rle = getRLE(dfmapcolarray, j, cols)
 					def first = map[dfmapcolarray[j]]
-				
+					currentlinestore[j] == first; //suppossed to store the current value into a map, but doesnt :(
 					if (first != '$') {
 						//println "i got an rle of $rle at index: $j  first is $first"
 						def x = j * cubesize;
@@ -93,7 +94,8 @@ public class DFMapBuilder {
 						} else if (first == 'r') {
 						sauer('walltex', "selcube $x $y $zw $rle 2 2 $cubesize 5; $texture; editface -1 1")}
 					}
-					dumpCommands()
+					dumpCommands();
+					println currentlinestore;
 				}
 				
 				if (remipCount > 25000) {
