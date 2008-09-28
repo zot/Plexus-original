@@ -57,6 +57,7 @@ public class Prep {
 	def static initialClick = null
 	def static warningDialog = [:]
 	def static successDialog = [:]
+	def static testSocket
 
 	def static verifySauerDir(dir) {
 		while (!Plexus.verifySauerdir(dir)) {
@@ -163,7 +164,9 @@ public class Prep {
 		mainArgs = mainArgs as String[]
 	}
 	def static connectivityReport(showOk = false, reportSuccess = false) {
-		def con = testConnectivity(true)
+		def con = testConnectivity(true, false)
+		def result = true
+
 		if (con.status.toLowerCase() != 'success' || con.address != props.external_ip) {
 			def buttons = showOk ? warningDialog.continueButtons : warningDialog.okButton
 			def buttonPos = showOk ? 0 : 1
@@ -185,14 +188,17 @@ public class Prep {
 			}
 			warningDialog.buttonPanel.add(buttons, 'growx', buttonPos)
 			warningDialog.frame.pack()
-			return warningDialog.continueAnyway
+			result = warningDialog.continueAnyway
 		} else if (reportSuccess) {
 			successDialog.frame.visible = true
 		}
-		return true
+		if (testSocket) {
+			testSocket.close()
+		}
+		return result
 	}
 	def static finished(start) {
-		if (props.pastry_boot_host != '-' && !props.disable_con_check) {
+		if (start && props.pastry_boot_host != '-' && !props.disable_con_check) {
 			if (!connectivityReport()) {
 				return
 			}
@@ -437,11 +443,11 @@ public class Prep {
 		}
 		propsWindow.show()
 	}
-	def static testConnectivity(listen = true) {
+	def static testConnectivity(listen = true, closeSocket = true) {
 		println conProps
 		if (conProps?.status != 'success') {
 			println props.pastry_port
-			def sock = listen ? new ServerSocket(Integer.parseInt(props.pastry_port)) : null
+			testSocket = listen ? new ServerSocket(Integer.parseInt(props.pastry_port)) : null
 			//sock?.setReuseAddress(true)
 			//		println sock
 			//		Thread.sleep(5000)
@@ -451,8 +457,9 @@ public class Prep {
 			conProps = [:] as Properties
 			conProps.load(input)
 			input.close()
-			if (sock) {
-				sock.close()
+			if (testSocket && closeSocket) {
+				testSocket.close()
+				testSocket = null
 			}
 		}
 		return conProps

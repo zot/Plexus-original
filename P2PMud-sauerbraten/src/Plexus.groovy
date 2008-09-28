@@ -145,9 +145,9 @@ public class Plexus {
 		return true
 	}
 	def static err(msg, err) {
-		println(msg)
+		System.err.println(msg)
 		stackTrace(err)
-		println "UNSANITIZED STACK TRACE FOLLOWS..."
+		System.err.println "UNSANITIZED STACK TRACE FOLLOWS..."
 		err.printStackTrace()
 		System.exit(1)
 	}
@@ -282,35 +282,41 @@ public class Plexus {
 		}
 		P2PMudPeer.verboseLogging = LaunchPlexus.props.verbose_log == '1'
 		P2PMudPeer.logFile = new File(plexusDir, "cache/$name/plexus.log")
-		if (P2PMudPeer.verboseLogging) {
-			P2PMudPeer.sauerLogFile = new File(plexusDir, "cache/$name/sauer.log")
-			if (P2PMudPeer.sauerLogFile.exists()) P2PMudPeer.sauerLogFile.delete()
-		}
-		P2PMudPeer.main(
-			{id, topic, cmd ->
-				try {
-					exec {
-						if (topic == null && cmd == null) {
-							id = id.toStringFull()
-							transmitRemoveCloudProperty("player/$id")
-							println "Going to remove '${ids[id]}' from names"
-						} else {
-							pastryCmd = cmd
-							cmd.msgs.each {line ->
-								pastryCmds.invoke(line)
+			if (P2PMudPeer.verboseLogging) {
+				P2PMudPeer.sauerLogFile = new File(plexusDir, "cache/$name/sauer.log")
+				if (P2PMudPeer.sauerLogFile.exists()) P2PMudPeer.sauerLogFile.delete()
+			}
+			try {
+			P2PMudPeer.main(
+				{id, topic, cmd ->
+					try {
+						exec {
+							if (topic == null && cmd == null) {
+								id = id.toStringFull()
+								transmitRemoveCloudProperty("player/$id")
+								println "Going to remove '${ids[id]}' from names"
+							} else {
+								pastryCmd = cmd
+								cmd.msgs.each {line ->
+									pastryCmds.invoke(line)
+								}
+								pastryCmd = null
 							}
-							pastryCmd = null
 						}
+					} catch (Exception ex) {
+						err("Problem executing command: " + cmd, ex)
 					}
-				} catch (Exception ex) {
-					err("Problem executing command: " + cmd, ex)
-				}
-			} as P2PMudCommandHandler,
-			{
-				//sauer('peers', "peers ${peer.getNeighborCount()}")
-				//dumpCommands()
-			},
-			args[2..-1] as String[])
+				} as P2PMudCommandHandler,
+				{
+					//sauer('peers', "peers ${peer.getNeighborCount()}")
+					//dumpCommands()
+				},
+				args[2..-1] as String[])
+		} catch (Exception ex) {
+			System.err.println("PROBLEMS CONNECTING TO THE CLOUD.  PEER STATE...")
+			System.err.println(P2PMudPeer.test.routeState())
+			err("Could not connect...", ex)
+		}
 		peer = P2PMudPeer.test
 		peerId = peer.nodeId.toStringFull()
 //		println "Node ID: $peerId}"
@@ -336,8 +342,8 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			updatePastryDiag()
 		}
 	}
-	def showData(field, header, cols, data) {
-		def buf = ("" << "<html><body><table><tr colspan=\"$cols\" style=\"background-color: rgb(192,192,192)\"><td><div>$header</div></td></tr>\n")
+	def showData(field, header, cols, data, prologue = null, epilogue = null) {
+		def buf = ("" << "<html><body>${prologue ?: ''}<table><tr colspan=\"$cols\" style=\"background-color: rgb(192,192,192)\"><td><div>$header</div></td></tr>\n")
 		def count = 0
 		def pane = field.parent.parent
 
@@ -348,7 +354,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			buf << "</tr>\n"
 			count++
 		}
-		buf << "</table></body></html>"
+		buf << "</table>${epilogue ?: ''}</body></html>"
 		println "buf: $buf"
 		swing.edt {
 			def horiz = pane.horizontalScrollBar.value
@@ -374,9 +380,32 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			}
 		}, receiveException: {ex -> err("Could not fetch data for $type: $id -> ${new File(plexusDir, "cache/$name/$location")}", ex)})
 	}
+	def die() {
+		exec {
+			swing.edt {
+				gui.visible = false
+			}
+			if (plexusTopic) {
+				def node = peer.nodeId.toStringFull()
+
+				transmitRemoveCloudProperty("player/$node")
+				Thread.sleep(1000)
+				if (mapTopic) {
+					unsubscribe(mapTopic)
+				}
+				unsubscribe(plexusTopic)
+				Thread.sleep(1000)
+				peer.destroy()
+			}
+			Thread.start {
+				Thread.sleep(1000)
+				System.exit(0)
+			}
+		}
+	}
 	def buildPlexusGui() {
 		swing = new SwingXBuilder()
-		gui = swing.frame(title: "PLEXUS [${LaunchPlexus.props.name}]", size: [500, 500], windowClosing: {System.exit(0)}, pack: true, show: true) {
+		gui = swing.frame(title: "PLEXUS [${LaunchPlexus.props.name}]", size: [500, 500], windowClosing: {die()}, pack: true, show: true) {
 			def makeTitlePainter = {label, pos = null ->
 				compoundPainter() {
 		            mattePainter(fillPaint: new Color(0x28, 0x26, 0x19))
@@ -504,6 +533,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 							}
 						}
 						panel(name: 'Pastry', layout: new MigLayout('fill')) {
+							button(text: 'Update', actionPerformed: {exec {updatePastryDiag()}}, constraints: 'wrap')
 							scrollPane(constraints: 'grow,span,wrap', border: null) {
 								pastryFields.topics = textPane(editable: false, editorKit: new NoWrapEditorKit())
 							}
@@ -1126,7 +1156,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			}
 			data << [it, map]
 		}
-		showData(pastryFields.topics, "Topics", 2, data)
+		showData(pastryFields.topics, "Topics", 2, data, "", "Neighbors: ${peer.getNeighborCount()}<br>Route State...<br><pre>${peer.routeState()}</pre><br>")
 	}
 	def updatePlayerList() {
 		if (!peer?.nodeId) return

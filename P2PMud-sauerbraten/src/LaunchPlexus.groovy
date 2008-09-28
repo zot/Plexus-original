@@ -1,3 +1,12 @@
+import java.awt.Frame
+import javax.swing.JButton
+import java.awt.event.ActionListener
+import javax.swing.JLabel
+import javax.swing.JPanel
+import javax.swing.JDialog
+import javax.swing.border.TitledBorder
+import net.miginfocom.swing.MigLayout
+import groovy.swing.SwingBuilder
 import p2pmud.Tools
 import net.sbbi.upnp.messages.UPNPResponseException
 import net.sbbi.upnp.devices.*;
@@ -12,6 +21,7 @@ public class LaunchPlexus {
 
 	public static void main(String[] args) {
 		try {
+			checkJavaVersion()
 			System.properties["sun.java2d.d3d"] = "false"
 			if (System.properties['os.name'] != 'Linux') {
 				//System.properties["sun.java2d.opengl"] = "true"
@@ -32,7 +42,28 @@ public class LaunchPlexus {
 	public static saveProps() {
 		Prep.saveProps()
 	}
-	
+	//No SwingBuilder here in case we're using JRE 1.5
+	public static checkJavaVersion() {
+		def version = System.properties['java.version']
+		if (!version.startsWith('1.6.0_10')) {
+			def dialog = new JDialog((Frame)null, true)
+			def panel = new JPanel(new MigLayout('fill'))
+			dialog.setContentPane(panel)
+			def group = new JPanel(new MigLayout('fill'))
+			panel.add(group, 'grow, spanx, wrap')
+			group.setBorder(new TitledBorder('Plexus Needs At Least Java Version 1.6.0_10'))
+			group.add(new JLabel("You are running with Java version $version"), 'wrap, spanx')
+			def cont = new JButton("Continue Anyway")
+			cont.addActionListener({e -> dialog.visible = false} as ActionListener)
+			panel.add(cont)
+			panel.add(new JPanel(), 'growx')
+			def exit = new JButton("Exit")
+			exit.addActionListener({e-> System.exit(0)} as ActionListener)
+			panel.add(exit)
+			dialog.pack()
+			dialog.visible = true
+		}
+	}
 	public static pokeHole(String service, int port) {
 		int discoveryTimeout = 5000; // 5 secs to receive a response from devices
 		try {
