@@ -273,6 +273,9 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	public void destroy() {
 		node.destroy();
 	}
+	public String routeState() {
+		return node.printRouteState();
+	}
 	public Id buildId(String path) {
 		return idFactory.buildId(path);
 	}

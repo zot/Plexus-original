@@ -336,8 +336,8 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			updatePastryDiag()
 		}
 	}
-	def showData(field, header, cols, data) {
-		def buf = ("" << "<html><body><table><tr colspan=\"$cols\" style=\"background-color: rgb(192,192,192)\"><td><div>$header</div></td></tr>\n")
+	def showData(field, header, cols, data, prologue = null, epilogue = null) {
+		def buf = ("" << "<html><body>${prologue ?: ''}<table><tr colspan=\"$cols\" style=\"background-color: rgb(192,192,192)\"><td><div>$header</div></td></tr>\n")
 		def count = 0
 		def pane = field.parent.parent
 
@@ -348,7 +348,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			buf << "</tr>\n"
 			count++
 		}
-		buf << "</table></body></html>"
+		buf << "</table>${epilogue ?: ''}</body></html>"
 		println "buf: $buf"
 		swing.edt {
 			def horiz = pane.horizontalScrollBar.value
@@ -527,6 +527,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 							}
 						}
 						panel(name: 'Pastry', layout: new MigLayout('fill')) {
+							button(text: 'Update', actionPerformed: {exec {updatePastryDiag()}}, constraints: 'wrap')
 							scrollPane(constraints: 'grow,span,wrap', border: null) {
 								pastryFields.topics = textPane(editable: false, editorKit: new NoWrapEditorKit())
 							}
@@ -1149,7 +1150,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			}
 			data << [it, map]
 		}
-		showData(pastryFields.topics, "Topics", 2, data)
+		showData(pastryFields.topics, "Topics", 2, data, "", "Neighbors: ${peer.getNeighborCount()}<br>Route State...<br><pre>${peer.routeState()}</pre><br>")
 	}
 	def updatePlayerList() {
 		if (!peer?.nodeId) return
