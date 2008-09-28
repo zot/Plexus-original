@@ -22,14 +22,16 @@ class Props {
 
 	def initProps() {
 		for (e in defaultProps) {
-			this[e.key] = e.value
+			if (!this[e.key]) this[e.key] = e.value
 		}
-		if (System.getProperty('os.name').equalsIgnoreCase('linux')) {
-			this.sauer_cmd = 'packages/plexus/dist/sauerbraten_plexus_linux -t'
-		} else {
-			this.sauer_cmd = 'packages/plexus/dist/sauerbraten_plexus_windows.exe -t'
+		if (!this['sauer_cmd']) {
+			if (System.getProperty('os.name').equalsIgnoreCase('linux')) {
+				this.sauer_cmd = 'packages/plexus/dist/sauerbraten_plexus_linux -t'
+			} else {
+				this.sauer_cmd = 'packages/plexus/dist/sauerbraten_plexus_windows.exe -t'
+			}
+			this.sauer_cmd += " -lplexus/dist/limbo/map"
 		}
-		this.sauer_cmd += " -lplexus/dist/limbo/map"
 	}
 	
 	def setProfile(prof) {
@@ -72,11 +74,7 @@ class Props {
 			if (properties.last_profile == null) properties.last_profile = ""
 			last_profile = properties.last_profile
 		}
-		// if there are any missing props after a read, fill them in with defaults
-		for (e in defaultProps) {
-			if (!this[e.key]) this[e.key] = e.value
-		}
-		
+		initProps()
 	}
 	def setLastProfile(prof) {
 		if (prof != last_profile) {
