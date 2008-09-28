@@ -685,7 +685,7 @@ groovy scripts
 *save the map list to the cloud
 *way to save map to the cloud</pre>
 </div>
-<div title="MobileCode" modifier="BillBurdick" created="200809280523" modified="200809280624" changecount="6">
+<div title="MobileCode" modifier="BillBurdick" created="200809280523" modified="200809280739" changecount="6">
 <pre>{{cthulhu{
 !Mobile Code
 What can you use a peer-to-peer network for?  Messaging and file sharing.  Duh. How about a hive-mind?
@@ -697,6 +697,8 @@ Map.groovy can contain Groovy code which executes in a sandbox in the peer.  Thi
 OK, so you have code for each map.  Now you can make brains for shop keepers, traps, etc. and of course you can use this to implement game mechanics.  In the next weeks and months, we're going to implement &quot;cloud libraries&quot; which you can use in your map.groovy code.  This will allow people to write game mechanics and other frameworks that you can use across different maps.  We'll be upgrading the plexus cache to be a real Git cache (it already shares some ideas with Git anyway; it implements content-addressable files and directories) and you'll be able to configure your peer to back up selected parts of the cloud in your own private Git cache, for good measure. This will help protect the integrity of the cloud, since there is no central server.
 
 That's all kind of a logical extension of what we have, but there's something more that I'm pretty interested in seeing actually run.  We plan to allow distributed control of brains.  The current idea is to make brains //relatively// stateless, so that each &quot;tick,&quot; a brain &quot;wakes up&quot; and starts over (kind of like the movie Memento).  This model allows brains to transfer around between peers.  The peer in a world with an ID closest to the brain's ID will control it.  This is using a DHT to arbitrate control over the set of available brains.  When peers join or leave from a world, brains will shuffle around to accommodate the new state of the ring (Pastry nodes are arranged in a ring, according to their ~IDs).  To help manage this, brains will have two &quot;storage areas:&quot; a local &quot;peer area&quot; for incidental bookkeeping and a global &quot;cloud area&quot; for major information that has to be restored when a brain jarringly transfers over to another peer.
+
+All of the peers have the code for all of the brains because they come with the map but a given brain will only have one 'pilot peer' at a time.  A world's DHT consists of only the peers in that world, not the full Plexus Pastry ring. Pastry doesn't have &quot;subrings&quot; right now that would make this easy to implement, but each world does use a SCRIBE topic for communication, so we can leverage that.  My current approach is to use a cloud properties object (like the one that Plexus uses for players, maps, and costumes) to assign brains to peers.  Maybe the topic root can be in charge of shuffling brains after a join or leave.  Right now, cloud properties are not stored in PAST -- they are read in by the root peer and then managed entirely with SCRIBE and direct messaging (for booting), but that can change if it's not good enough.
 }}}</pre>
 </div>
 <div title="MudLingua" modifier="Zot" created="200806191123" changecount="1">
