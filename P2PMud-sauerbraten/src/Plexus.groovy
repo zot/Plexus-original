@@ -257,7 +257,6 @@ public class Plexus {
 				}
 				showData(cloudFields.properties, "CURRENT CLOUD PROPERTIES: ${new Date()}", 2, data)
 			}
-			if ((LaunchPlexus.props.sauer_mode ?: 'launch') == 'launch') launchSauer();
 			//PlasticLookAndFeel.setPlasticTheme(new DesertBlue());
 			try {
 //			   UIManager.setLookAndFeel(new Plastic3DLookAndFeel());
@@ -331,6 +330,8 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		plexusTopic = subscribe(peer.buildId(PLEXUS_KEY), null)
 		println "execing init..."
 		exec {
+			if ((LaunchPlexus.props.sauer_mode ?: 'launch') == 'launch') launchSauer();
+			
 			if (peer.node.getLeafSet().getUniqueCount() == 1) {
 				println "initBoot"
 				initBoot()
@@ -578,6 +579,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	}
 	def launchSauer() {
 		if (sauerExec) {
+			exec {
 			def env = []
 			def winderz = System.getProperty('os.name').toLowerCase() ==~ /.*windows.*/
 
@@ -588,11 +590,31 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 					env.add("$vars.key=$vars.value")
 				}
 			}
-			sauerExec += " -x\"alias sauerPort $LaunchPlexus.props.sauer_port;alias sauerHost 127.0.0.1\""
+
+			def commandLine = sauerExec.replaceFirst(/\-l[^\s]+/, '')  // remove old -llimbo if present
+
+			commandLine += ' -l' + buildMapPath()
+			commandLine += " -x\"alias sauerPort $LaunchPlexus.props.sauer_port;alias sauerHost 127.0.0.1\""
 			env = env as String[]
-			println ("Going to exec $sauerExec from $sauerDir with env: $env")
-			Runtime.getRuntime().exec(sauerExec,  env, sauerDir)
+			println ("Going to exec $commandLine from $sauerDir with env: $env")
+			Runtime.getRuntime().exec(commandLine,  env, sauerDir)
+			}
 		}
+	}
+	def buildMapPath() {
+		def result = 'plexus/dist/limbo/map' 
+		def who = getPlayer(peerId)
+		println who
+		if (who.map) {
+			def map = getMap(who.map)
+			if (map && map.dir) {
+				def dir = new File(mapDir, map.dir)
+				def mapPath = subpath(new File(sauerDir, "packages"), dir)
+				println mapPath
+				result = "$mapPath/map"
+			}
+		}
+		return result
 	}
 	def loadDFMap() {
 		def ch = new JFileChooser();
@@ -789,19 +811,30 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			}
 		}
 	}
+	def computePlayerInfo() {
+		def playerInfo = ""
+		def who = getPlayer(peerId)
+		def costume = who.costume ? who.costume : "mrfixit"
+		playerInfo = "playerinfo p0 \"$who.guild\" $costume"
+		println "pi $playerInfo"
+		return playerInfo
+	}
 	def init() {
-	 	sauer('init', [
-  			"alias p2pname [$name]",
-			"name [$name]",
-			"team [$LaunchPlexus.props.guild]",
-			"cleargui 1",
-			"showgui Plexus",
-			'echo INIT'
-		].join(';'))
-	 	dumpCommands()
-	 	updatePlayerList()
-	 	updateMapGui()
-	 	updateCostumeGui()
+		exec {
+		 	sauer('init', [
+				"alias p2pname [$name]",
+				"name [$name]",
+				"map " + buildMapPath(),
+				computePlayerInfo(),
+				"cleargui 1",
+				"showgui Plexus",
+				'echo INIT'
+			].join(';'))
+		 	dumpCommands()
+		 	updatePlayerList()
+		 	updateMapGui()
+		 	updateCostumeGui()
+		}
 	}
 	def broadcast(cmds) {
 		checkExec()
