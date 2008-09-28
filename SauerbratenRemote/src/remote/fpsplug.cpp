@@ -502,24 +502,35 @@ ICOMMAND(selcube, "ssssssss", (char *oX, char *oY, char *oZ, char *sX, char *sY,
 	sel.corner = 0;
 });
 
-/* ICOMMAND(tc_delcube, "", (), {
+ICOMMAND(debugsel, "", (), {
 	extern selinfo sel;
-	mpdelcube(sel, true);
-}); */
+	char buf[512];
+	snprintf(buf, sizeof(buf), "o (%d %d %d) s (%d %d %d) grd %d or %d",
+               sel.o.x, sel.o.y, sel.o.z, sel.s.x, sel.s.y, sel.s.z, sel.grid, sel.orient);
+	result(buf);
+});
+
+ICOMMAND(selcorner, "sssss", (char *corner, char *cx, char *cxs, char *cy, char *cys), {
+	extern selinfo sel;
+	sel.corner = parse(corner);
+	sel.cx = parse(cx);
+	sel.cxs = parse(cxs);
+	sel.cy = parse(cy);
+	sel.cys = parse(cys);
+});
+
+ICOMMAND(debugcorner, "", (), {
+	extern selinfo sel;
+	char buf[512];
+	snprintf(buf, sizeof(buf), "corner %d cx %d cxs %d cy %d cys %d",
+               sel.corner, sel.cx, sel.cxs, sel.cy, sel.cys);
+	result(buf);
+});
 
 ICOMMAND(tc_settex, "ss", (char *t, char *allfaces), {
 	extern void mpedittex(int tex, int allfaces, selinfo &sel, bool local);
 	extern selinfo sel;
 	mpedittex(parse(t), parse(allfaces), sel, true);
-});
-
-ICOMMAND(debugsel, "", (), {
-	extern selinfo sel;
-	char buf[512];
-	snprintf(buf, sizeof(buf), "o (%d %d %d) s (%d %d %d) grd %d or %d, cx (%d %d %d %d) corner %d",
-               sel.o.x, sel.o.y, sel.o.z, sel.s.x, sel.s.y, sel.s.z, sel.grid, sel.orient,
-               sel.cx, sel.cxs, sel.cy, sel.cys, sel.corner);
-	result(buf);
 });
 
 static void hit_shooter() {
