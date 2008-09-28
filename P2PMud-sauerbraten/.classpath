@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="migLayout"/>
 	<classpathentry kind="lib" path="lib/commons-jxpath-1.1.jar"/>
 	<classpathentry kind="lib" path="lib/commons-logging.jar"/>
 	<classpathentry kind="lib" path="lib/FreePastry-2.1beta.jar" sourcepath="lib/FreePastry-2.1beta-source.zip"/>
 	<classpathentry kind="lib" path="lib/sbbi-upnplib-1.0.4.jar" sourcepath="lib/sbbi-upnplib-src-1.0.4.zip"/>
 	<classpathentry kind="lib" path="lib/xmlpull_1_1_3_4a.jar"/>
 	<classpathentry kind="lib" path="lib/xpp3-1.1.3.4d_b2.jar"/>
-	<classpathentry kind="lib" path="lib/miglayout-3.5.5-swing.jar" sourcepath="lib/miglayout-3.5.5-sources.zip"/>
 	<classpathentry kind="lib" path="lib/egit-20080715.jar" sourcepath="lib/egit-20080715-src.zip"/>
 	<classpathentry kind="lib" path="lib/javolution-5.2.6.jar" sourcepath="lib/javolution-5.2.6-src.zip"/>
 	<classpathentry kind="lib" path="lib/Filters.jar"/>
 	<classpathentry kind="lib" path="lib/MultipleGradientPaint.jar"/>
 	<classpathentry kind="lib" path="lib/swing-layout.jar"/>
 	<classpathentry kind="lib" path="lib/swing-worker.jar"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/jre1.6.0_10"/>
 	<classpathentry kind="lib" path="lib/swingx-2008_05_18.jar" sourcepath="lib/swingx-2008_05_18-src.zip"/>
 	<classpathentry kind="con" path="GROOVY_SUPPORT"/>
 	<classpathentry kind="lib" path="lib/swingxbuilder-0.1.5-svn.jar" sourcepath="lib/swingxbuilder-0.1.5-svn-src.zip"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
