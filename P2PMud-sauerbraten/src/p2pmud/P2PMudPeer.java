@@ -359,9 +359,16 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		// the node may require sending several messages to fully boot into the ring
 		synchronized (node) {
 			int countdown = 10;
+			int oldNeighborCount = 1;
 			while (!node.isReady() && !node.joinFailed()) {
 				// delay so we don't busy-wait
 				node.wait(500);
+				int cnt = getNeighborCount();
+				if (cnt > oldNeighborCount) {
+					countdown += 10;
+					oldNeighborCount = cnt;
+					System.out.println("New neighbor count is " + cnt);
+				}
 				// abort if can't join
 				if (node.joinFailed() || --countdown < 0) {
 					joinFailedReason = countdown < 0 ? "timeout retries exceeded" : node.joinFailedReason().toString();

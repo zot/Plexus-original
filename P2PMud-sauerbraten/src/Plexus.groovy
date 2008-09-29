@@ -605,7 +605,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		def result = 'plexus/dist/limbo/map' 
 		def who = getPlayer(peerId)
 		println who
-		if (who.map) {
+		if (who && who.map) {
 			def map = getMap(who.map)
 			if (map && map.dir) {
 				def dir = new File(mapDir, map.dir)
