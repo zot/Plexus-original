@@ -97,6 +97,7 @@ public class Plexus {
 	def mapCombo
 	def mapPlayers
 	def mapPlayersCombo
+	def launchSauerButton
 	def downloadPanel
 	def downloadProgressBar
 	def uploadCountField
@@ -161,6 +162,9 @@ public class Plexus {
 		}
 		assert executorThread == Thread.currentThread()
 	}
+	/**
+	 * Exec a block of code asynchronously, hence exec() does not return a value from the block.
+	 */
 	def exec(block) {
 		executor.submit({
 			try {
@@ -246,16 +250,18 @@ public class Plexus {
 				removePlayerFromSauerMap(key.substring('player/'.length()))
 			}
 			cloudProperties.changedPropertyHooks.add {
-				updatePlayerList()
-				updateMapGui()
-				updateCostumeGui()
-				def props = cloudProperties.properties
-				def data = []
+				if (swing) {
+					updatePlayerList()
+					updateMapGui()
+					updateCostumeGui()
+					def props = cloudProperties.properties
+					def data = []
 
-				new ArrayList(props.keySet()).sort().each {
-					data << ["<b>$it</b>", props[it]]
+					new ArrayList(props.keySet()).sort().each {
+						data << ["<b>$it</b>", props[it]]
+					}
+					showData(cloudFields.properties, "CURRENT CLOUD PROPERTIES: ${new Date()}", 2, data)
 				}
-				showData(cloudFields.properties, "CURRENT CLOUD PROPERTIES: ${new Date()}", 2, data)
 			}
 			//PlasticLookAndFeel.setPlasticTheme(new DesertBlue());
 			try {
@@ -330,8 +336,6 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		plexusTopic = subscribe(peer.buildId(PLEXUS_KEY), null)
 		println "execing init..."
 		exec {
-			if ((LaunchPlexus.props.sauer_mode ?: 'launch') == 'launch') launchSauer();
-			
 			if (peer.node.getLeafSet().getUniqueCount() == 1) {
 				println "initBoot"
 				initBoot()
@@ -339,8 +343,14 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 				println "initJoin"
 				initJoin()
 			}
-			updateMappingDiag()
-			updatePastryDiag()
+			if (swing) {
+				updateMappingDiag()
+				updatePastryDiag()
+			}
+			if ((LaunchPlexus.props.sauer_mode ?: 'launch') == 'launch') launchSauer();
+			if (launchSauerButton) {
+				launchSauerButton.enabled = true
+			}
 		}
 	}
 	def showData(field, header, cols, data, prologue = null, epilogue = null) {
@@ -356,7 +366,6 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			count++
 		}
 		buf << "</table>${epilogue ?: ''}</body></html>"
-		println "buf: $buf"
 		swing.edt {
 			def horiz = pane.horizontalScrollBar.value
 			def vert = pane.verticalScrollBar.value
@@ -437,7 +446,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 								panel(layout: new MigLayout('fillx')) {
 									label(text: 'Generation')
 									panel(layout: new MigLayout('fill, ins 0'), constraints: 'growx,wrap') {
-										button(text: "Launch Sauerbraten", actionPerformed: {launchSauer()})
+										launchSauerButton = button(text: "Launch Sauerbraten", actionPerformed: {launchSauer()}, enabled: false)
 										button(text: "Generate Dungeon", actionPerformed: {generateDungeon()})
 										button(text: "Load DF Map", actionPerformed: {loadDFMap()})
 										panel(constraints: 'growx,wrap')
@@ -1142,10 +1151,12 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			}
 			ids.remove(peerId)
 			names.remove(sauerId)
+			if (swing) {
+				updateMapGui()
+				updateMappingDiag()
+			}
 			sauer('delplayer', "deleteplayer $sauerId")
-			updateMapGui()
 			dumpCommands()
-			updateMappingDiag()
 		} else {
 			println "WARNING: can't find id for player: $peerId"
 		}
@@ -1162,10 +1173,13 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		++id_index
 		sauer('prep', "echo [Welcome player $name to this world.]; createplayer $sauerid $name; playerinfo $sauerid \"$who.guild\"")
 		loadCostume(who)
-		updateMappingDiag()
+		if (swing) {
+			updateMappingDiag()
+		}
 		return sauerid
 	}
 	def updateMappingDiag() {
+		if (!swing) return
 		def data = []
 
 		ids.each {
@@ -1179,6 +1193,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		showData(mappingFields.names, "Names", 2, data)
 	}
 	def updatePastryDiag() {
+		if (!swing) return
 		def data = []
 
 		peer.topics.each {
@@ -1192,7 +1207,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		showData(pastryFields.topics, "Topics", 2, data, "", "Neighbors: ${peer.getNeighborCount()}<br>Route State...<br><pre>${peer.routeState()}</pre><br>")
 	}
 	def updatePlayerList() {
-		if (!peer?.nodeId) return
+		if (!peer?.nodeId || !swing) return
 		synchronized (presenceLock) {
 			updateMapGui()
 
@@ -1291,6 +1306,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		peer.sendCmds(Id.build(id), ["setCloudProperty $key $value"] as String[])
 	}
 	def updateMapGui() {
+		if (!swing) return
 		def ents = []
 		def privates = []
 
@@ -1427,6 +1443,7 @@ println "STORED COSTUME, adding"
 		}
 	}
 	def updateCostumeGui() {
+		if (!swing) return
 		def costumesDir = new File(plexusDir, 'models')
 		def tumes = []
 		def needed = []
