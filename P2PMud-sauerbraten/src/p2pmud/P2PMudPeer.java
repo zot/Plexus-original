@@ -16,6 +16,7 @@ import java.util.Enumeration;
 
 import javolution.util.FastMap;
 import javolution.util.FastTable;
+
 import rice.Continuation;
 import rice.Continuation.MultiContinuation;
 import rice.environment.Environment;
@@ -34,6 +35,8 @@ import rice.p2p.scribe.ScribeContent;
 import rice.p2p.scribe.ScribeImpl;
 import rice.p2p.scribe.ScribeMultiClient;
 import rice.p2p.scribe.Topic;
+import rice.pastry.NetworkListener;
+import rice.pastry.NodeHandle;
 import rice.pastry.NodeIdFactory;
 import rice.pastry.PastryNode;
 import rice.pastry.commonapi.PastryIdFactory;
@@ -55,6 +58,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	private PastryIdFactory idFactory;
 	private InetAddress outgoingAddress;
 	private Id other;
+	private String joinFailedReason;
 	public rice.pastry.Id nodeId;
 	public FastMap<Topic, Continuation<Topic, Exception>> subscriptionContinuations = new FastMap<Topic, Continuation<Topic,Exception>>();
 
@@ -271,7 +275,14 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	}
 
 	public void destroy() {
-		node.destroy();
+		if (node != null) {
+			node.destroy();
+			node = null;
+		}
+		if (myScribe != null) {
+			myScribe.destroy();
+			myScribe = null;
+		}
 	}
 	public String routeState() {
 		return node != null ? node.printRouteState() : "null";
@@ -322,13 +333,13 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		SocketPastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, outgoingAddress, bindport, env);
 		nodeId = nodeIdString != null ? rice.pastry.Id.build(nodeIdString) : nidFactory.generateNodeId();
 		System.out.println("Using boot address: " + bootaddress);
-		for (int i = 0; i < 5 && !attemptConnect(bootaddress, probes, factory); i++) {
-			if (i > 0) {
-				System.out.println("TRYING AGAIN TO JOIN RING.  ATTEMPT NUMBER " + i);
-			}
+		boolean success = false;
+		for (int i = 0; i < 5 && !success; i++) {
+			if (i > 0) System.out.println("TRYING AGAIN TO JOIN RING.  ATTEMPT NUMBER " + (i + 1));
+			success = attemptConnect(bootaddress, probes, factory);
 		}
-		if (node.joinFailed()) {
-			throw new IOException("Could not join the FreePastry ring.  Reason:" + node.joinFailedReason());
+		if (!success) {
+			throw new IOException("Could not join the FreePastry ring.  Reason:" +  joinFailedReason);
 		}
 		System.out.println("Finished creating new node " + node + ", count: " + node.getLeafSet().getUniqueCount());
 		startPast();
@@ -347,14 +358,17 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		System.out.println("Waiting to join ring...");
 		// the node may require sending several messages to fully boot into the ring
 		synchronized (node) {
+			int countdown = 10;
 			while (!node.isReady() && !node.joinFailed()) {
 				// delay so we don't busy-wait
 				node.wait(500);
 				// abort if can't join
-				if (node.joinFailed()) {
-					node.destroy();
+				if (node.joinFailed() || --countdown < 0) {
+					joinFailedReason = countdown < 0 ? "timeout retries exceeded" : node.joinFailedReason().toString();
+					destroy();
 					return false;
 				}
+				System.out.println("Waiting on node again!");				
 			}
 		}
 		return true;
@@ -367,7 +381,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		}
 	}
 	public Collection<Topic> getTopics() {
-		return myScribe.getTopicsByClient(this);
+		return myScribe != null ? myScribe.getTopicsByClient(this) : new ArrayList();
 	}
 	public Topic subscribe(Id topicId, Continuation<Topic, Exception> cont) {
 		Topic topic = new Topic(topicId);
@@ -418,7 +432,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		}
 	}
 	public int getNeighborCount() {
-		return node.getLeafSet().neighborSet(node.getLeafSet().maxSize()).size();
+		return node != null ? node.getLeafSet().neighborSet(node.getLeafSet().maxSize()).size() : 0;
 	}
 	public boolean anycast(Topic topic, ScribeContent content) {
 		if (content instanceof P2PMudScribeContent) {
