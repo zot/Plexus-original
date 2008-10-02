@@ -1113,9 +1113,9 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		println "newmap: $name"
 		clearPlayers()
 		sauer("delp", "deleteallplayers")
-		cachedPlayerLocations.each { peer ->
-			def array = cachedPlayerLocations[peer], pname = array[0], update = array[1]
-			def id = main.newPlayer(pname, peer)
+		cachedPlayerLocations.each {
+			def pname = it.value[0], update = it.value[1]
+			def id = main.newPlayer(pname, it.key)
 			main.sauer("${id}.update", "tc_setinfo $id $update" + args.join(' '))			
 			dumpCommands()
 		}
