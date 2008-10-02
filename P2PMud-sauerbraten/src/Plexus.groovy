@@ -1437,9 +1437,12 @@ println "STORED COSTUME, adding"
 					transmitSetCloudProperty("costume/$fileId", new JSONWriter().write([thumb: thumb, type: thumb ? type : null, name: name]))
 				} catch (Exception ex) {
 					System.err.println "Error pushing costume..."
-					ex.printStackTrace()
+					stackTrace(ex)
 				}
-			}, receiveException: {ex -> err("Couldn't store costume in cloud: $path", ex)})
+			}, receiveException: {ex ->
+				System.err.println("Couldn't store costume in cloud: $path")
+				stackTrace(ex)
+			})
 		}
 	}
 	def updateCostumeGui() {
@@ -1464,7 +1467,7 @@ println "STORED COSTUME, adding"
 				for (i = 0; i < needed.size(); i++) {
 					if (files[i] instanceof Exception) {
 						System.err.println "Error fetching thumb for costume: ${needed[i].name}..."
-						files[i].printStackTrace()
+						stackTrace(files[i])
 					} else {
 						def thumbFile = new File(costumesDir, "thumbs/${needed[i].id}.${needed[i].type}")
 
@@ -1628,7 +1631,7 @@ println "pushMap: [$nameArgs]"
 			receiveException: {ex ->
 				exec {
 					System.err.println "Error pushing map..."
-					ex.printStackTrace()
+					stackTrace(ex)
 				}
 			})
 
