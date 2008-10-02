@@ -750,6 +750,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 				socket = sock.accept {
 					println("Got connection from sauerbraten...")
 					output = it.getOutputStream()
+					launchSauerButton.enabled = false
 					exec {init()}
 					try {
 						it.getInputStream().eachLine {line ->
@@ -769,6 +770,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 						gui.extendedState = Frame.NORMAL
 						gui.requestFocus()
 					}
+					launchSauerButton.enabled = true
 					println "Disconnect"
 				};
 			}
@@ -823,7 +825,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	def computePlayerInfo() {
 		def playerInfo = ""
 		def who = getPlayer(peerId)
-		def costume = who.costume ? who.costume : "mrfixit"
+		def costume = who && who.costume ? who.costume : "mrfixit"
 		playerInfo = "playerinfo p0 \"$who.guild\" $costume"
 		println "pi $playerInfo"
 		return playerInfo
