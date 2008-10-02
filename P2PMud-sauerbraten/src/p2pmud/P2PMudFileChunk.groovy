@@ -4,7 +4,11 @@ import java.io.File;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import rice.p2p.past.rawserialization.JavaSerializedPastContentimport rice.p2p.past.ContentHashPastContent
+import rice.p2p.past.rawserialization.JavaSerializedPastContent
+import rice.p2p.past.ContentHashPastContent
+import rice.p2p.past.PastContent
+import rice.p2p.past.PastException
+
 import rice.p2p.commonapi.Id;
 
 /**
@@ -26,5 +30,9 @@ public class P2PMudFileChunk extends ContentHashPastContent {
 	}
 	public String toString() {
 		return "P2PMud Chunk[" + offset + "] ${getId().toStringFull()}"
+	}
+	//Duplicate file chunks are fine
+	public PastContent checkInsert(Id id, PastContent existingContent) throws PastException {
+		return this;
 	}
 }

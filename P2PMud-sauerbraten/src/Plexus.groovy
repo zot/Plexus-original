@@ -1403,7 +1403,10 @@ println "loading costume: $who.costume"
 			} else {
 				fetchDir(who.costume, new File(plexusDir, "models/$who.costume"), receiveResult: {r ->
 					clothe(who, who.costume)
-				}, receiveException: {ex -> err("Could not fetch data for costume: $who.costume", ex)})
+				}, receiveException: {ex ->
+					System.err.println("Could not fetch data for costume: $who.costume", ex)
+					stackTrace(ex)
+				})
 			}
 		}
 	}
@@ -1476,7 +1479,10 @@ println "STORED COSTUME, adding"
 					}
 				}
 				showTumes(tumes)
-			}, receiveException: {ex -> err("Error fetching thumbs for costumes", ex)}) {tume, chain ->
+			}, receiveException: {ex ->
+				System.err.println("Error fetching thumbs for costumes", ex)
+				stackTrace(ex)
+			}) {tume, chain ->
 				fetchFile(chain, Id.build(tume.thumb))
 			}
 		} else {
@@ -1549,7 +1555,10 @@ println "COSTUME SELS: $triples"
 				dumpCommands()
 				println "USE COSTUME $name ($costumeDir)"
 				selectCostume()
-			}, receiveException: {ex -> err("Couldn't use costume: $name", ex)})
+			}, receiveException: {ex ->
+				System.err.println("Couldn't use costume: $name", ex)
+				stackTrace(ex)
+			})
 		}
 	}
 	def selectCostume() {
@@ -1596,9 +1605,12 @@ println "COSTUME SELS: $triples"
 							selectMap()
 						}
 					},
-					receiveException: {exception -> exec {err("Couldn't subscribe to topic: ", exception)}}))
+					receiveException: {exception -> err("Couldn't subscribe to topic: ", exception)}))
 				},
-				receiveException: {ex -> exec {err("Trouble loading map", ex)}}))
+				receiveException: {ex ->
+					System.err.println("Trouble loading map", ex)
+					stackTrace(ex)
+				}))
 			}
 		} else {
 			if (mapTopic) {
