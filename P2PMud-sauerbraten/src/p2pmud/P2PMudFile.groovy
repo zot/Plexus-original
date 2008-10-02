@@ -6,7 +6,7 @@ import rice.p2p.past.PastContent
 import rice.Continuation
 import rice.p2p.commonapi.Id
 import static p2pmud.Tools.*
-
+import rice.p2p.past.PastException
 public class P2PMudFile extends ContentHashPastContent {
 	public ArrayList<Id> chunks
 	public int size
@@ -217,5 +217,9 @@ println "STORE: $file.key -> $file.value"
 	}
 	def fetchDir(cacheDir, dir, callback = {chunk, total -> }, cont) {
 		fetchDirFromProperties(cacheDir, getId(), Tools.properties(filename(cacheDir)), dir, callback, cont)
+	}
+	//Duplicate file chunks are fine
+	public PastContent checkInsert(Id id, PastContent existingContent) throws PastException {
+		return this;
 	}
 }
