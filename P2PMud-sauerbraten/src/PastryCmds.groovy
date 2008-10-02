@@ -14,7 +14,7 @@ public class PastryCmds extends Cmds {
 		}
 		main.sauer("${id}.update", "tc_setinfo $id " + args.join(' '))
 		main.dumpCommands()
-		main.playerUpdate(main.pastryCmd.from.toStringFull(), args)
+		main.playerUpdate(main.pastryCmd.from.toStringFull(), name, args)
 	}
 	def chat(name, String... args) {
 		def id = main.ids[main.pastryCmd.from.toStringFull()]

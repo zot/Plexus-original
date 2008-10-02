@@ -116,7 +116,8 @@ public class Plexus {
 	def cloudFields = [:]
 	def mappingFields = [:]
 	def pastryFields = [:]
-
+	def cachedPlayerLocations = [:]
+	
 	def static sauerExec
 	def static TIME_STAMP = new SimpleDateFormat("yyyyMMdd-HHmmsszzz")
 	def static final PLEXUS_KEY = "Plexus: main"
@@ -476,6 +477,16 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 										if (mapPlayersCombo && mapPlayersCombo.selectedIndex > -1) {
 											followingPlayer = mapPlayersCombo.selectedIndex == 0 ? null : mapPlayers[mapPlayersCombo.selectedIndex - 1]
 			println "NOW FOLLOWING: ${followingPlayer?.name}"
+											if (followingPlayer?.id)
+											{
+												def array = cachedPlayerLocations[followingPlayer.id]
+												if (array) {
+													 def name = array[0], update = array[1]
+													 exec {
+														 playerUpdate(followingPlayer.id, name, update)
+													 }
+												}
+											}
 										}
 									}, constraints: 'wrap')
 									button(text: 'Upload Costume', actionPerformed: {
@@ -750,6 +761,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 				socket = sock.accept {
 					println("Got connection from sauerbraten...")
 					output = it.getOutputStream()
+					launchSauerButton.enabled = false
 					exec {init()}
 					try {
 						it.getInputStream().eachLine {line ->
@@ -769,6 +781,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 						gui.extendedState = Frame.NORMAL
 						gui.requestFocus()
 					}
+					launchSauerButton.enabled = true
 					println "Disconnect"
 				};
 			}
@@ -823,7 +836,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	def computePlayerInfo() {
 		def playerInfo = ""
 		def who = getPlayer(peerId)
-		def costume = who.costume ? who.costume : "mrfixit"
+		def costume = who && who.costume ? who.costume : "mrfixit"
 		playerInfo = "playerinfo p0 \"$who.guild\" $costume"
 		println "pi $playerInfo"
 		return playerInfo
@@ -1100,6 +1113,13 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		println "newmap: $name"
 		clearPlayers()
 		sauer("delp", "deleteallplayers")
+		cachedPlayerLocations.each { peer ->
+			def array = cachedPlayerLocations[peer], pname = array[0], update = array[1]
+			def id = main.newPlayer(pname, peer)
+			main.sauer("${id}.update", "tc_setinfo $id $update" + args.join(' '))			
+			dumpCommands()
+		}
+	
 		dumpCommands()
 		if (newMapHookBlock) {
 			newMapHookBlock()
@@ -1161,8 +1181,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			println "WARNING: can't find id for player: $peerId"
 		}
 	}
-	def newPlayer(name) {
-		def node = pastryCmd.from.toStringFull()
+	def newPlayer(name, node = pastryCmd.from.toStringFull()) {
 		def who = getPlayer(node)
 		def sauerid = ids[node]
 
@@ -1591,6 +1610,7 @@ println "COSTUME SELS: $triples"
 			if (!map) {
 				sauer('entry', "tc_msgbox [Couldn't find map] [Unknown map id: $id]")
 			} else if (map.id != mapTopic?.getId()?.toStringFull()) {
+				cachedPlayerLocations = [:]
 				println "CONNECTING TO WORLD: $map.name ($map.id)"
 				clearPlayers()
 				if (mapTopic) {
@@ -1614,6 +1634,7 @@ println "COSTUME SELS: $triples"
 			}
 		} else {
 			if (mapTopic) {
+				cachedPlayerLocations = [:]
 				unsubscribe(mapTopic)
 				mapTopic = null
 				sauer('limbo', "map plexus/dist/limbo/map")
@@ -1741,7 +1762,8 @@ println "createPortal portal_$trigger = $name; portal $trigger"
 		}
 		cfg.write(txt)
 	}
-	def playerUpdate(id, update) {
+	def playerUpdate(id, name, update) {
+		cachedPlayerLocations[id] = [name, update]
 		if (id == followingPlayer?.id) {
 			def values = [:]
 			def format = []
