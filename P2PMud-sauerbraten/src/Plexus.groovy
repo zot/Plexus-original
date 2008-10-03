@@ -754,7 +754,10 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	}
 	def start(port) {
 		Thread.startDaemon {
-			def sock = new ServerSocket(Integer.parseInt(port))
+			def sock = new ServerSocket()
+			sock.setReuseAddress(true)
+			//sock.setSoTimeout(10);
+			sock.bind(new java.net.InetSocketAddress(Integer.parseInt(port)))
 
 			println "READY"
 			while (true) {
