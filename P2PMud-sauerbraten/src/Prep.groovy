@@ -148,6 +148,12 @@ public class Prep {
 		}
 	}
 	def static buildMainArgs() {
+		def startPort = Integer.parseInt(props.pastry_port_start)
+		def endPort = Integer.parseInt(props.pastry_port_end)
+		def chosenPort = (Math.abs(new Random().nextInt()) % (endPort - startPort)) + startPort
+		props.pastry_port = chosenPort as String
+		props.external_port = chosenPort as String
+		println "using port: $props.pastry_port in range: ($startPort - $endPort)"
 		mainArgs = [
 					props.sauer_port,
 					props.name,
@@ -354,12 +360,16 @@ public class Prep {
 										check('Verbose Log', 'verbose_log', 'Turn on verbose logging')
 										label(text: "Node id: ")
 										nodeIdLabel = label(text: props.nodeId ?: "none", constraints: 'wrap, growx')
-										field('Pastry port: ', 'pastry_port')
+										panel(layout: new MigLayout('fill, ins 0'), constraints: 'wrap, spanx') {
+											field('Pastry port: ', 'pastry_port_start', 'width 64px')
+											label('-')
+											field('', 'pastry_port_end', 'width 64px, pushx', false)
+										}
 										label('External IP: ')
 										panel(layout: new MigLayout('fill, ins 0'), constraints: 'wrap, growx, spanx') {
 											field('', 'external_ip', 'growx', false)
 											button(text: "Discover", toolTipText: 'Discover your external IP.', actionPerformed: { props.external_ip = testConnectivity().address; showprop('external_ip')})
-											field('Port: ', 'external_port', 'width 64px,wrap')
+//											field('Port: ', 'external_port', 'width 64px,wrap')
 										}
 										check('Use UPnP', 'upnp', 'If checked, make sure UPnP is enabled on your router')
 									}
