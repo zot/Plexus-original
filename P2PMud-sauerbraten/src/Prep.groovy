@@ -457,10 +457,12 @@ public class Prep {
 		println conProps
 		if (conProps?.status != 'success') {
 			println props.pastry_port
-			testSocket = listen ? new ServerSocket(Integer.parseInt(props.pastry_port)) : null
-			//sock?.setReuseAddress(true)
-			//		println sock
-			//		Thread.sleep(5000)
+			testSocket = listen ? new ServerSocket() : null
+			if (testSocket) {
+				testSocket.setReuseAddress(true)
+				//testSocket.setSoTimeout(10);
+				testSocket.bind(new java.net.InetSocketAddress(Integer.parseInt(props.pastry_port)))
+			}
 			def con = new URL("http://plubble.com/p2p.php?port=$props.external_port").openConnection()
 			def input = con.getInputStream()
 
