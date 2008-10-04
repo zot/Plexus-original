@@ -8,7 +8,8 @@ class Props {
 		sauer_port: '12345',
 		name: 'bubba-' + System.currentTimeMillis(),
 		guild: '',
-		pastry_port: '3993',
+		pastry_port_start: '3993',
+		pastry_port_end: '4003',
 		pastry_boot_host: 'plubble.com',
 		pastry_boot_port: '9090',
 		external_ip: '',
@@ -21,6 +22,7 @@ class Props {
 
 
 	def initProps() {
+		println "going to initprops()"
 		for (e in defaultProps) {
 			if (!this[e.key]) this[e.key] = e.value
 		}
@@ -35,6 +37,7 @@ class Props {
 	
 	def setProfile(prof) {
 		profile = prof ? "$prof-" : ""
+		initProps()
 	}
 	def getAt(String key) {
 		properties["$profile$key" as String]
