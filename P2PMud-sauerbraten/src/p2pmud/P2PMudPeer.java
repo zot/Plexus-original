@@ -334,7 +334,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		nodeId = nodeIdString != null ? rice.pastry.Id.build(nodeIdString) : nidFactory.generateNodeId();
 		System.out.println("Using boot address: " + bootaddress);
 		boolean success = false;
-		for (int i = 0; i < 5 && !success; i++) {
+		for (int i = 0; i < 1 && !success; i++) {
 			if (i > 0) System.out.println("TRYING AGAIN TO JOIN RING.  ATTEMPT NUMBER " + (i + 1));
 			success = attemptConnect(bootaddress, probes, factory);
 		}
@@ -358,14 +358,14 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		System.out.println("Waiting to join ring...");
 		// the node may require sending several messages to fully boot into the ring
 		synchronized (node) {
-			int countdown = 10;
+			int countdown = 120;
 			int oldNeighborCount = 1;
 			while (!node.isReady() && !node.joinFailed()) {
 				// delay so we don't busy-wait
 				node.wait(500);
 				int cnt = getNeighborCount();
 				if (cnt > oldNeighborCount) {
-					countdown += 10;
+					countdown += 120;
 					oldNeighborCount = cnt;
 					System.out.println("New neighbor count is " + cnt);
 				}
@@ -375,7 +375,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 					destroy();
 					return false;
 				}
-				System.out.println("Waiting on node again!");				
+				System.out.println("Waiting on node again, roughly " + (countdown / 2.0) + " seconds left in this attempt");				
 			}
 		}
 		return true;
