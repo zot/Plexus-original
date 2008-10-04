@@ -19,6 +19,7 @@ import p2pmud.P2PMudPeer
 public class LaunchPlexus {
 	def static props
 	def static runCount
+	def static poked = [] as Set
 
 	public static void main(String[] args) {
 		try {
@@ -67,29 +68,32 @@ public class LaunchPlexus {
 		}
 	}
 	public static pokeHole(String service, int port) {
-		int discoveryTimeout = 5000; // 5 secs to receive a response from devices
-		try {
-		  def IGDs = InternetGatewayDevice.getDevices( discoveryTimeout );
-		  if ( IGDs != null ) {
-		    // let's the the first device found
-		    def testIGD = IGDs[0];
-		    System.out.println( "Found device " + testIGD.getIGDRootDevice().getModelName() );
-		    // now let's open the port
-		    String localHostIP = InetAddress.getLocalHost().getHostAddress();
-		    // we assume that localHostIP is something else than 127.0.0.1
-		    def mapped = testIGD.addPortMapping( "Plexus", null, port, port, localHostIP, 0, "TCP" );
-		    if ( mapped ) {
-		      System.out.println( "TCP Port $port mapped to " + localHostIP );
-		    }
-		    mapped = testIGD.addPortMapping( "Plexus", null, port, port, localHostIP, 0, "UDP" );
-		    if ( mapped ) {
-		      System.out.println( "UDP Port $port mapped to " + localHostIP );
-		    }
-		  }
-		} catch ( IOException ex ) {
-		  // some IO Exception occured during communication with device
-		} catch( UPNPResponseException respEx ) {
-		  // oops the IGD did not like something !!
-		}		
+		if (!(port in poked)) {
+			poked.add(port)
+			int discoveryTimeout = 5000; // 5 secs to receive a response from devices
+			try {
+			  def IGDs = InternetGatewayDevice.getDevices( discoveryTimeout );
+			  if ( IGDs != null ) {
+			    // let's the the first device found
+			    def testIGD = IGDs[0];
+			    System.out.println( "Found device " + testIGD.getIGDRootDevice().getModelName() );
+			    // now let's open the port
+			    String localHostIP = InetAddress.getLocalHost().getHostAddress();
+			    // we assume that localHostIP is something else than 127.0.0.1
+			    def mapped = testIGD.addPortMapping( "Plexus", null, port, port, localHostIP, 0, "TCP" );
+			    if ( mapped ) {
+			      System.out.println( "TCP Port $port mapped to " + localHostIP );
+			    }
+			    mapped = testIGD.addPortMapping( "Plexus", null, port, port, localHostIP, 0, "UDP" );
+			    if ( mapped ) {
+			      System.out.println( "UDP Port $port mapped to " + localHostIP );
+			    }
+			  }
+			} catch ( IOException ex ) {
+			  // some IO Exception occured during communication with device
+			} catch( UPNPResponseException respEx ) {
+			  // oops the IGD did not like something !!
+			}
+		}
 	}
 }
