@@ -181,26 +181,21 @@ public class Prep {
 		def result = true
 
 		if (con.status.toLowerCase() != 'success' || con.address != props.external_ip) {
-			def buttons = showOk ? warningDialog.continueButtons : warningDialog.okButton
-			def buttonPos = showOk ? 0 : 1
-
 			warningDialog.plubbleIp.text = con.address
 			warningDialog.externalPort.text = props.external_port
-			warningDialog.buttonPanel.remove(buttons)
+			warningDialog.okButton.visible = showOk
+			warningDialog.continueButtons.visible = !showOk
 			if (con.address != props.external_ip) {
 				warningDialog.externalIp.text = props.external_ip
+				warningDialog.reassignIpButton.visible = true
+				warningDialog.ipBox.visible = true
 			} else {
 				println "going to remove panel"
-				warningDialog.panel.remove(warningDialog.ipBox)
+				warningDialog.ipBox.visible = false
+				warningDialog.reassignIpButton.visible = false
 			}
 			warningDialog.frame.pack()
 			warningDialog.frame.visible = true
-			if (con.address == props.external_ip) {
-				println "readding the panel"
-				warningDialog.panel.add(warningDialog.ipBox, 'growx, spanx, wrap', 1)
-			}
-			warningDialog.buttonPanel.add(buttons, 'growx', buttonPos)
-			warningDialog.frame.pack()
 			result = warningDialog.continueAnyway
 		} else if (reportSuccess) {
 			successDialog.frame.visible = true
@@ -420,7 +415,7 @@ public class Prep {
 			scroll.verticalScrollBar.unitIncrement = 16
 		}
 		warningDialog.frame = swing.dialog(title: 'Connectivity Warning', modal: true, pack: true) {
-			warningDialog.panel = panel(layout: new MigLayout('fill,ins 0, gap 0')) {
+			panel(layout: new MigLayout('fill,ins 0, gap 0, hidemode 3')) {
 				panel(border: titledBorder(title: 'Connection Data'), constraints: 'growx, spanx, wrap', layout: new MigLayout('fill')) {
 					label(text: 'No connectivity from Plubble.com to your machine', font: new FontUIResource("SansSerif", Font.BOLD, 12), constraints: 'growx, spanx, wrap')
 					label(text: 'Plubble Reported This External IP: ')
@@ -433,11 +428,17 @@ public class Prep {
 					label(text: 'Profile External IP: ')
 					warningDialog.externalIp = label(constraints: 'pushx, wrap')
 				}
-				warningDialog.buttonPanel = panel(layout: new MigLayout('fillx, ins 0'), constraints: 'growx,spanx') {
-					warningDialog.continueButtons = panel(constraints: 'growx', layout: new MigLayout('fillx, ins 0')) {
-						button(text: "Don't start yet...", actionPerformed: {warningDialog.continueAnyway = false; warningDialog.frame.visible = false})
+				panel(layout: new MigLayout('fillx, ins 0, hidemode 3'), constraints: 'growx,spanx') {
+					warningDialog.continueButtons = panel(constraints: 'growx', layout: new MigLayout('fillx, ins 0, hidemode 3')) {
+						button(text: "Don't Start Yet...", actionPerformed: {warningDialog.continueAnyway = false; warningDialog.frame.visible = false})
 						panel(constraints: 'growx')
-						button(text: 'Start Anyway...', actionPerformed: {warningDialog.continueAnyway = true; warningDialog.frame.visible = false})
+						warningDialog.reassignIpButton = panel(constraints: 'growx', visible: false, layout: new MigLayout('fill, ins 0')) {
+							button(text: 'Use Detected IP Address, But Don\'t Start Yet...', actionPerformed: {props.external_ip = conProps.address; showProp('external_ip'); warningDialog.continueAnyway = true; warningDialog.frame.visible = false})
+							panel(constraints: 'growx')
+							button(text: 'Use Detected IP Address And Start...', actionPerformed: {props.external_ip = conProps.address; warningDialog.continueAnyway = true; warningDialog.frame.visible = false})
+						}
+						panel(constraints: 'growx')
+						button(text: 'Start With Current Settings...', actionPerformed: {warningDialog.continueAnyway = true; warningDialog.frame.visible = false})
 					}
 					warningDialog.okButton = panel(constraints: 'growx', layout: new MigLayout('fillx, ins 0')) {
 						panel(constraints: 'growx')
@@ -448,8 +449,8 @@ public class Prep {
 			}
 		}
 		successDialog.frame = swing.dialog(title: 'Success!', modal: true, pack: true) {
-			warningDialog.panel = panel(layout: new MigLayout('fill,ins 0, gap 0')) {
-				warningDialog.ipBox = panel(border: titledBorder(title: 'Your Settings Appear Correct'), constraints: 'growx, spanx, wrap', layout: new MigLayout('fill')) {
+			panel(layout: new MigLayout('fill,ins 0, gap 0')) {
+				panel(border: titledBorder(title: 'Your Settings Appear Correct'), constraints: 'growx, spanx, wrap', layout: new MigLayout('fill')) {
 					label(text: 'Plubble has successfuly connected to your machine.', font: new FontUIResource("SansSerif", Font.BOLD, 12), constraints: 'growx, spanx, wrap')
 				}
 				panel(constraints: 'growx')

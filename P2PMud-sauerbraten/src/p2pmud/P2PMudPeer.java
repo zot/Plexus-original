@@ -358,7 +358,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		System.out.println("Waiting to join ring...");
 		// the node may require sending several messages to fully boot into the ring
 		synchronized (node) {
-			int countdown = 120;
+			int countdown = 1200;
 			int oldNeighborCount = 1;
 			while (!node.isReady() && !node.joinFailed()) {
 				// delay so we don't busy-wait
