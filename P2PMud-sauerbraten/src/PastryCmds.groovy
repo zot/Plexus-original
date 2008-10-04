@@ -17,10 +17,11 @@ public class PastryCmds extends Cmds {
 		main.playerUpdate(main.pastryCmd.from.toStringFull(), name, args)
 	}
 	def chat(name, String... args) {
-		def id = main.ids[main.pastryCmd.from.toStringFull()]
-		def player = main.getPlayer(main.pastryCmd.from.toStringFull())
+		def peer = main.pastryCmd.from.toStringFull()
+		def id = main.ids[peer]
+		//def player = main.getPlayer(peer)
 
-		main.sauer('chat', "psay $player.name [${args.join(' ')}]")
+		main.sauer('chat', "psay $id [${args.join(' ')}]")
 		main.dumpCommands()
 	}
 	def tc_taunt() {
