@@ -47,6 +47,8 @@ public class SauerCmds extends Cmds {
 	}
 	def position(name, String... args) {
 		if (main.names && main.names[name] == main.peerId) {
+			// if we're following someone, ignore our position updates
+			if (main?.followingPlayer?.id) return
 			if (main.swing) {
 				synchronized (positionLock) {
 					currentPosition = args

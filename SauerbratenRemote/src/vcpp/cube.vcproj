@@ -149,8 +149,8 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
-				CommandLine="copy $(TargetPath) &quot;C:\Program Files\SauerCTF\bin\sauerbraten_debug.exe&quot;"
-				Outputs="C:\Program Files\SauerCTF\bin\sauerbraten_debug.exe"
+				CommandLine="copy $(TargetPath) &quot;C:\Program Files\SauerCTF\packages/plexus/dist\sauerbraten_debug.exe&quot;&#x0D;&#x0A;"
+				Outputs="C:\Program Files\SauerCTF\packages/plexus/dist\sauerbraten_debug.exe"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
