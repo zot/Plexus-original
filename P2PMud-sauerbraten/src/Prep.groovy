@@ -58,6 +58,7 @@ public class Prep {
 	def static warningDialog = [:]
 	def static successDialog = [:]
 	def static testSocket
+	def static chosenPort
 
 	def static verifySauerDir(dir) {
 		while (!Plexus.verifySauerdir(dir)) {
@@ -148,12 +149,7 @@ public class Prep {
 		}
 	}
 	def static buildMainArgs() {
-		def startPort = Integer.parseInt(props.pastry_port_start)
-		def endPort = Integer.parseInt(props.pastry_port_end)
-		def chosenPort = (Math.abs(new Random().nextInt()) % (endPort - startPort)) + startPort
-		props.pastry_port = chosenPort as String
-		props.external_port = chosenPort as String
-		println "using port: $props.pastry_port in range: ($startPort - $endPort)"
+		choosePort()
 		mainArgs = [
 					props.sauer_port,
 					props.name,
@@ -168,6 +164,17 @@ public class Prep {
 			mainArgs.add(props.nodeId)
 		}
 		mainArgs = mainArgs as String[]
+	}
+	def static choosePort() {
+		if (!chosenPort) {
+			def startPort = Integer.parseInt(props.pastry_port_start)
+			def endPort = Integer.parseInt(props.pastry_port_end)
+
+			chosenPort = (Math.abs(new Random().nextInt()) % (endPort - startPort)) + startPort
+			props.pastry_port = chosenPort as String
+			props.external_port = chosenPort as String
+			println "using port: $props.pastry_port in range: ($startPort - $endPort)"
+		}
 	}
 	def static connectivityReport(showOk = false, reportSuccess = false) {
 		def con = testConnectivity(true, false)
@@ -229,6 +236,10 @@ public class Prep {
 	}
 	def static setprop(key) {
 		props[key] = fields[key].getText()
+		if (key in ['pastry_port_start', 'pastry_port_end']) {
+			chosenPort = null
+			conProps = null
+		}
 	}
 	def static showprop(key) {
 		 fields[key].setText(props[key])
@@ -388,7 +399,7 @@ public class Prep {
 									}
 									panel(layout: new MigLayout('fillx'), constraints: 'growx, spanx, wrap') {
 										check('Disable connectivity check', 'disable_con_check', 'If checked, PLEXUS will not check your connectivity before starting', '')
-										button(text: 'Test Now', actionPerformed: {connectivityReport(true, true)}, constraints: 'pushx')
+										button(text: 'Test Now', actionPerformed: {conProps = chosenPort = null; connectivityReport(true, true)}, constraints: 'pushx')
 									}
 									panel(layout: new MigLayout('fillx,ins 0'), constraints: 'wrap, spanx') {
 										button(text: "Start", toolTipText: 'Press to start PLEXUS', actionPerformed: {finished(true)})
@@ -454,8 +465,8 @@ public class Prep {
 		propsWindow.show()
 	}
 	def static testConnectivity(listen = true, closeSocket = true) {
-		println conProps
 		if (conProps?.status != 'success') {
+			choosePort()
 			println props.pastry_port
 			testSocket = listen ? new ServerSocket() : null
 			if (testSocket) {
@@ -463,6 +474,7 @@ public class Prep {
 				//testSocket.setSoTimeout(10);
 				testSocket.bind(new java.net.InetSocketAddress(Integer.parseInt(props.pastry_port)))
 			}
+			if (props.upnp == '1') LaunchPlexus.pokeHole("Plexus", Integer.parseInt(props.external_port))
 			def con = new URL("http://plubble.com/p2p.php?port=$props.external_port").openConnection()
 			def input = con.getInputStream()
 
@@ -473,6 +485,9 @@ public class Prep {
 				testSocket.close()
 				testSocket = null
 			}
+			println "connection test results: $conProps"
+		} else {
+			println "connection test already succeeded: $conProps"
 		}
 		return conProps
 	}

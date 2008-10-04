@@ -32,7 +32,7 @@ public class LaunchPlexus {
 			props = Prep.props
 			runCount = props.runCount ? Integer.parseInt(props.runCount) + 1 : 0;
 			props.runCount = String.valueOf(runCount)
-			if (props.upnp == '1') pokeHole("Plexus", props.external_port as String)
+			if (props.upnp == '1') pokeHole("Plexus", Integer.parseInt(props.external_port))
 			if (props.node_interface && props.node_interface != '') P2PMudPeer.node_interface = props.node_interface;
 			Plexus.main(*args)
 		} catch (Exception ex) {
