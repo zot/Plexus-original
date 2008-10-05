@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include "remote.h"
+#include <process.h>
 #include "tc.h"
 
 //Millisecond value updated before each tick
@@ -869,5 +870,21 @@ ICOMMAND(addhuditem, "sssssss", (char *type, char *exp, char *clicked, char *x, 
 });
 
 ICOMMAND(defined, "s", (char *var), {
-	intret((int) var ? identexists(var) : 0);
+	intret((int) (var != NULL ? identexists(var) : 0));
+});
+
+
+static void launchplexus() {
+#ifdef WINDOWS
+	_spawnlp(_P_NOWAIT, "java", "java", "-jar", "plexus.jar", NULL);
+#else
+	if (fork()==0) {
+		_execl("java", "java", "-jar", "plexus.jar", NULL);
+	}
+#endif
+}
+
+ICOMMAND(launchplexus, "", (), {
+	launchplexus();
+	intret(0);
 });
