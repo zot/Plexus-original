@@ -170,7 +170,7 @@ public class Prep {
 			def startPort = Integer.parseInt(props.pastry_port_start)
 			def endPort = Integer.parseInt(props.pastry_port_end)
 
-			chosenPort = (Math.abs(new Random().nextInt()) % (endPort - startPort)) + startPort
+			chosenPort = (startPort >= endPort)? startPort : (Math.abs(new Random().nextInt()) % (endPort - startPort)) + startPort
 			props.pastry_port = chosenPort as String
 			props.external_port = chosenPort as String
 			println "using port: $props.pastry_port in range: ($startPort - $endPort)"
