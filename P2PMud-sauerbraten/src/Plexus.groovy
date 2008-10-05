@@ -54,6 +54,7 @@ public class Plexus {
 	def pendingCommands = [:]
 	def sauerCmds = new SauerCmds(this)
 	def pastryCmds = new PastryCmds(this)
+	def sauerSocket
 	def queueRunTime = Long.MAX_VALUE
 	def queueBatchPeriod = 200
 	def swing
@@ -270,7 +271,7 @@ public class Plexus {
 			   UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
 			} catch (Exception e) {}
 			buildPlexusGui()
-			start(args[0])
+			//start(args[0])
 		} else {
 			cloudProperties.saveFilter = {prop -> !pendingDownloads.contains(prop)}
 			cloudProperties.setPropertyHooks[~'map/..*'] = {key, value, oldValue ->
@@ -351,6 +352,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			if ((LaunchPlexus.props.sauer_mode ?: 'launch') == 'launch') launchSauer();
 			if (launchSauerButton) {
 				launchSauerButton.enabled = true
+				start(LaunchPlexus.props.sauer_port)
 			}
 		}
 	}
@@ -754,14 +756,16 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	}
 	def start(port) {
 		Thread.startDaemon {
-			def sock = new ServerSocket()
-			sock.setReuseAddress(true)
-			//sock.setSoTimeout(10);
-			sock.bind(new java.net.InetSocketAddress(Integer.parseInt(port)))
-
+			// don't enable socket to sauer til after we've joined the ring
+			sauerSocket = new ServerSocket()
+			sauerSocket.setReuseAddress(true)
+			//sauerSocket.setSoTimeout(10);
+			sauerSocket.bind(new java.net.InetSocketAddress(Integer.parseInt(port)))
+			println ("Sauer socket opened at: $port")
+			
 			println "READY"
 			while (true) {
-				socket = sock.accept {
+				socket = sauerSocket.accept {
 					println("Got connection from sauerbraten...")
 					output = it.getOutputStream()
 					launchSauerButton.enabled = false
@@ -1164,8 +1168,8 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		}
 	}
 	def removePlayerFromSauerMap(peerId) {
-		if (ids[peerId]) {
-			def sauerId = ids[peerId]
+		def sauerId = ids[peerId]
+		if (sauerId && sauerId != 'p0') {
 			def who = getPlayer(peerId)
 
 			if (who) {
