@@ -1,7 +1,7 @@
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import java.util.zip.ZipFile
-import p2pmud.Tools
+import p2pmud.BasicTools
 import java.util.jar.*
 
 public class BuildPlexusJar {
@@ -14,7 +14,7 @@ public class BuildPlexusJar {
 	static version = ""	
 	
 	static void main(String[] args) {
-		peer = Tools.getCwd()
+		peer = BasicTools.getCwd()
 		plx = new File(peer, "../../Plexus")
 		sauer = new File(peer, "../SauerbratenRemote")
 		build = new File("/tmp/plexus-build")
@@ -22,10 +22,10 @@ public class BuildPlexusJar {
 		
 		// if called with -clean, nuke the build folder first
 		if (args.length > 0 && args[0] == "-clean") {
-			Tools.deleteAll(build)
+			BasicTools.deleteAll(build)
 		}
 		
-		Tools.deleteAll(new File("/tmp/plexus.jar"))
+		BasicTools.deleteAll(new File("/tmp/plexus.jar"))
 		
 		new File(build, "dist").mkdirs()
 		def libDir = new File(peer, "lib") 
@@ -39,10 +39,10 @@ public class BuildPlexusJar {
 		}
 		
 		// copy over remaining files
-		Tools.copyAll(new File(peer, "bin"), build)
-		Tools.copyAll(new File(plx, "build/plexus"), build)
-		Tools.copyAll(new File(plx, "META-INF"), build)
-		Tools.copyAll(new File(sauer, "src/sauer_client"), new File(build, "dist/sauerbraten_plexus_linux"))
+		BasicTools.copyAll(new File(peer, "bin"), build)
+		BasicTools.copyAll(new File(plx, "build/plexus"), build)
+		BasicTools.copyAll(new File(plx, "META-INF"), build)
+		BasicTools.copyAll(new File(sauer, "src/sauer_client"), new File(build, "dist/sauerbraten_plexus_linux"))
 
 		// update the timestamp on the version file
 		def today = new Date();
@@ -58,7 +58,7 @@ public class BuildPlexusJar {
 			if (!it.isDirectory()) {
 				def input = it.newInputStream()
 
-				zo.putNextEntry(new ZipEntry(Tools.subpath(build, it)))
+				zo.putNextEntry(new ZipEntry(BasicTools.subpath(build, it)))
 				zo << input
 				zo.closeEntry()
 				input.close()
@@ -82,7 +82,7 @@ public class BuildPlexusJar {
 		def mani = new File(build, "dist/manifest")
 		if (mani.exists()) mani.delete()
 		def dist = new File(build, "dist")
-		dist.eachFileRecurse { it -> if (it.isFile()) mani << Tools.subpath(build, it) << '\n' }
+		dist.eachFileRecurse { it -> if (it.isFile()) mani << BasicTools.subpath(build, it) << '\n' }
 	}
 	
 	static void extractZip(zipfile, destDir) {
