@@ -1,14 +1,9 @@
 package p2pmud
 
-import rice.p2p.util.SecurityUtils
-import rice.pastry.Id
 import org.codehaus.groovy.runtime.StackTraceUtils
 import java.util.zip.ZipFile
-import java.security.MessageDigest
 
 public class BasicTools {
-	def static digest = MessageDigest.getInstance("SHA-1")
-
 	def static stackTrace(ex) {
 		def w = new PrintWriter(System.err)
 		def lines = []
@@ -143,10 +138,7 @@ public class BasicTools {
 	def static String encode(bytes) {
 		bytes.encodeBase64()
 	}
-	def static contentId(byte[] bytes) {
-//		Id.build(SecurityUtils.hash(bytes))
-		Id.build(digest.digest(bytes))
-	}
+
 	def static guard(block) {
 		return {r->
 			try {

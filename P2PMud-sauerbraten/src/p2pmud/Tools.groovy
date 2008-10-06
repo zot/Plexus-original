@@ -1,11 +1,14 @@
 package p2pmud
 
-
+import rice.p2p.util.SecurityUtils
+import rice.pastry.Id
 import rice.Continuation
 import rice.Continuation.MultiContinuation
+import java.security.MessageDigest
 
 
 public class Tools extends BasicTools {
+	def static digest = MessageDigest.getInstance("SHA-1")
 
 	def static continuation(cont, parent = null) {
 		def validParent = parent && !(cont instanceof Continuation)
@@ -51,4 +54,8 @@ public class Tools extends BasicTools {
 			block(it, multi.getSubContinuation(counter++))
 		}
 	}
+	def static contentId(byte[] bytes) {
+//		Id.build(SecurityUtils.hash(bytes))
+		Id.build(digest.digest(bytes))
+	}	
 }
