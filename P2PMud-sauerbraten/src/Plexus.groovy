@@ -395,6 +395,10 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		}, receiveException: {ex -> err("Could not fetch data for $type: $id -> ${new File(plexusDir, "cache/$name/$location")}", ex)})
 	}
 	def die() {
+		if (sauerSocket) {
+			sauerSocket.close()
+			sauerSocket = null
+		}
 		exec {
 			swing.edt {
 				gui.visible = false
