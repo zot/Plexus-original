@@ -1377,7 +1377,11 @@ void gl_drawframe(int w, int h)
     rendermaterials();
     render_particles(curtime);
 
-#ifndef TC
+#ifdef TC
+	// compute the mouse camera depending on the current cursor position
+	extern float cursorx, cursory;
+	tc_copycamera(cursorx, cursory);
+#else
     if(!isthirdperson())
     {
         project(curhgfov, aspect, farplane);

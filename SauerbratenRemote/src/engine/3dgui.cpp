@@ -22,7 +22,7 @@ static enum {FIELDCOMMIT, FIELDABORT, FIELDEDIT, FIELDSHOW} fieldmode = FIELDSHO
 static bool fieldsactive = false;
 
 static bool hascursor;
-static float cursorx = 0.5f, cursory = 0.5f;
+float cursorx = 0.5f, cursory = 0.5f;
 
 #define SHADOW 4
 #define ICON_SIZE (FONTH-SHADOW)

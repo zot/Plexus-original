@@ -691,7 +691,7 @@ void checkinput()
 							extern void tc_copycamera(float dx, float dy);
 							//int dx = event.motion.x - (screen->w/2), dy = event.motion.y - (screen->h/2); 
 							//tc_copycamera(dx, dy);
-							tc_copycamera(event.motion.x / (float)screen->w, event.motion.y/ (float) screen->h);
+							//tc_copycamera(event.motion.x / (float)screen->w, event.motion.y/ (float) screen->h);
                 			tc_movecursor(event.motion.x, event.motion.y, false);
                 		}
                 	} else {
