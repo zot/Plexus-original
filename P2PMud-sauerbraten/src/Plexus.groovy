@@ -13,6 +13,7 @@ import groovy.swing.SwingXBuilder
 import java.awt.Font
 import p2pmud.Tools
 import static p2pmud.Tools.*
+import static p2pmud.BasicTools.*
 import java.awt.event.ItemEvent
 import java.util.concurrent.Executors
 import javax.swing.UIManager
@@ -398,24 +399,26 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			swing.edt {
 				gui.visible = false
 			}
-		}
-		Thread.start {
-			if (peer) {
-				def node = peer.nodeId.toStringFull()
-
-				if (plexusTopic) {
-					transmitRemoveCloudProperty("player/$node")
-					Thread.sleep(1000)
-					if (mapTopic) {
-						unsubscribe(mapTopic)
-						unsubscribe(plexusTopic)
-					}
-					Thread.sleep(1000)
-				}
-				peer.destroy()
+			if (plexusTopic) {
+				transmitRemoveCloudProperty("player/$node")
 			}
-			Thread.sleep(1000)
-			System.exit(0)
+			Thread.start {
+				if (peer) {
+					def node = peer.nodeId.toStringFull()
+	
+					if (plexusTopic) {
+						Thread.sleep(1000)
+						if (mapTopic) {
+							unsubscribe(mapTopic)
+							unsubscribe(plexusTopic)
+						}
+						Thread.sleep(1000)
+					}
+					peer.destroy()
+				}
+				Thread.sleep(1000)
+				System.exit(0)
+			}
 		}
 	}
 	def buildPlexusGui() {
