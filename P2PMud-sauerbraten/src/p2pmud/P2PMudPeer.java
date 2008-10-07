@@ -709,7 +709,7 @@ final int c = count++;
 			}
 		}, count);
 
-		for (int i = 0; i < chunks.size(); i++) {
+		for (int i = chunks.size(); i-- > 0;) {
 			if (i < count) {
 				final Continuation<Object, Exception> sub = cont.getSubContinuation(i);
 
