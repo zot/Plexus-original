@@ -398,22 +398,24 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			swing.edt {
 				gui.visible = false
 			}
-			if (plexusTopic) {
+		}
+		Thread.start {
+			if (peer) {
 				def node = peer.nodeId.toStringFull()
 
-				transmitRemoveCloudProperty("player/$node")
-				Thread.sleep(1000)
-				if (mapTopic) {
-					unsubscribe(mapTopic)
+				if (plexusTopic) {
+					transmitRemoveCloudProperty("player/$node")
+					Thread.sleep(1000)
+					if (mapTopic) {
+						unsubscribe(mapTopic)
+						unsubscribe(plexusTopic)
+					}
+					Thread.sleep(1000)
 				}
-				unsubscribe(plexusTopic)
-				Thread.sleep(1000)
 				peer.destroy()
 			}
-			Thread.start {
-				Thread.sleep(1000)
-				System.exit(0)
-			}
+			Thread.sleep(1000)
+			System.exit(0)
 		}
 	}
 	def buildPlexusGui() {

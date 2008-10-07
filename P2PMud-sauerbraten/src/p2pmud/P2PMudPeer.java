@@ -360,7 +360,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		synchronized (node) {
 			int countdown = 1200;
 			int oldNeighborCount = 1;
-			while (!node.isReady() && !node.joinFailed()) {
+			for (countdown = 1200; countdown > 0 && !node.isReady() && !node.joinFailed(); countdown--) {
 				// delay so we don't busy-wait
 				node.wait(500);
 				int cnt = getNeighborCount();
@@ -369,13 +369,13 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 					oldNeighborCount = cnt;
 					System.out.println("New neighbor count is " + cnt);
 				}
-				// abort if can't join
-				if (node.joinFailed() || --countdown < 0) {
-					joinFailedReason = countdown < 0 ? "timeout retries exceeded" : node.joinFailedReason().toString();
-					destroy();
-					return false;
-				}
 				System.out.println("Waiting on node again, roughly " + (countdown / 2.0) + " seconds left in this attempt");				
+			}
+			// abort if can't join
+			if (node.joinFailed() || countdown <= 0) {
+				joinFailedReason = countdown <= 0 ? "timeout retries exceeded" : node.joinFailedReason().toString();
+				destroy();
+				return false;
 			}
 		}
 		return true;

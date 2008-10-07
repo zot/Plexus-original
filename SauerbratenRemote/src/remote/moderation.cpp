@@ -9,7 +9,9 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include "remote.h"
+#ifdef WINDOWS
 #include <process.h>
+#endif
 #include "tc.h"
 
 //Millisecond value updated before each tick
@@ -879,7 +881,7 @@ static void launchplexus() {
 	_spawnlp(_P_NOWAIT, "java", "java", "-jar", "plexus.jar", NULL);
 #else
 	if (fork()==0) {
-		_execl("java", "java", "-jar", "plexus.jar", NULL);
+		execlp("java", "java", "-jar", "plexus.jar", (char *)NULL);
 	}
 #endif
 }
