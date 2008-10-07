@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -35,6 +36,7 @@ import rice.p2p.scribe.ScribeContent;
 import rice.p2p.scribe.ScribeImpl;
 import rice.p2p.scribe.ScribeMultiClient;
 import rice.p2p.scribe.Topic;
+import rice.p2p.util.Base64;
 import rice.pastry.NetworkListener;
 import rice.pastry.NodeHandle;
 import rice.pastry.NodeIdFactory;
@@ -622,7 +624,7 @@ final int c = count++;
 						String data[] = new String[file.chunks.size()];
 
 						System.out.println("RETRIEVED FILE OBJECT: " + file + ", getting chunks");
-						getChunks(cacheDir, callback, cont, file, file.chunks, data, 0);
+						getChunks(cacheDir, callback, cont, file, file.chunks, new P2PMudFileChunk[file.chunks.size()], 0);
 					} else {
 						cont.receiveException(new FileNotFoundException("No file found for " + id.toStringFull()));
 					}
@@ -633,7 +635,7 @@ final int c = count++;
 			});
 		}
 	}
-	protected void getChunks(final File cacheDir, final Closure callback, final Continuation handler, final P2PMudFile file, final ArrayList<Id> chunks, final String data[], final int attempt) {
+	protected void getChunks(final File cacheDir, final Closure callback, final Continuation handler, final P2PMudFile file, final ArrayList<Id> chunks, final P2PMudFileChunk[] mudFileChunks, final int attempt) {
 		if (attempt > chunkBatch) {
 			//maybe pass the missing chunks in this exception
 			handler.receiveException(new RuntimeException("Made " + attempt + " attempts to get file without receiving any new data"));
@@ -654,7 +656,10 @@ final int c = count++;
 						} else {
 							P2PMudFileChunk chunk = (P2PMudFileChunk)result[i];
 
-							data[chunk.offset] = chunk.data;
+							if (mudFileChunks[chunk.offset] != null) {
+								throw new Exception("Duplicate chunk offset: " + chunk.offset);
+							}
+							mudFileChunks[chunk.offset] = chunk;
 							any = true;
 						}
 					}
@@ -662,24 +667,38 @@ final int c = count++;
 						File fn = file.filename(cacheDir);
 						fn.getParentFile().mkdirs();
 						FileOutputStream output = new FileOutputStream(fn);
-						StringBuffer buf = new StringBuffer();
 						ArrayList value = new ArrayList();
 
-						for (int i = 0; i < data.length; i++) {
-							buf.append(data[i]);
+//						StringBuffer buf = new StringBuffer();
+//						
+//						for (int i = 0; i < mudFileChunks.length; i++) {
+//							buf.append(mudFileChunks[i].data);
+//						}
+//						byte[] bytes = Tools.decode(buf.toString());
+//						if (bytes.length != file.size) {
+//							System.err.println("buffer.length (" + bytes.length + ") != file.size (" + file.size + ")");
+//						}
+//						output.write(bytes, 0, file.size);
+//						output.flush();
+//						output.getFD().sync();
+//						output.close();
+						
+						OutputStream out64 = new Base64.OutputStream(output, Base64.DECODE);
+						for (int i = 0; i < mudFileChunks.length; i++) {
+							out64.write(mudFileChunks[i].data.getBytes());
 						}
-						byte[] bytes = Tools.decode(buf.toString());
-						output.write(bytes, 0, file.size);
-						output.flush();
+						out64.flush();
 						output.getFD().sync();
 						output.close();
+						
+						
 						value.add(fn);
 						value.add(missing.isEmpty() ? null : missing);
 						value.add(file);
 						value.add(file.getId());
 						handler.receiveResult(value);
 					} else {
-						getChunks(cacheDir, callback, handler, file, missing, data, !any ? attempt + 1 : 0);
+						getChunks(cacheDir, callback, handler, file, missing, mudFileChunks, !any ? attempt + 1 : 0);
 					}
 				} catch (Exception ex) {
 					handler.receiveException(ex);

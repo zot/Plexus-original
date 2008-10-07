@@ -418,9 +418,11 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 						unsubscribe(plexusTopic)
 						Thread.sleep(1000)
 					}
+					println "destroying node"
 					peer.destroy()
 				}
 				Thread.sleep(1000)
+				println "exiting"
 				System.exit(0)
 			}
 		}
@@ -1517,7 +1519,7 @@ println "STORED COSTUME, adding"
 				}
 				showTumes(tumes)
 			}, receiveException: {ex ->
-				System.err.println("Error fetching thumbs for costumes", ex)
+				System.err.println("Error fetching thumbs for costumes: $ex")
 				stackTrace(ex)
 			}) {tume, chain ->
 				fetchFile(chain, Id.build(tume.thumb))
@@ -1646,7 +1648,7 @@ println "COSTUME SELS: $triples"
 					receiveException: {exception -> err("Couldn't subscribe to topic: ", exception)}))
 				},
 				receiveException: {ex ->
-					System.err.println("Trouble loading map", ex)
+					System.err.println("Trouble loading map: $ex")
 					stackTrace(ex)
 				}))
 			}
