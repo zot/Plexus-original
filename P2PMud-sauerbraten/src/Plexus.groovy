@@ -1204,13 +1204,13 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 	def newPlayer(name, node = pastryCmd.from.toStringFull()) {
 		def who = getPlayer(node)
 		def sauerid = ids[node]
-
+		def guild = who ? who.guild : ""
 		if (!sauerid) sauerid = "p$id_index" as String
 
 		ids[node] = sauerid
 		names[sauerid] = node
 		++id_index
-		sauer('prep', "echo [Welcome player $name to this world.]; createplayer $sauerid $name; playerinfo $sauerid \"$who.guild\"")
+		sauer('prep', "echo [Welcome player $name to this world.]; createplayer $sauerid $name; playerinfo $sauerid \"$guild\"")
 		loadCostume(who)
 		if (swing) {
 			updateMappingDiag()
