@@ -499,12 +499,12 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		}
 	}
 	public void anycastCmds(Topic myTopic, String cmds[]) {
-		if (myTopic != null) {
+		if (myTopic != null && node != null) {
 			myScribe.anycast(myTopic, new P2PMudScribeContent(new P2PMudCommand(node.getId(), cmds)));
 		}
 	}
 	public void broadcastCmds(Topic myTopic, String cmds[]) {
-		if (myTopic != null) {
+		if (myTopic != null && node != null) {
 			myScribe.publish(myTopic, new P2PMudScribeContent(new P2PMudCommand(node.getId(), cmds)));
 		}
 	}
