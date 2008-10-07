@@ -354,7 +354,7 @@ public class Prep {
 										label(text: 'Active Profile:')
 										profilesCombo = comboBox(editable: true, actionPerformed: {
 											if (profilesCombo) addProfile(profilesCombo?.editor?.item)
-	//										showTitle()
+//											showTitle()
 										})
 										removeProfileButton = button(text: 'Remove Profile', actionPerformed: { if (MessageBox.AreYouSure("Remove Profile", "Are you sure you want to remove the $props.profile profile?")) removeProfile()}, enabled: false)
 									}

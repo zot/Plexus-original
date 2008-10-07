@@ -414,8 +414,8 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 						Thread.sleep(1000)
 						if (mapTopic) {
 							unsubscribe(mapTopic)
-							unsubscribe(plexusTopic)
 						}
+						unsubscribe(plexusTopic)
 						Thread.sleep(1000)
 					}
 					peer.destroy()
