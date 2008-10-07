@@ -773,7 +773,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			println ("Sauer socket opened at: $port")
 			
 			println "READY"
-			while (true) {
+			while (sauerSocket != null) {
 				try {
 					socket = sauerSocket.accept {
 						println("Got connection from sauerbraten...")
