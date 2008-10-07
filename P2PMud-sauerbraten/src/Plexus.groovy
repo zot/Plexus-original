@@ -404,12 +404,12 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 				gui.visible = false
 			}
 			if (plexusTopic) {
+				def node = peer.nodeId.toStringFull()
+
 				transmitRemoveCloudProperty("player/$node")
 			}
 			Thread.start {
 				if (peer) {
-					def node = peer.nodeId.toStringFull()
-	
 					if (plexusTopic) {
 						Thread.sleep(1000)
 						if (mapTopic) {
@@ -774,32 +774,34 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			
 			println "READY"
 			while (true) {
-				socket = sauerSocket.accept {
-					println("Got connection from sauerbraten...")
-					output = it.getOutputStream()
-					launchSauerButton.enabled = false
-					exec {init()}
-					try {
-						it.getInputStream().eachLine {line ->
-							exec {
-								try {
-									exec {sauerCmds.invoke(line)}
-								} catch (Exception ex) {
-									err("Problem executing sauer command: " + it, ex)
+				try {
+					socket = sauerSocket.accept {
+						println("Got connection from sauerbraten...")
+						output = it.getOutputStream()
+						launchSauerButton.enabled = false
+						exec {init()}
+						try {
+							it.getInputStream().eachLine {line ->
+								exec {
+									try {
+										exec {sauerCmds.invoke(line)}
+									} catch (Exception ex) {
+										err("Problem executing sauer command: " + it, ex)
+									}
 								}
 							}
+						} catch (Exception ex) {}
+						try {it.shutdownInput()} catch (Exception ex) {}
+						try {it.shutdownOutput()} catch (Exception ex) {}
+						swing.edt {
+							gui.visible = true
+							gui.extendedState = Frame.NORMAL
+							gui.requestFocus()
 						}
-					} catch (Exception ex) {}
-					try {it.shutdownInput()} catch (Exception ex) {}
-					try {it.shutdownOutput()} catch (Exception ex) {}
-					swing.edt {
-						gui.visible = true
-						gui.extendedState = Frame.NORMAL
-						gui.requestFocus()
-					}
-					launchSauerButton.enabled = true
-					println "Disconnect"
-				};
+						launchSauerButton.enabled = true
+						println "Disconnect"
+					};
+				} catch (IOException ex) {}
 			}
 		}
 	}
