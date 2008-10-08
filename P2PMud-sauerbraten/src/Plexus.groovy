@@ -104,6 +104,7 @@ public class Plexus {
 	def downloadProgressBar
 	def uploadCountField
 	def downloadCountField
+	def cloudLight
 	def loadTypeField
 	def followingPlayer
 	def cotumeUploadField
@@ -339,6 +340,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		plexusTopic = subscribe(peer.buildId(PLEXUS_KEY), null)
 		println "execing init..."
 		exec {
+			cloudLight.setIcon(new ImageIcon(getClass().getResource('/resources/connected.gif')))
 			if (peer.node.getLeafSet().getUniqueCount() == 1) {
 				println "initBoot"
 				initBoot()
@@ -443,7 +445,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			}
 			titledPanel(title: ' ', titlePainter: makeTitlePainter("PLEXUS [${LaunchPlexus.props.name}]: Killer App of the Future - Here Today!"), border: new DropShadowBorder(Color.BLACK, 15)) {
 				panel(layout: new MigLayout('fill, ins 0')) {
-					panel(layout: new MigLayout(), constraints: 'spanx, wrap') {
+					panel(layout: new MigLayout(), constraints: '') {
 						label(text: "Node id: ")
 						label(text: LaunchPlexus.props.nodeId ?: "none", constraints: 'wrap, growx')
 						label(text: "Neighbors: ")
@@ -453,6 +455,9 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 						}
 						label(text: "Command: ")
 						fields.cmd = textField(actionPerformed: {cmd()}, constraints: 'wrap, growx')
+					}
+					panel(layout: new MigLayout(), constraints: 'spanx, wrap') {
+						cloudLight = label(icon: imageIcon(resource: '/resources/waiting.gif'), constraints: 'wrap')
 					}
 					tabbedPane(constraints: 'spanx,grow,wrap') {
 						scrollPane(name: 'Commands', border: null) {
