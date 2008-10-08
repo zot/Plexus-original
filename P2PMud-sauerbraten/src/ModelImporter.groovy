@@ -403,7 +403,7 @@ class ModelConvertor
 		copyFile(fn, fn)
 	}
 	def copyFile(from, to) {
-		def s = new File(srcDir, from), d = new File(dstDir, to)
+		def s = new File(srcDir, from), d = new File(dstDir, to.toLowerCase())
 		if (!s.isFile()) return
 	    def input
 	    def output
