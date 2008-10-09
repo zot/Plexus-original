@@ -95,7 +95,7 @@ println "STORE: $file.key -> $file.value"
 			def stream = new ByteArrayOutputStream()
 
 			println "--- STORING DIR: $props"
-			props.store(stream, "$chunkTotal")
+			props.store(new PropertyHackWriter(stream), "$chunkTotal")
 			P2PMudPeer.test.wimpyStoreFile(cacheDir, stream.toByteArray(), {}, continuation(cont, receiveResult: {res2 ->
 				cont.receiveResult([file: res2, properties: props])
 			}), false, false)
