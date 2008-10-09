@@ -821,18 +821,19 @@ You can even see a reference to TEAM CTHULHU in the CREDITS file of [[LPMud|http
 #Fall 2005, we commission Steven Missal to create Lovecraftian art
 #Spring 2008, we switch to Sauerbraten, Groovy, and Pastry (on top of Java)</pre>
 </div>
-<div title="RoadMap" modifier="BillBurdick" created="200806191122" modified="200810090553" changecount="230">
+<div title="RoadMap" modifier="BillBurdick" created="200806191122" modified="200810090609" changecount="233">
 <pre>!Mondo Yith
+*Filter out Thumbs.db and 0 length files
 *Make md3load handle missing files (deactivate md3skin, md3pitch, md3anim, md3link, mdlspec, mdlscale, mdltrans, etc.) -- maybe make it load a default model (like Zippy the Pinhead)
 *Handle error loading a map from a peer that drops out
 *if this is a new plexus version, offer to toast the cache
 *make updateMappingDiag() also display results for dumpents
-*test 0 byte file uploading
 *set CPPFLAGS -DTC in src/Makefile's call to src/enet/configure
 *taunt bug
 *Pastry reconnect business (multiple root peers?)
 *camera rotation problem on Linux
 !Next
+*Diag panes for sauer and pastry cmds
 *plexus profile editor in sauer (prepopulate wizard)
 *combine swing windows
 *only show diag tools until the first successful connect.  Then make it an option.

@@ -67,16 +67,27 @@ public class P2PMudFile extends ContentHashPastContent {
 		if (dir instanceof Map) {
 			for (file in dir) {
 println "STORE: $file.key -> $file.value"
-				files.add([file.value, file.key])
-				chunkTotal += estimateChunks(file.value.length())
+				def f = file.value as File
+
+				if (f.getName() == "Thumbs.db") {
+					println "IGNORING FILE: $f"
+				} else if (!f.length()) {
+					println "IGNORING FILE $f because it is empty"
+				} else {
+					println "adding file: $f"
+					files.add([file.value, file.key])
+					chunkTotal += estimateChunks(file.value.length())
+				}
 			}
 		} else {
 			dir = dir as File
 			dir.eachFileRecurse {
 				if (it.getName() == "Thumbs.db") {
 					println "IGNORING FILE: $it"
-				} else if (it.isDirectory()) {
-					println "IGNORING DIRECTORY: $it"
+				} else if (!it.length()) {
+					println "IGNORING FILE $it because it is empty"
+//				} else if (it.isDirectory()) {
+//					println "IGNORING DIRECTORY: $it"
 				} else {
 					println "adding file: $it"
 					files.add([it, Tools.subpath(dir, it)])
