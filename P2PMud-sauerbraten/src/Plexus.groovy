@@ -1144,7 +1144,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		cachedPlayerLocations.each {
 			def pname = it.value[0], update = it.value[1]
 			def id = newPlayer(pname, it.key)
-			sauer("${id}.update", "tc_setinfo $id $update" + args.join(' '))			
+			sauer("${id}.update", "tc_setinfo $id $update")			
 			dumpCommands()
 		}
 	
