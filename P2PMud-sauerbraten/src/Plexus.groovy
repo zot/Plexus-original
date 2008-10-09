@@ -317,6 +317,9 @@ public class Plexus {
 					}
 				} as P2PMudCommandHandler,
 				{
+					if (P2PMudPeer.test.getNeighborCount() < 2) {
+						cloudLight.setIcon(new ImageIcon(getClass().getResource('/resources/disconnected.gif')))
+					}
 					//sauer('peers', "peers ${peer.getNeighborCount()}")
 					//dumpCommands()
 				},
