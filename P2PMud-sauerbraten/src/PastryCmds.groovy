@@ -26,9 +26,8 @@ public class PastryCmds extends Cmds {
 	}
 	def tc_taunt() {
 		def id = main.ids[main.pastryCmd.from.toStringFull()]
-		def player = main.getPlayer(main.pastryCmd.from.toStringFull())
 
-		main.sauer('taunt', "tc_taunt $player.name")
+		main.sauer('taunt', "tc_taunt $id")
 		main.dumpCommands()
 	}
 	def tc_upmap(String... args) {
