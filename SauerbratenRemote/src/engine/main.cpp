@@ -663,13 +663,24 @@ void checkinput()
                 #endif
 #ifdef TC
 				{
-					if (tcmode > 0) { // && !editMode) {
+					if (tcmode > 0) {
                 		// make the mouse track only when a button is held down
                 		extern void tc_movecursor(int x, int y, bool hide);
-                		if (tc_amgrabbingmouse) {
-							ms = SDL_GetMouseState(NULL, NULL);
+						ms = SDL_GetMouseState(NULL, NULL);
+						bool leftOnly = 0 != (ms & SDL_BUTTON_LMASK) && 0 == (ms & SDL_BUTTON_RMASK);
+						bool rightOnly = 0 != (ms & SDL_BUTTON_RMASK) && 0 == (ms & SDL_BUTTON_LMASK);
+						bool both = 0 != (ms & SDL_BUTTON_RMASK) && 0 != (ms & SDL_BUTTON_LMASK);
+                		if (tc_amgrabbingmouse) { // move mouse normally if in edit mode for drag select
 							extern int thirdperson;
-							if (0 != (ms & SDL_BUTTON_LMASK) && 0 == (ms & SDL_BUTTON_RMASK) && thirdperson) {
+							if (both || rightOnly) {
+								extern void clearswing(physent *p);
+								clearswing(p);
+                				// only call mousemove() to spin the camera when we are grabbing
+                				mousemove(event.motion.xrel * 5.0, event.motion.yrel * 5.0);
+							} else if (editmode && leftOnly) {
+								// left button in edit mode, just move the cursor normally
+	                			tc_movecursor(event.motion.x, event.motion.y, false);
+							} else if (leftOnly && thirdperson) {
 								// force toon upright if swinging the camera
 								if (p->pitch) {
 									extern int swingpitch;
@@ -678,17 +689,12 @@ void checkinput()
 								}
 								extern void swingcamera(int dx, int dy);
 								swingcamera(event.motion.xrel * 3.0, event.motion.yrel * 3.0);
-							} else if (ms) {
-								extern void clearswing(physent *p);
-								clearswing(p);
-                				// only call mousemove() to spin the camera when we are grabbing
-                				mousemove(event.motion.xrel * 5.0, event.motion.yrel * 5.0);
+								// keep the crosshairs locked in dead center while grabbing
+								g3d_resetcursor();
 							}
-							// keep the crosshairs locked in dead center while grabbing
-							g3d_resetcursor();
                 		} else {
 							// not grabbing? freely move the cursor, but not the player/camera
-							extern void tc_copycamera(float dx, float dy);
+							//extern void tc_copycamera(float dx, float dy);
 							//int dx = event.motion.x - (screen->w/2), dy = event.motion.y - (screen->h/2); 
 							//tc_copycamera(dx, dy);
 							//tc_copycamera(event.motion.x / (float)screen->w, event.motion.y/ (float) screen->h);
@@ -715,7 +721,7 @@ void checkinput()
 				extern void tc_setcursorpos(float x, float y);
 				//fprintf(stderr, "got a mouse click %d  which: %d buttons: %d state: %d lastbut: %d  lasttype: %d lastmiddle: %d!\n", event.type, event.button.which, event.button.button, ms, lastbut, lasttype, (int) lastmiddle);
 				// grab the mouse only if left or right mouse button are clicked
-				if (event.button.button == 3 || event.button.button == 1) {
+				if (event.button.button == 3 || (event.button.button == 1 && !editmode)) {
 					if (event.type == SDL_MOUSEBUTTONDOWN) {
 						//if we already clicked one and are grabbing, don't bother regrabbing!  also, don't grab while menus are up
 						bool tc_aremenuspresent();
