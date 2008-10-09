@@ -793,6 +793,9 @@ void checkinput()
 						p->move = 0;
 					}
 				}
+				// if using both mouse buttons to move, don't bork the current selection
+				if (SDL_BUTTON_BOTHMASK == ms && editmode)
+					break;
 			}				
 #endif
                 if(lasttype==event.type && lastbut==event.button.button) break; // why?? get event twice without it
