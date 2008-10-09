@@ -1451,7 +1451,7 @@ println "loading costume: $who.costume"
 				fetchDir(who.costume, new File(plexusDir, "models/$who.costume"), receiveResult: {r ->
 					clothe(who, who.costume)
 				}, receiveException: {ex ->
-					System.err.println("Could not fetch data for costume: $who.costume", ex)
+					System.err.println("Could not fetch data for costume: $who.costume: ex")
 					stackTrace(ex)
 				})
 			}
@@ -1603,7 +1603,7 @@ println "COSTUME SELS: $triples"
 				println "USE COSTUME $name ($costumeDir)"
 				selectCostume()
 			}, receiveException: {ex ->
-				System.err.println("Couldn't use costume: $name", ex)
+				System.err.println("Couldn't use costume: $name: ex")
 				stackTrace(ex)
 			})
 		}
