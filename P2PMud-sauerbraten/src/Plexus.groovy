@@ -489,6 +489,8 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 													def tume = tumes[tumesCombo.selectedIndex - 1]
 			
 													useCostume(tume.name, tume.id)
+												} else {
+													useCostume('', 0)
 												}
 											}
 										}
@@ -1342,7 +1344,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		// bump counts to include ourself
 		++cnt
 		++mapCnt
-		PlayerGui += "]; peers $cnt; tc_mapcount $mapCnt; tc_loadmsg ${allPlayers ? myMap.name : 'none'}"
+		PlayerGui += "]; peers $cnt; tc_mapcount $mapCnt" // ;tc_loadmsg ${allPlayers ? myMap.name : 'none'}"
 		sauer('Player', cvtNewlines(PlayerGui))
 		dumpCommands()
 	}
@@ -1592,6 +1594,17 @@ println "COSTUME SELS: $triples"
 		dumpCommands()
 	}
 	def useCostume(name, dirId) {
+		print "name $name  dir $dirId"
+		if (!name) {
+			if (costume != null) {
+				costume = null
+				updateMyPlayerInfo()
+				sauer('cost', "playerinfo p0 [${LaunchPlexus.props.guild}] mrfixit")
+				dumpCommands()
+				selectCostume()
+			}
+			return
+		}
 		if (costume != dirId) {
 			def costumeDir = new File(plexusDir, "models/$dirId")
 
