@@ -318,7 +318,7 @@ public class Plexus {
 					}
 				} as P2PMudCommandHandler,
 				{
-					if (P2PMudPeer.test.getNeighborCount() < 2) {
+					if (P2PMudPeer.test.getNeighborCount() < 2 && !headless) {
 						cloudLight.setIcon(new ImageIcon(getClass().getResource('/resources/disconnected.gif')))
 					}
 					//sauer('peers', "peers ${peer.getNeighborCount()}")
@@ -344,7 +344,9 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		plexusTopic = subscribe(peer.buildId(PLEXUS_KEY), null)
 		println "execing init..."
 		exec {
-			cloudLight.setIcon(new ImageIcon(getClass().getResource('/resources/connected.gif')))
+			if (!headless) {
+				cloudLight.setIcon(new ImageIcon(getClass().getResource('/resources/connected.gif')))
+			}
 			if (peer.node.getLeafSet().getUniqueCount() == 1) {
 				println "initBoot"
 				initBoot()
