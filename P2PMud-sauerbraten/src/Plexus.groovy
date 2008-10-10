@@ -120,6 +120,7 @@ public class Plexus {
 	def mappingFields = [:]
 	def pastryFields = [:]
 	def cachedPlayerLocations = [:]
+	def myCachedLocation
 	
 	def static sauerExec
 	def static TIME_STAMP = new SimpleDateFormat("yyyyMMdd-HHmmsszzz")
@@ -637,10 +638,20 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			def commandLine = sauerExec.replaceFirst(/\-l[^\s]+/, '')  // remove old -llimbo if present
 
 			commandLine += ' -l' + buildMapPath()
-			commandLine += " -x\"alias sauerPort $LaunchPlexus.props.sauer_port;alias sauerHost 127.0.0.1\""
+			commandLine += " \"-xalias sauerPort $LaunchPlexus.props.sauer_port;alias sauerHost 127.0.0.1\""
+			def t = new StreamTokenizer(new StringReader(commandLine))
+			def args = []
+			t.resetSyntax()
+			t.wordChars(0, 127)
+			t.whitespaceChars(0, (int)' ')
+			t.quoteChar((int)'"')
+			t.quoteChar((int)"'")
+			while (t.nextToken() != StreamTokenizer.TT_EOF) {
+				args << t.sval
+			}
 			env = env as String[]
-			println ("Going to exec $commandLine from $sauerDir with env: $env")
-			Runtime.getRuntime().exec(commandLine,  env, sauerDir)
+			println ("Going to exec $commandLine from $sauerDir with env: $env, args: $args")
+			Runtime.getRuntime().exec(args as String[],  env, sauerDir)
 			}
 		}
 	}
@@ -1664,6 +1675,7 @@ println "COSTUME SELS: $triples"
 							mapIsPrivate = map.privateMap
 							updateMyPlayerInfo()
 							selectMap()
+							anycast(["sendPlayerLocations"])
 						}
 					},
 					receiveException: {exception -> err("Couldn't subscribe to topic: ", exception)}))
@@ -1683,6 +1695,8 @@ println "COSTUME SELS: $triples"
 				updateMyPlayerInfo()
 			}
 		}
+	}
+	def receivePlayerLocation(id, update) {
 	}
 	def pushMap(privateMap, String... nameArgs) {
 println "pushMap: [$nameArgs]"

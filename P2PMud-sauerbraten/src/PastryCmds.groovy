@@ -8,13 +8,18 @@ public class PastryCmds extends Cmds {
 		update(name, *args)
 	}
 	def update(name, String... args) {
-		def id = main.ids[main.pastryCmd.from.toStringFull()] 
+		playerUpdate(main.pastryCmd.from.toStringFull(), name, args)
+	}
+	def playerUpdate(pid, name, args) {
+		def id = main.ids[pid]
+
 		if (!id ) {		
-			id = main.newPlayer(name)
+			id = main.newPlayer(name, pid)
 		}
 		main.sauer("${id}.update", "tc_setinfo $id " + args.join(' '))
 		main.dumpCommands()
-		main.playerUpdate(main.pastryCmd.from.toStringFull(), name, args)
+		main.playerUpdate(pid, name, args)
+		id
 	}
 	def chat(name, String... args) {
 		def peer = main.pastryCmd.from.toStringFull()
@@ -64,5 +69,22 @@ public class PastryCmds extends Cmds {
 		main.addCostume(dir, name, thumb)
 	}
 	def sendCostumes() {
+	}
+	def sendPlayerLocations() {
+		def cmd = new P2PMudCommand(main.peer.nodeId, "receivePlayerLocations")
+		def locs = main.cachedPlayerLocations.clone()
+
+		locs[main.peerId] = [main.name, main.myCachedLocation]
+		cmd.payload = locs
+		main.peer.sendCmds(main.pastryCmd.from, cmd)
+	}
+	def receivePlayerLocations() {
+		println "RECEIVED PLAYER LOCATIONS: $main.pastryCmd.payload"
+		main.pastryCmd.payload.each {
+			if (it.key != main.peerId && !main.cachedPlayerLocations[it.key]) {
+				def id = playerUpdate(it.key, it.value[0], it.value[1])
+				println "PLACING PLAYER: $it.key ($id, ${it.value[0]}) at ${it.value[1]}"
+			}
+		}
 	}
 }
