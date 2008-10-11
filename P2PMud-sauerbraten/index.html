@@ -801,8 +801,8 @@ Part of this is putting in hooks for moderated play, for instance, chain of comm
 <pre>relaying (if using Sauerbraten's server)
 *to prevent, set curmsg = p.length(), otherwise it multicasts the current message</pre>
 </div>
-<div title="Reloaded" modifier="BillBurdick" created="200806171638" modified="200807281538" changecount="18">
-<pre>P2PMud traces its roots back to the murky depths history in 1988 when Roy Riggs first wrote a tiny multi-user dungeon in C, one of the earliest ~MMORPGs that ran over the Internet (while, maybe an MORPG, anyway.)  It took only a matter of days, or perhaps even hours, for Bill Burdick to join Roy in this glorious endevour and together they formed the sinister TEAM CTHULHU!
+<div title="Reloaded" modifier="BillBurdick" created="200806171638" modified="200810101524" changecount="20">
+<pre>~P2PMud traces its roots back to the murky depths of history.  In 1988, Roy Riggs first wrote a tiny multi-user dungeon in C, one of the earliest ~MMORPGs that ran over the Internet (while, maybe an MORPG, anyway.)  It took only a matter of days, or perhaps even hours, for Bill Burdick to join Roy in this glorious endevour and together they formed the sinister TEAM CTHULHU!
 
 Since that time, TEAM CTHULHU's MUD has metamophosed many times, each time shedding its carapace to reveal something bizarrely different from its predecessor.
 
@@ -821,11 +821,14 @@ You can even see a reference to TEAM CTHULHU in the CREDITS file of [[LPMud|http
 #Fall 2005, we commission Steven Missal to create Lovecraftian art
 #Spring 2008, we switch to Sauerbraten, Groovy, and Pastry (on top of Java)</pre>
 </div>
-<div title="RoadMap" modifier="BillBurdick" created="200806191122" modified="200810100732" changecount="245">
+<div title="RoadMap" modifier="BillBurdick" created="200806191122" modified="200810110635" changecount="251">
 <pre>!Mondo Yith
-*limbo name not showing up
+*Update costume list as thumbs arrive (don't wait for all of them before updating)
 *Handle error loading a map from a peer that drops out
 *camera rotation problem on Linux
+*fix case for md2 import
+*constumes getting reset to null (mr fixit) -- seems connected to costume uploading
+*when costume becomes null, sometimes it doesn't change it
 !Next
 *if this is a new plexus version, offer to toast the cache
 *Pastry reconnect business (multiple root peers?)
@@ -869,6 +872,7 @@ You can even see a reference to TEAM CTHULHU in the CREDITS file of [[LPMud|http
 **players can move around inside, fire grenades, etc.
 *groovy libraries in the cloud
 !Done
+*DONE limbo name not showing up
 *DONE taunt bug
 *DONE Map name sometimes shows up as &quot;none&quot; when you are on a map
 *DONE Blank costume no longer switches to Mr Fixit
