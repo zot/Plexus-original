@@ -1692,7 +1692,7 @@ println "COSTUME SELS: $triples"
 				cachedPlayerLocations = [:]
 				unsubscribe(mapTopic)
 				mapTopic = null
-				sauer('limbo', "map plexus/dist/limbo/map")
+				sauer('limbo', "tc_loadmsg Limbo; map plexus/dist/limbo/map")
 				dumpCommands()
 				updateMyPlayerInfo()
 			}
