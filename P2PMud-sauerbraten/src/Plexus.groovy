@@ -501,17 +501,13 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 									label(text: "Follow player: ")
 									mapPlayersCombo = comboBox(editable: false, actionPerformed: {
 										exec {
-											if (mapPlayersCombo && mapPlayersCombo.selectedIndex > -1) {
-												def sel = mapPlayersCombo.selectedIndex
-
-												followingPlayer = sel ? null : mapPlayers[sel - 1]
+											if (mapPlayersCombo && mapPlayersCombo.selectedIndex > 0) {
+												followingPlayer = mapPlayers[mapPlayersCombo.selectedIndex - 1]
 			println "NOW FOLLOWING: ${followingPlayer?.name}"
-												if (followingPlayer?.id) {
-													def array = cachedPlayerLocations[followingPlayer.id]
-													if (array) {
-														 def name = array[0], update = array[1]
-														 playerUpdate(followingPlayer.id, name, update)
-													}
+												def array = cachedPlayerLocations[followingPlayer.id]
+												if (array) {
+													 def name = array[0], update = array[1]
+													 playerUpdate(followingPlayer.id, name, update)
 												}
 											}
 										}
@@ -881,7 +877,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		def playerInfo = ""
 		def who = getPlayer(peerId)
 		def costume = who && who.costume ? who.costume : "mrfixit"
-		playerInfo = "playerinfo p0 \"$who.guild\" $costume"
+		playerInfo = "playerinfo p0 \"${who?.guild}\" $costume"
 		println "pi $playerInfo"
 		return playerInfo
 	}

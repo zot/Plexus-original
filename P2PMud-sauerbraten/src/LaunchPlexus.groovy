@@ -91,8 +91,10 @@ public class LaunchPlexus {
 			  }
 			} catch ( IOException ex ) {
 			  // some IO Exception occured during communication with device
+				ex.printStackTrace()
 			} catch( UPNPResponseException respEx ) {
 			  // oops the IGD did not like something !!
+				respEx.printStackTrace()
 			}
 		}
 	}
