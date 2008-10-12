@@ -430,6 +430,10 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 					peer.destroy()
 				}
 				Thread.sleep(1000)
+				if (LaunchPlexus.igd) {
+					println "cleaning up UPNP mappings"
+					LaunchPlexus.cleanMappings()
+				}
 				println "exiting"
 				System.exit(0)
 			}

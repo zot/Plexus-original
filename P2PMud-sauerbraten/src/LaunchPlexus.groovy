@@ -21,6 +21,7 @@ public class LaunchPlexus {
 	def static runCount
 	def static poked = [] as Set
 	def static igd
+	def static portMappings = []
 
 	public static void main(String[] args) {
 		try {
@@ -78,19 +79,21 @@ public class LaunchPlexus {
 			    // let's get the first device found
 			    igd = IGDs[0];
 			    System.out.println( "Found device " + igd.getIGDRootDevice().getModelName() );
-			    cleanMappings(igd)
+//			    cleanAllMappings(igd)
 			    // now let's open the port
 			    String localHostIP = InetAddress.getLocalHost().getHostAddress();
 			    // we assume that localHostIP is something else than 127.0.0.1
 			    def mapped = igd.addPortMapping( "Plexus", null, port, port, localHostIP, 0, "TCP" );
 			    if ( mapped ) {
 					System.out.println( "TCP Port $port mapped to " + localHostIP );
+					portMappings << [port: port, protocol: "TCP"]
 			    } else {
 					System.out.println( "COULD NOT MAP TCP Port $port to " + localHostIP );
 			    }
 			    mapped = igd.addPortMapping( "Plexus", null, port, port, localHostIP, 0, "UDP" );
 			    if ( mapped ) {
 					System.out.println( "UDP Port $port mapped to " + localHostIP );
+					portMappings << [port: port, protocol: "UDP"]
 			    } else {
 					System.out.println( "COULD NOT MAP UDP Port $port to " + localHostIP );
 			    }
@@ -106,7 +109,15 @@ public class LaunchPlexus {
 			}
 		}
 	}
-	public static cleanMappings(igd) {
+	public static cleanMappings() {
+		if (igd) {
+			portMappings.each {
+				println "removing mapping: $it.port [$it.protocol]"
+				igd.deletePortMapping(null, it.port, it.protocol)
+			}
+		}
+	}
+	public static cleanAllMappings(igd) {
 		try {
 			def count
 			def mappings = []
