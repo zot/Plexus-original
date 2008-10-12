@@ -79,7 +79,7 @@ public class LaunchPlexus {
 			    // let's get the first device found
 			    igd = IGDs[0];
 			    System.out.println( "Found device " + igd.getIGDRootDevice().getModelName() );
-//			    cleanAllMappings(igd)
+//			    cleanAllMappings()
 			    // now let's open the port
 			    String localHostIP = InetAddress.getLocalHost().getHostAddress();
 			    // we assume that localHostIP is something else than 127.0.0.1
@@ -112,12 +112,21 @@ public class LaunchPlexus {
 	public static cleanMappings() {
 		if (igd) {
 			portMappings.each {
-				println "removing mapping: $it.port [$it.protocol]"
-				igd.deletePortMapping(null, it.port, it.protocol)
+				println "attempting to remove mapping: $it.port [$it.protocol]..."
+				try {
+					if (igd.deletePortMapping(null, it.port, it.protocol)) {
+						println "Succeeded"
+					} else {
+						println "Couldn't remove mapping"
+					}
+				} catch (Exception ex) {
+					pritnln "Exception while attempting to remove mapping..."
+					ex.printStackTrace()
+				}
 			}
 		}
 	}
-	public static cleanAllMappings(igd) {
+	public static cleanAllMappings() {
 		try {
 			def count
 			def mappings = []
