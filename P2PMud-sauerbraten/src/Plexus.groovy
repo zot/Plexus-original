@@ -120,6 +120,7 @@ public class Plexus {
 	def mappingFields = [:]
 	def pastryFields = [:]
 	def cachedPlayerLocations = [:]
+	def cachedLocationDoc
 	def myCachedLocation
 	
 	def static sauerExec
@@ -582,6 +583,12 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 								mappingFields.names = textPane(editable: false, editorKit: new NoWrapEditorKit())
 							}
 						}
+						panel(name: 'Cached Locations', layout: new MigLayout('fill')) {
+							button(text: 'Update', actionPerformed: {exec {updateCachedLocationDoc()}}, constraints: 'wrap')
+							scrollPane(constraints: 'grow,span,wrap', border: null) {
+								cachedLocationDoc = textPane(editable: false, editorKit: new NoWrapEditorKit())
+							}
+						}
 						panel(name: 'Pastry', layout: new MigLayout('fill')) {
 							button(text: 'Update', actionPerformed: {exec {updatePastryDiag()}}, constraints: 'wrap')
 							scrollPane(constraints: 'grow,span,wrap', border: null) {
@@ -605,6 +612,15 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 				}
 			}
 		}
+	}
+	def updateCachedLocationDoc() {
+		def buf = "<html>" << "<body><table>"
+
+		cachedPlayerLocations.each {
+			buf << "<tr><td>$it.key</td><td>${it.value[0]}</td><td><div>${it.value[1].join(' ')}</div></td></tr>"
+		}
+		buf << "</table></body></html>"
+		cachedLocationDoc.text = buf.toString()
 	}
 	def chooseFile(message, field, filterName, filterRegexp) {
 		def ch = new JFileChooser();
