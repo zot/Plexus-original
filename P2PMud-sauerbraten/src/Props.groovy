@@ -9,7 +9,7 @@ class Props {
 		name: 'bubba-' + System.currentTimeMillis(),
 		guild: '',
 		pastry_port_start: '3993',
-		pastry_port_end: '4003',
+		pastry_port_end: '3999',
 		pastry_boot_host: 'plubble.com',
 		pastry_boot_port: '9090',
 		external_ip: '',

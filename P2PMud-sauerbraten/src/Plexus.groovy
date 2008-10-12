@@ -1607,7 +1607,7 @@ println "COSTUME SELS: $triples"
 		dumpCommands()
 	}
 	def useCostume(name, dirId) {
-		print "name $name  dir $dirId"
+		println "name $name  dir $dirId"
 		if (!name) {
 			if (costume != null) {
 				costume = null
