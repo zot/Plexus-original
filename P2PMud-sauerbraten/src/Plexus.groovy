@@ -500,17 +500,18 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 									}, constraints: 'wrap')
 									label(text: "Follow player: ")
 									mapPlayersCombo = comboBox(editable: false, actionPerformed: {
-										if (mapPlayersCombo && mapPlayersCombo.selectedIndex > -1) {
-											followingPlayer = mapPlayersCombo.selectedIndex == 0 ? null : mapPlayers[mapPlayersCombo.selectedIndex - 1]
+										exec {
+											if (mapPlayersCombo && mapPlayersCombo.selectedIndex > -1) {
+												def sel = mapPlayersCombo.selectedIndex
+
+												followingPlayer = sel ? null : mapPlayers[sel - 1]
 			println "NOW FOLLOWING: ${followingPlayer?.name}"
-											if (followingPlayer?.id)
-											{
-												def array = cachedPlayerLocations[followingPlayer.id]
-												if (array) {
-													 def name = array[0], update = array[1]
-													 exec {
+												if (followingPlayer?.id) {
+													def array = cachedPlayerLocations[followingPlayer.id]
+													if (array) {
+														 def name = array[0], update = array[1]
 														 playerUpdate(followingPlayer.id, name, update)
-													 }
+													}
 												}
 											}
 										}
