@@ -12,11 +12,12 @@ public class PastryCmds extends Cmds {
 	}
 	def playerUpdate(pid, name, args) {
 		def id = main.ids[pid]
+		def updateStr = "tc_setinfo $id ${args.join(' ')}"
 
 		if (!id ) {		
 			id = main.newPlayer(name, pid)
 		}
-		main.sauer("${id}.update", "tc_setinfo $id " + args.join(' '))
+		main.sauer("${id}.update", updateStr)
 		main.dumpCommands()
 		main.playerUpdate(pid, name, args)
 		id

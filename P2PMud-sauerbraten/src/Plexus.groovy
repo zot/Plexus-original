@@ -1162,7 +1162,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		cachedPlayerLocations.each {
 			def pname = it.value[0], update = it.value[1]
 			def id = newPlayer(pname, it.key)
-			sauer("${id}.update", "tc_setinfo $id $update")			
+			sauer("${id}.update", "tc_setinfo $id ${update.join(' ')}")			
 			dumpCommands()
 		}
 	
@@ -1461,7 +1461,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 		dumpCommands()
 	}
 	def loadCostume(who) {
-		if (who.costume) {
+		if (who?.costume) {
 println "loading costume: $who.costume"
 			def costume = getCostume(who.costume)
 			def costumeFile = new File(plexusDir, "models/$who.costume")
@@ -1558,7 +1558,6 @@ println "STORED COSTUME, adding"
 		}
 	}
 	def showTumes(tumes) {
-		println "CREATING EMPTY"
 		def trips = []
 
 		tumes.sort {a,b -> a.name.compareTo(b.name)}
