@@ -20,6 +20,7 @@ public class LaunchPlexus {
 	def static props
 	def static runCount
 	def static poked = [] as Set
+	def static igd
 
 	public static void main(String[] args) {
 		try {
@@ -75,19 +76,19 @@ public class LaunchPlexus {
 			  def IGDs = InternetGatewayDevice.getDevices( discoveryTimeout );
 			  if ( IGDs != null ) {
 			    // let's get the first device found
-			    def testIGD = IGDs[0];
-			    System.out.println( "Found device " + testIGD.getIGDRootDevice().getModelName() );
-			    cleanMappings(testIGD)
+			    igd = IGDs[0];
+			    System.out.println( "Found device " + igd.getIGDRootDevice().getModelName() );
+			    cleanMappings(igd)
 			    // now let's open the port
 			    String localHostIP = InetAddress.getLocalHost().getHostAddress();
 			    // we assume that localHostIP is something else than 127.0.0.1
-			    def mapped = testIGD.addPortMapping( "Plexus", null, port, port, localHostIP, 0, "TCP" );
+			    def mapped = igd.addPortMapping( "Plexus", null, port, port, localHostIP, 0, "TCP" );
 			    if ( mapped ) {
 					System.out.println( "TCP Port $port mapped to " + localHostIP );
 			    } else {
 					System.out.println( "COULD NOT MAP TCP Port $port to " + localHostIP );
 			    }
-			    mapped = testIGD.addPortMapping( "Plexus", null, port, port, localHostIP, 0, "UDP" );
+			    mapped = igd.addPortMapping( "Plexus", null, port, port, localHostIP, 0, "UDP" );
 			    if ( mapped ) {
 					System.out.println( "UDP Port $port mapped to " + localHostIP );
 			    } else {
@@ -106,28 +107,34 @@ public class LaunchPlexus {
 		}
 	}
 	public static cleanMappings(igd) {
-//		int discoveryTimeout = 5000; // 5 secs to receive a response from devices
 		try {
-//			def IGDs = InternetGatewayDevice.getDevices( discoveryTimeout );
-//			if ( IGDs != null ) {
-//				def igd = IGDs[0];
-				def count = igd.getNatMappingsCount()
-				def mappings = []
+			def count
+			def mappings = []
 
-				for (def i = count; i-- > 0; ) {
+			try {
+				count = igd.getNatMappingsCount()
+			} catch (UPNPResponseException ex) {
+				count = 200
+			}
+			println "Checking the first $count entries"
+			for (def i = 0; i < count; i++) {
+				try {
 					def entry = igd.getGenericPortMappingEntry(i)
 
 					if (entry.getOutActionArgumentValue('NewPortMappingDescription') == 'Plexus') {
 						mappings << entry
 					}
+				} catch (UPNPResponseException ex) {}
+				if (i > 0 && i % 50 == 0) {
+					println ''
 				}
-				mappings.each {
-					println "deleting old mapping: ${it.getOutActionArgumentValue('NewExternalPort')}"
-					igd.deletePortMapping(null, Integer.parseInt(it.getOutActionArgumentValue('NewExternalPort')), it.getOutActionArgumentValue('NewProtocol'))
-				}
-//			} else {
-//				System.out.println("Couldn't find UPNP capable device");
-//			}
+				print '.'
+			}
+			println ''
+			mappings.each {
+				println "deleting old mapping: ${it.getOutActionArgumentValue('NewExternalPort')}"
+				igd.deletePortMapping(null, Integer.parseInt(it.getOutActionArgumentValue('NewExternalPort')), it.getOutActionArgumentValue('NewProtocol'))
+			}
 		} catch ( IOException ex ) {
 		  // some IO Exception occured during communication with device
 			ex.printStackTrace()
