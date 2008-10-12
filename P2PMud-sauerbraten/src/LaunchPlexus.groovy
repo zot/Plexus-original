@@ -74,20 +74,27 @@ public class LaunchPlexus {
 			try {
 			  def IGDs = InternetGatewayDevice.getDevices( discoveryTimeout );
 			  if ( IGDs != null ) {
-			    // let's the the first device found
+			    // let's get the first device found
 			    def testIGD = IGDs[0];
 			    System.out.println( "Found device " + testIGD.getIGDRootDevice().getModelName() );
+			    cleanMappings(testIGD)
 			    // now let's open the port
 			    String localHostIP = InetAddress.getLocalHost().getHostAddress();
 			    // we assume that localHostIP is something else than 127.0.0.1
 			    def mapped = testIGD.addPortMapping( "Plexus", null, port, port, localHostIP, 0, "TCP" );
 			    if ( mapped ) {
-			      System.out.println( "TCP Port $port mapped to " + localHostIP );
+					System.out.println( "TCP Port $port mapped to " + localHostIP );
+			    } else {
+					System.out.println( "COULD NOT MAP TCP Port $port to " + localHostIP );
 			    }
 			    mapped = testIGD.addPortMapping( "Plexus", null, port, port, localHostIP, 0, "UDP" );
 			    if ( mapped ) {
-			      System.out.println( "UDP Port $port mapped to " + localHostIP );
+					System.out.println( "UDP Port $port mapped to " + localHostIP );
+			    } else {
+					System.out.println( "COULD NOT MAP UDP Port $port to " + localHostIP );
 			    }
+			  } else {
+				  System.out.println("Couldn't find UPNP capable device");
 			  }
 			} catch ( IOException ex ) {
 			  // some IO Exception occured during communication with device
@@ -96,6 +103,37 @@ public class LaunchPlexus {
 			  // oops the IGD did not like something !!
 				respEx.printStackTrace()
 			}
+		}
+	}
+	public static cleanMappings(igd) {
+//		int discoveryTimeout = 5000; // 5 secs to receive a response from devices
+		try {
+//			def IGDs = InternetGatewayDevice.getDevices( discoveryTimeout );
+//			if ( IGDs != null ) {
+//				def igd = IGDs[0];
+				def count = igd.getNatMappingsCount()
+				def mappings = []
+
+				for (def i = count; i-- > 0; ) {
+					def entry = igd.getGenericPortMappingEntry(i)
+
+					if (entry.getOutActionArgumentValue('NewPortMappingDescription') == 'Plexus') {
+						mappings << entry
+					}
+				}
+				mappings.each {
+					println "deleting old mapping: ${it.getOutActionArgumentValue('NewExternalPort')}"
+					igd.deletePortMapping(null, Integer.parseInt(it.getOutActionArgumentValue('NewExternalPort')), it.getOutActionArgumentValue('NewProtocol'))
+				}
+//			} else {
+//				System.out.println("Couldn't find UPNP capable device");
+//			}
+		} catch ( IOException ex ) {
+		  // some IO Exception occured during communication with device
+			ex.printStackTrace()
+		} catch( UPNPResponseException respEx ) {
+		  // oops the IGD did not like something !!
+			respEx.printStackTrace()
 		}
 	}
 }
