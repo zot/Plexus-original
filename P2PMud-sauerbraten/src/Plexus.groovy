@@ -122,6 +122,8 @@ public class Plexus {
 	def cachedPlayerLocations = [:]
 	def cachedLocationDoc
 	def myCachedLocation
+	def costumeUpdating = false
+	def costumeUpdateNeeded = false
 	
 	def static sauerExec
 	def static TIME_STAMP = new SimpleDateFormat("yyyyMMdd-HHmmsszzz")
@@ -1233,6 +1235,7 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			}
 			ids.remove(peerId)
 			names.remove(sauerId)
+			cachedPlayerLocations.remove(peerId)
 			if (swing) {
 				updateMapGui()
 				updateMappingDiag()
@@ -1533,10 +1536,17 @@ println "STORED COSTUME, adding"
 		}
 	}
 	def updateCostumeGui() {
+		if (costumeUpdating) {
+println "\n\n@@@\n@@@ QUEUING COSTUME UPDATE"
+			costumeUpdateNeeded = true
+			return
+		}
+		costumeUpdateNeeded = false
 		if (!swing) return
 		def costumesDir = new File(plexusDir, 'models')
 		def tumes = []
 		def needed = []
+		def present = [] as Set
 
 		cloudProperties.each('costume/(.*)') {key, value, match ->
 			def tume = getCostume(match.group(1))
@@ -1544,30 +1554,42 @@ println "STORED COSTUME, adding"
 			tumes.add(tume)
 			if (tume.thumb && !new File(costumesDir, "thumbs/${tume.id}.$tume.type").exists()) {
 				needed.add(tume)
+			} else {
+				present.add(tume)
 			}
 		}
-		println "Tumes: $tumes, Needed: $needed"
 		if (needed) {
-			serialContinuations(needed, receiveResult: {files ->
-				def i = 0
-	
-				for (i = 0; i < needed.size(); i++) {
-					if (files[i] instanceof Exception) {
-						System.err.println "Error fetching thumb for costume: ${needed[i].name}..."
-						stackTrace(files[i])
-					} else {
-						def thumbFile = new File(costumesDir, "thumbs/${needed[i].id}.${needed[i].type}")
+println "Tumes: $tumes, Needed: $needed"
+			def i = 0;
 
-						thumbFile.getParentFile().mkdirs()
-						copyFile(files[i][0], thumbFile)
-					}
+			costumeUpdating = true
+println "\n\n@@@\n@@@ UPDATE COSTUME GUI"
+			serialContinuations(needed, receiveResult: {files ->
+				costumeUpdating = false
+				if (costumeUpdateNeeded) {
+println "\n\n@@@\n@@@ CHECKING QUEUED COSTUME UPDATE"
+					updateCostumeGui()
 				}
-				showTumes(tumes)
 			}, receiveException: {ex ->
 				System.err.println("Error fetching thumbs for costumes: $ex")
 				stackTrace(ex)
 			}) {tume, chain ->
-				fetchFile(chain, Id.build(tume.thumb))
+				//cut out if we have been superceded
+				fetchFile(continuation(receiveResult: {file ->
+println "\n\n###\n### SERIAL COSTUME DOWNLOWD: $i"
+					def thumbFile = new File(costumesDir, "thumbs/${tume.id}.${tume.type}")
+
+					thumbFile.getParentFile().mkdirs()
+					copyFile(file[0], thumbFile)
+					present.add(tume)
+					showTumes(tumes.findAll {present.contains(it)})
+					i++
+					chain.receiveResult(file)
+				},
+				receiveException: {ex ->
+					System.err.println "Error fetching thumb for costume: ${needed[i].name}..."
+					stackTrace(files[i])
+				}), Id.build(tume.thumb))
 			}
 		} else {
 			showTumes(tumes)
@@ -1580,11 +1602,14 @@ println "STORED COSTUME, adding"
 		if (tumes != this.tumes) {
 			this.tumes = tumes
 			swing.doLater {
+				def sel = tumesCombo.selectedItem
+
 				tumesCombo.removeAllItems()
 				tumesCombo.addItem('')
 				tumes.each {
 					tumesCombo.addItem(it.name)
 				}
+				tumesCombo.selectedItem = sel
 			}
 		}
 		tumes.each {c-> trips.add([c.name, c.thumb ? "${c.id}.$c.type" : '', c.id])}
@@ -1603,7 +1628,7 @@ println "COSTUME SELS: $triples"
 		guitext += 'alias showcostume [ guibar; guiimage (concatword "packages/plexus/models/thumbs/" (get $costumenames [[@@guirollovername]])) $guirolloveraction 4 1 "packages/plexus/dist/tc_logo.jpg"];'
 		guitext += "alias costumenames ["
 		for (trip in triples) {
-			guitext += " [${trip[0]}] ${trip[1]}"
+			guitext += " [${trip[0]}] ${trip[1] ?: '[]'}"
 		}
 		guitext += " ];"
 		guitext += 'newgui Costumes [ \n guilist [ \n   guilist [ \n'
