@@ -451,7 +451,7 @@ public class Prep {
 		successDialog.frame = swing.dialog(title: 'Success!', modal: true, pack: true) {
 			panel(layout: new MigLayout('fill,ins 0, gap 0')) {
 				panel(border: titledBorder(title: 'Your Settings Appear Correct'), constraints: 'growx, spanx, wrap', layout: new MigLayout('fill')) {
-					label(text: 'Plubble has successfuly connected to your machine.', font: new FontUIResource("SansSerif", Font.BOLD, 12), constraints: 'growx, spanx, wrap')
+					label(text: 'Plubble has successfully connected to your machine.', font: new FontUIResource("SansSerif", Font.BOLD, 12), constraints: 'growx, spanx, wrap')
 				}
 				panel(constraints: 'growx')
 				button(text: "OK", actionPerformed: {successDialog.frame.visible = false})
