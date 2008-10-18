@@ -179,12 +179,13 @@ public class Prep {
 	def static connectivityReport(showOk = false, reportSuccess = false) {
 		def con = testConnectivity(true, false)
 		def result = true
+		def bad = con.status.toLowerCase() != 'success' || con.address != props.external_ip
 
-		if (con.status.toLowerCase() != 'success' || con.address != props.external_ip) {
+		if (bad || LaunchPlexus.privateIp) {
 			warningDialog.plubbleIp.text = con.address
 			warningDialog.externalPort.text = props.external_port
-			warningDialog.okButton.visible = showOk
-			warningDialog.continueButtons.visible = !showOk
+			warningDialog.okButton.visible = showOk || !bad
+			warningDialog.continueButtons.visible = !showOk && bad
 			if (con.address != props.external_ip) {
 				warningDialog.externalIp.text = props.external_ip
 				warningDialog.reassignIpButton.visible = true
@@ -193,6 +194,10 @@ public class Prep {
 				println "going to remove panel"
 				warningDialog.ipBox.visible = false
 				warningDialog.reassignIpButton.visible = false
+			}
+			if (LaunchPlexus.privateIp) {
+				warningDialog.routerIp.text = LaunchPlexus.gatewayIp
+				warningDialog.privateIp.visible = true
 			}
 			warningDialog.frame.pack()
 			warningDialog.frame.visible = true
@@ -427,6 +432,11 @@ public class Prep {
 					label(text: 'Your external address is not consistent with your connection to Plubble', font: new FontUIResource("SansSerif", Font.BOLD, 12), constraints: 'growx, spanx, wrap')
 					label(text: 'Profile External IP: ')
 					warningDialog.externalIp = label(constraints: 'pushx, wrap')
+				}
+				warningDialog.privateIp = panel(border: titledBorder(title: 'Router has private IP address'), constraints: 'growx, spanx, wrap', layout: new MigLayout('fill')) {
+					label(text: 'Your router appears to be an internal router', font: new FontUIResource("SansSerif", Font.BOLD, 12), constraints: 'growx, spanx, wrap')
+					label(text: 'Router\'s IP address: ')
+					warningDialog.routerIp = label(constraints: 'pushx, wrap')
 				}
 				panel(layout: new MigLayout('fillx, ins 0, hidemode 3'), constraints: 'growx,spanx') {
 					warningDialog.continueButtons = panel(constraints: 'growx', layout: new MigLayout('fillx, ins 0, hidemode 3')) {

@@ -21,6 +21,8 @@ public class LaunchPlexus {
 	def static runCount
 	def static poked = [] as Set
 	def static igd
+	def static gatewayIp
+	def static privateIp
 	def static portMappings = []
 
 	public static void main(String[] args) {
@@ -69,16 +71,24 @@ public class LaunchPlexus {
 			}
 		}
 	}
+	public static getIgd() {
+		if (!igd) {
+			def IGDs = InternetGatewayDevice.getDevices(5000);
+			if ( IGDs != null ) {
+				// let's get the first device found
+				igd = IGDs[0];
+			    System.out.println( "Found device " + igd.getIGDRootDevice().getModelName() );
+			}
+		}
+		igd
+	}
 	public static pokeHole(String service, int port) {
 		if (!(port in poked)) {
 			poked.add(port)
 			int discoveryTimeout = 5000; // 5 secs to receive a response from devices
 			try {
-			  def IGDs = InternetGatewayDevice.getDevices( discoveryTimeout );
-			  if ( IGDs != null ) {
-			    // let's get the first device found
-			    igd = IGDs[0];
-			    System.out.println( "Found device " + igd.getIGDRootDevice().getModelName() );
+			  if (getIgd()) {
+				println "externalIp: ${getGatewayIp()}"
 //			    cleanAllMappings()
 			    // now let's open the port
 			    String localHostIP = InetAddress.getLocalHost().getHostAddress();
@@ -162,5 +172,19 @@ public class LaunchPlexus {
 		  // oops the IGD did not like something !!
 			respEx.printStackTrace()
 		}
+	}
+	/**
+	 * reserved ranges:
+	 * 10.x.x.x
+	 * 169.x.x.x
+	 * 172.16.x.x - 172.31.x.x
+	 * 192.168.x.x
+	 */
+	public static getGatewayIp() {
+		if (!gatewayIp) {
+			gatewayIp = getIgd().externalIPAddress
+			privateIp = gatewayIp ==~ /((10|169)|172\.(1[6-9]|2.|30|31)|192.168)\..*/
+		}
+		gatewayIp
 	}
 }
