@@ -155,7 +155,8 @@ public class Prep {
 					props.name,
 					props.pastry_port,
 					props.pastry_boot_host,
-					props.pastry_boot_port,
+					props.pastry_boot_start,
+					props.pastry_boot_end,
 					'-external',
 					"$props.external_ip:$props.external_port"
 				]
@@ -388,7 +389,8 @@ public class Prep {
 										label('Pastry boot host: ')
 										panel(layout: new MigLayout('fill, ins 0'), constraints: 'wrap, growx, spanx') {
 											field('', 'pastry_boot_host', 'growx', false)
-											field('Port: ', 'pastry_boot_port', 'width 64px')
+											field('Start Port: ', 'pastry_boot_start', 'width 64px')
+											field('End Port: ', 'pastry_boot_end', 'width 64px')
 										}
 									}
 									panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Sauerbraten'), constraints: 'wrap,spanx,growx') {
