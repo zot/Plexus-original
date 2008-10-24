@@ -10,6 +10,7 @@ class Props {
 		guild: '',
 		pastry_port_start: '3993',
 		pastry_port_end: '3999',
+		pastry_port_rotate: '',
 		pastry_boot_host: 'plubble.com',
 		pastry_boot_start: '3993',
 		pastry_boot_end: '3994',
