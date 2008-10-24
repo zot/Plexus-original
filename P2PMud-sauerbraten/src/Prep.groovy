@@ -338,7 +338,7 @@ public class Prep {
 			}
 		}
 		propsWindow = config ? new JFrame(config) : new JXFrame()
-		swing.widget(propsWindow, iconImage: ImageIO.read(Prep.getResource('/tinyCthulhu.png')), title: 'PLEXUS Configuration', size: [800, 700], location: [200, 300], windowClosing: {System.exit(0)}, undecorated: true,
+		swing.widget(propsWindow, iconImage: ImageIO.read(Prep.getResource('/tinyCthulhu.png')), title: 'PLEXUS Configuration', size: [800, 700], location: [200, 300], windowClosing: {println "closing..."; die()}, windowClosed: {println "closed."}, undecorated: true,
 			mousePressed: {e ->
 				def loc = propsWindow.getLocation()
 
@@ -486,6 +486,12 @@ public class Prep {
 			com.sun.awt.AWTUtilities.setWindowOpaque(propsWindow, false)
 		}
 		propsWindow.show()
+	}
+	def static die() {
+		println "DYING, CLEANING UP..."
+		LaunchPlexus.cleanAllMappings()
+//		LaunchPlexus.cleanMappings()
+		System.exit(0)
 	}
 	def static testConnectivity(listen = true, closeSocket = true) {
 		if (conProps?.status != 'success') {
