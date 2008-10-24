@@ -1,0 +1,6 @@
+#!/bin/sh
+#if ! screen -ls|grep -q '\.TC'; then
+#	screen -S TC -d -m
+#fi
+#screen -S TC -X exec java -Dsupress_java_version_check=true -jar plexus.jar
+nohup java -Dsupress_java_version_check=true -jar plexus.jar&

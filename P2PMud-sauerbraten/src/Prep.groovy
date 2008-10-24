@@ -168,23 +168,18 @@ public class Prep {
 	}
 	def static choosePort() {
 		if (!chosenPort) {
-			def startPort = Integer.parseInt(props.pastry_port_start)
-			def endPort = Integer.parseInt(props.pastry_port_end)
-
-			chosenPort = (startPort >= endPort)? startPort : (Math.abs(new Random().nextInt()) % (endPort - startPort)) + startPort
-			if (props.pasty_port_rotate) {
-				def rot = Integer.parseInt(props.pastry_port_rotate)
-				if (rot > 0) {
-					chosenPort = rot
-					if (++props.pastry_port_rotate > props.pastry_port_end) {
-						props.pastry_port_rotate = props.pastry_port_start
-					}
-					saveProps()
-				}
+			if (!props.pastry_port_rotate) {
+				props.pastry_port_rotate = props.pastry_port_start
+			}
+			def rot = Integer.parseInt(props.pastry_port_rotate)
+			def tmp = rot
+			if (rot > 0) {
+				chosenPort = rot
+				props.pastry_port_rotate = rot + 1 > Integer.parseInt(props.pastry_port_end) ? props.pastry_port_start : (rot + 1) as String
 			}
 			props.pastry_port = chosenPort as String
 			props.external_port = chosenPort as String
-			println "using port: $props.pastry_port in range: ($startPort - $endPort)"
+			println "using port: $props.pastry_port in range: ($props.pastry_port_start - $props.pastry_port_end)"
 		}
 	}
 	def static connectivityReport(showOk = false, reportSuccess = false) {
