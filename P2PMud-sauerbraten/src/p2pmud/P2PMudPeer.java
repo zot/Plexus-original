@@ -11,6 +11,7 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -79,110 +80,127 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	private static final int STORE = 4;
 	private static final int FETCH = 5;
 	private static ArrayList<String> savedCmds = new ArrayList<String>();
-	private static String probeHost;
-	private static int probePort;
-	public static String node_interface;
 	public static boolean verboseLogging = false;
 	public static File logFile = null;
 	public static File sauerLogFile = null;
-	
+	//PARAMS
+	private static String probeHost;
+	private static int probePort;
+	public static String node_interface;
+	public static int bindport;
+	public static String boothost;
+	public static int firstBootport;
+	public static int lastBootport = -1;
+	public static InetAddress bootaddress;
+	public static String externalHost = null;
+	public static int externalPort = -1;
+	public static String nodeIdStr = null;
+	public static boolean clean = false;
+
 	public static void main(P2PMudCommandHandler handler, Runnable neighborChangeBlock, String args[]) throws Exception {
 		cmdHandler = handler;
 		neighborChange = neighborChangeBlock;
 		main(args);
 	}
 	public static void main(final String[] args) throws Exception {
-		try {
-			// the port to use locally
-			int bindport = Integer.parseInt(args[0]);
-			// build the bootaddress from the command line args
-			String host = args[1];
-			InetAddress bootaddr = null;
-
-			if (node_interface != null && node_interface != "") {
-				test.outgoingAddress = InetAddress.getByName(node_interface);
-				System.out.println("Using node_interface: " + test.outgoingAddress);
-				bootaddr = test.outgoingAddress;
-			} else {
-				faces: for (Enumeration interfaces = NetworkInterface.getNetworkInterfaces(); interfaces.hasMoreElements(); ) {
-					NetworkInterface face = (NetworkInterface) interfaces.nextElement();
+		// the port to use locally
+		bindport = Integer.parseInt(args[0]);
+		// build the bootaddress from the command line args
+		boothost = args[1];
+//		if (node_interface != null && node_interface != "") {
+//			test.outgoingAddress = InetAddress.getByName(node_interface);
+//			System.out.println("Using node_interface: " + test.outgoingAddress);
+//			bootaddress = host.equals("-") ? null : new InetSocketAddress(test.outgoingAddress,bootport);
+//		} else {
+			faces: for (Enumeration interfaces = NetworkInterface.getNetworkInterfaces(); interfaces.hasMoreElements(); ) {
+				NetworkInterface face = (NetworkInterface) interfaces.nextElement();
+				
+				for(Enumeration addrs = face.getInetAddresses(); addrs.hasMoreElements(); ) {
+					InetAddress addr = (InetAddress) addrs.nextElement();
 					
-					for(Enumeration addrs = face.getInetAddresses(); addrs.hasMoreElements(); ) {
-						InetAddress addr = (InetAddress) addrs.nextElement();
-						
-						if (addr.isAnyLocalAddress()) {
-							break;
-						} else if (addr instanceof Inet4Address && !addr.isLoopbackAddress()) {
-							test.outgoingAddress = addr;
-							break faces;
-						}
+					if (addr.isAnyLocalAddress()) {
+						break;
+					} else if (addr instanceof Inet4Address && !addr.isLoopbackAddress()) {
+						test.outgoingAddress = addr;
+						break faces;
 					}
 				}
-				System.out.println("Using interface: " + test.outgoingAddress);
-				bootaddr = host.equals("-") ? test.outgoingAddress : InetAddress.getByName(host);
 			}
-			if (bootaddr == null) {
-				throw new RuntimeException("Could not find interface");
+			System.out.println("Using interface: " + test.outgoingAddress);
+			bootaddress = boothost.equals("-") ? null : InetAddress.getByName(boothost);
+//		}
+		firstBootport = Integer.parseInt(args[2]);
+		lastBootport = Integer.parseInt(args[3]);
+		for (int i = 3; i < args.length; i++) {
+			if (args[i].equalsIgnoreCase("-clean") && System.getProperty("past.storage") != null) {
+				clean = true;
+			} else if (args[i].equalsIgnoreCase("-nodeid")) {
+				nodeIdStr = args[++i];
+			} else if (args[i].equalsIgnoreCase("-external")) {
+				int col = args[++i].indexOf(':');
+
+				externalHost = args[i].substring(0, col);
+				externalPort = Integer.parseInt(args[i].substring(col + 1));
+			} else {
+				savedCmds.add(args[i]);
 			}
-			int bootport = Integer.parseInt(args[2]);
-			InetSocketAddress bootaddress = host.equals("-") ? null : new InetSocketAddress(bootaddr,bootport);
-			for (int i = 3; i < args.length; i++) {
-				if (args[i].equalsIgnoreCase("-clean") && System.getProperty("past.storage") != null) {
-					File storage = new File(System.getProperty("past.storage"));
+		}
+		start();
+	}
+	public static void start() throws Exception {
+		if (clean) {
+			File storage = new File(System.getProperty("past.storage"));
 
-					if (storage.exists()) {
-						System.out.println("CLEANING STORAGE");
-						Tools.deleteAll(storage);
-					}
-				} else if (args[i].equalsIgnoreCase("-nodeid")) {
-					nodeIdString = args[++i];
-				} else if (args[i].equalsIgnoreCase("-external")) {
-					int col = args[++i].indexOf(':');
-
-					probeHost = args[i].substring(0, col);
-					probePort = Integer.parseInt(args[i].substring(col + 1));
-				} else {
-					savedCmds.add(args[i]);
-				}
+			if (storage.exists()) {
+				System.out.println("CLEANING STORAGE");
+				Tools.deleteAll(storage);
 			}
-			// launch our node!
-			test.connect(args, bindport, bootaddress);
-			if (!savedCmds.isEmpty()) {
-				new Thread() {
-					public void run() {
-						try {
-							Thread.sleep(5000);
-							mode = NONE;
-							for (int i = 0; i < savedCmds.size(); i++) {
-								if (savedCmds.get(i).equalsIgnoreCase("-scribe")) {
-									mode = SCRIBE;
-								} else if (savedCmds.get(i).equalsIgnoreCase("-past")) {
-									mode = PAST;
-								} else if (savedCmds.get(i).equalsIgnoreCase("-pastget")) {
-									mode = PAST_GET;
-								} else if (savedCmds.get(i).equalsIgnoreCase("-cmd")) {
-									mode = CMD;
-								} else if (savedCmds.get(i).equalsIgnoreCase("-store")) {
-									mode = STORE;
-								} else if (savedCmds.get(i).equalsIgnoreCase("-fetch")) {
-									mode = FETCH;
-								} else if (savedCmds.get(i).charAt(0) != '-') {
-									switch (mode) {
-									case SCRIBE: {
-										final String cmd = savedCmds.get(i);
+		}
+		nodeIdString = nodeIdStr;
+		probeHost = externalHost;
+		probePort = externalPort;
+		// launch our node!
+		test.connect();
+		if (!savedCmds.isEmpty()) {
+			runTestCode();
+		}
+	}
+	private static void runTestCode() {
+		new Thread() {
+			public void run() {
+				try {
+					Thread.sleep(5000);
+					mode = NONE;
+					for (int i = 0; i < savedCmds.size(); i++) {
+						if (savedCmds.get(i).equalsIgnoreCase("-scribe")) {
+							mode = SCRIBE;
+						} else if (savedCmds.get(i).equalsIgnoreCase("-past")) {
+							mode = PAST;
+						} else if (savedCmds.get(i).equalsIgnoreCase("-pastget")) {
+							mode = PAST_GET;
+						} else if (savedCmds.get(i).equalsIgnoreCase("-cmd")) {
+							mode = CMD;
+						} else if (savedCmds.get(i).equalsIgnoreCase("-store")) {
+							mode = STORE;
+						} else if (savedCmds.get(i).equalsIgnoreCase("-fetch")) {
+							mode = FETCH;
+						} else if (savedCmds.get(i).charAt(0) != '-') {
+							switch (mode) {
+							case SCRIBE: {
+								final String cmd = savedCmds.get(i);
 
-										test.subscribe(test.buildId("updates for bubba"), new Continuation<Topic, Exception>() {
-											public void receiveResult(Topic topic) {
-												test.broadcastCmds(topic, new String[]{cmd});
-											}
-											public void receiveException(Exception exception) {
-												System.out.println("Couldn't subscribe to topic");
-												Tools.stackTrace(exception);
-											}
-										});
-										break;
+								test.subscribe(test.buildId("updates for bubba"), new Continuation<Topic, Exception>() {
+									public void receiveResult(Topic topic) {
+										test.broadcastCmds(topic, new String[]{cmd});
 									}
-									case PAST:
+									public void receiveException(Exception exception) {
+										System.out.println("Couldn't subscribe to topic");
+										Tools.stackTrace(exception);
+									}
+								});
+								break;
+							}
+							case PAST:
 //										test.wimpyStoreFile("map.ogz", new File(System.getProperty("sauerdir")), savedCmds.get(i), new Continuation<P2PMudFile, Exception>() {
 //											public void receiveResult(P2PMudFile result) {
 //												if (result != null) {
@@ -196,84 +214,80 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 //												Tools.stackTrace(exception);
 //											}
 //										});
-										break;
-									case PAST_GET:
-										File base = new File(new File(System.getProperty("sauerdir")), "/packages/p2pmud");
+								break;
+							case PAST_GET:
+								File base = new File(new File(System.getProperty("sauerdir")), "/packages/p2pmud");
 
-										Thread.sleep(5000);
-										test.wimpyGetFile(rice.pastry.Id.build(savedCmds.get(i)), base, new Closure(this) {}, new Continuation<ArrayList<?>, Exception>() {
-											public void receiveResult(ArrayList<?> result) {
-												if (((Collection)result.get(1)).isEmpty()) {
-													System.out.println("Loaded file: " + result.get(0));
-												} else {
-													System.out.println("Could not load data for file: " + result.get(0) + ", missing ids: " + result.get(1));
-												}
-											}
-											public void receiveException(Exception exception) {
-												Tools.stackTrace(exception);
-											}
-										});
-										break;
-									case CMD:
-										cmdHandler = new P2PMudCommandHandler() {
-											public void handleCommand(Id forPeer, Topic topic, P2PMudCommand cmd) {
-												System.out.println("Received " + cmd.msgs.length + " commands...");
-												for (String m : cmd.msgs) {
-													System.out.println(m);
-												}
-											}
-										};
-										test.sendCmds(new String[]{savedCmds.get(i)});
-										break;
-									case STORE: {
-										String cacheDir = savedCmds.get(i);
-										String srcDir = savedCmds.get(++i);
+								Thread.sleep(5000);
+								test.wimpyGetFile(rice.pastry.Id.build(savedCmds.get(i)), base, new Closure(this) {}, new Continuation<ArrayList<?>, Exception>() {
+									public void receiveResult(ArrayList<?> result) {
+										if (((Collection)result.get(1)).isEmpty()) {
+											System.out.println("Loaded file: " + result.get(0));
+										} else {
+											System.out.println("Could not load data for file: " + result.get(0) + ", missing ids: " + result.get(1));
+										}
+									}
+									public void receiveException(Exception exception) {
+										Tools.stackTrace(exception);
+									}
+								});
+								break;
+							case CMD:
+								cmdHandler = new P2PMudCommandHandler() {
+									public void handleCommand(Id forPeer, Topic topic, P2PMudCommand cmd) {
+										System.out.println("Received " + cmd.msgs.length + " commands...");
+										for (String m : cmd.msgs) {
+											System.out.println(m);
+										}
+									}
+								};
+								test.sendCmds(new String[]{savedCmds.get(i)});
+								break;
+							case STORE: {
+								String cacheDir = savedCmds.get(i);
+								String srcDir = savedCmds.get(++i);
 
-										System.out.println("STORING DIR: " + srcDir + ", cache: " + cacheDir);
-										P2PMudFile.storeDir(cacheDir, srcDir, new Continuation() {
-											public void receiveResult(Object result) {
-												System.out.println("Stored dir: " + result);
-											}
-											public void receiveException(Exception exception) {
-												Tools.stackTrace(exception);
-											}
-										});
-										break;
+								System.out.println("STORING DIR: " + srcDir + ", cache: " + cacheDir);
+								P2PMudFile.storeDir(cacheDir, srcDir, new Continuation() {
+									public void receiveResult(Object result) {
+										System.out.println("Stored dir: " + result);
 									}
-									case FETCH: {
-										final String cacheDir = savedCmds.get(i);
-										final String dstDir = savedCmds.get(++i);
-										String id = savedCmds.get(++i);
-
-										test.wimpyGetFile(rice.pastry.Id.build(id), new File(cacheDir), new Closure(this) {}, new Continuation<ArrayList<?>, Exception>() {
-											public void receiveResult(ArrayList<?> result) {
-												P2PMudFile.fetchDirFromProperties(cacheDir, result.get(3), Tools.properties(result.get(0)), dstDir, 0, new Closure(this) {}, new Continuation() {
-													public void receiveResult(Object result) {
-														System.out.println("STORED");
-													}
-													public void receiveException(Exception exception) {
-														Tools.stackTrace(exception);
-													}
-												}, false);
-											};
-											public void receiveException(Exception exception) {
-												Tools.stackTrace(exception);
-											};
-										});
-										break;
+									public void receiveException(Exception exception) {
+										Tools.stackTrace(exception);
 									}
-									}
-								}
+								});
+								break;
 							}
-						} catch (Exception e) {
-							Tools.stackTrace(e);
+							case FETCH: {
+								final String cacheDir = savedCmds.get(i);
+								final String dstDir = savedCmds.get(++i);
+								String id = savedCmds.get(++i);
+
+								test.wimpyGetFile(rice.pastry.Id.build(id), new File(cacheDir), new Closure(this) {}, new Continuation<ArrayList<?>, Exception>() {
+									public void receiveResult(ArrayList<?> result) {
+										P2PMudFile.fetchDirFromProperties(cacheDir, result.get(3), Tools.properties(result.get(0)), dstDir, 0, new Closure(this) {}, new Continuation() {
+											public void receiveResult(Object result) {
+												System.out.println("STORED");
+											}
+											public void receiveException(Exception exception) {
+												Tools.stackTrace(exception);
+											}
+										}, false);
+									};
+									public void receiveException(Exception exception) {
+										Tools.stackTrace(exception);
+									};
+								});
+								break;
+							}
+							}
 						}
 					}
-				}.start();
+				} catch (Exception e) {
+					Tools.stackTrace(e);
+				}
 			}
-		} catch (Exception e) {
-			throw e; 
-		}
+		}.start();
 	}
 
 	public void destroy() {
@@ -303,7 +317,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 	 * @param bindport the local port to bind to 
 	 * @param bootaddress the IP:port of the node to boot from
 	 */
-	public void connect(String args[], int bindport, InetSocketAddress bootaddress) throws Exception {
+	public void connect() throws Exception {
 		Parameters params = new SimpleParameters(Environment.defaultParamFileArray, null);
 		SimpleTimeSource timeSrc = new SimpleTimeSource();
 		RotatingLogManager logMgr = null;
@@ -334,11 +348,25 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		}
 		SocketPastryNodeFactory factory = new SocketPastryNodeFactory(nidFactory, outgoingAddress, bindport, env);
 		nodeId = nodeIdString != null ? rice.pastry.Id.build(nodeIdString) : nidFactory.generateNodeId();
-		System.out.println("Using boot address: " + bootaddress);
+		System.out.println("Using boot host: " + bootaddress);
 		boolean success = false;
+		FastTable<InetSocketAddress> bootAddresses = new FastTable<InetSocketAddress>();
+		for (int i = firstBootport; i <= lastBootport; i++) {
+			InetSocketAddress address = new InetSocketAddress(bootaddress, i);
+			Socket sock = new Socket();
+
+			try {
+				sock.connect(address);
+				bootAddresses.add(address);
+				sock.close();
+			} catch (IOException ex) {
+				//Couldn't connect to address
+			}
+		}
+		System.out.println("Using bood addresses: " + bootAddresses);
 		for (int i = 0; i < 1 && !success; i++) {
 			if (i > 0) System.out.println("TRYING AGAIN TO JOIN RING.  ATTEMPT NUMBER " + (i + 1));
-			success = attemptConnect(bootaddress, probes, factory);
+			success = attemptConnect(bootAddresses, probes, factory);
 		}
 		if (!success) {
 			throw new IOException("Could not join the FreePastry ring.  Reason:" +  joinFailedReason);
@@ -346,13 +374,13 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		System.out.println("Finished creating new node " + node + ", count: " + node.getLeafSet().getUniqueCount());
 		startPast();
 	}
-	protected boolean attemptConnect(InetSocketAddress bootaddress, FastTable<InetSocketAddress> probes, SocketPastryNodeFactory factory) throws InterruptedException, IOException {
+	protected boolean attemptConnect(Collection bootaddresses, FastTable<InetSocketAddress> probes, SocketPastryNodeFactory factory) throws InterruptedException, IOException {
 		if (probes.isEmpty()) {
 			node = factory.newNode(nodeId);
 		} else {
 			node = factory.newNode(nodeId, probes.get(0));
 		}
-		node.boot(bootaddress);
+		node.boot(bootaddresses);
 		idFactory = new PastryIdFactory(node.getEnvironment());
 		endpoint = node.buildEndpoint(this, "myinstance");
 		endpoint.register();
