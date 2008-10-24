@@ -459,8 +459,12 @@ println "SAVED NODE ID: $LaunchPlexus.props.nodeId"
 			titledPanel(title: ' ', titlePainter: makeTitlePainter("PLEXUS [${LaunchPlexus.props.name}]: Killer App of the Future - Here Today!"), border: new DropShadowBorder(Color.BLACK, 15)) {
 				panel(layout: new MigLayout('fill, ins 0')) {
 					panel(layout: new MigLayout(), constraints: '') {
-						label(text: "Node id: ")
+						label(text: "Node ID: ")
 						label(text: LaunchPlexus.props.nodeId ?: "none", constraints: 'wrap, growx')
+						label(text: "External IP: ")
+						label(text: LaunchPlexus.props.external_ip ?: "none", constraints: 'wrap, growx')
+						label(text: "External Port: ")
+						label(text: LaunchPlexus.props.external_port ?: "none", constraints: 'wrap, growx')
 						label(text: "Neighbors: ")
 						panel(layout: new MigLayout('fill, ins 0'), constraints: 'spanx,wrap,growx') {
 							button(text: "Update Neighbor List", actionPerformed: {updateNeighborList()})

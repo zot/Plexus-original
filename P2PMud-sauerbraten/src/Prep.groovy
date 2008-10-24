@@ -155,7 +155,8 @@ public class Prep {
 					props.name,
 					props.pastry_port,
 					props.pastry_boot_host,
-					props.pastry_boot_port,
+					props.pastry_boot_start,
+					props.pastry_boot_end,
 					'-external',
 					"$props.external_ip:$props.external_port"
 				]
@@ -388,7 +389,8 @@ public class Prep {
 										label('Pastry boot host: ')
 										panel(layout: new MigLayout('fill, ins 0'), constraints: 'wrap, growx, spanx') {
 											field('', 'pastry_boot_host', 'growx', false)
-											field('Port: ', 'pastry_boot_port', 'width 64px')
+											field('Start Port: ', 'pastry_boot_start', 'width 64px')
+											field('End Port: ', 'pastry_boot_end', 'width 64px')
 										}
 									}
 									panel(layout: new MigLayout('fill,ins 0'), border: titledBorder(title: 'Sauerbraten'), constraints: 'wrap,spanx,growx') {
@@ -461,7 +463,7 @@ public class Prep {
 		successDialog.frame = swing.dialog(title: 'Success!', modal: true, pack: true) {
 			panel(layout: new MigLayout('fill,ins 0, gap 0')) {
 				panel(border: titledBorder(title: 'Your Settings Appear Correct'), constraints: 'growx, spanx, wrap', layout: new MigLayout('fill')) {
-					label(text: 'Plubble has successfuly connected to your machine.', font: new FontUIResource("SansSerif", Font.BOLD, 12), constraints: 'growx, spanx, wrap')
+					label(text: 'Plubble has successfully connected to your machine.', font: new FontUIResource("SansSerif", Font.BOLD, 12), constraints: 'growx, spanx, wrap')
 				}
 				panel(constraints: 'growx')
 				button(text: "OK", actionPerformed: {successDialog.frame.visible = false})
