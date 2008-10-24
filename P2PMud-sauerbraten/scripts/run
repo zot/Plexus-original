@@ -3,4 +3,20 @@
 #	screen -S TC -d -m
 #fi
 #screen -S TC -X exec java -Dsupress_java_version_check=true -jar plexus.jar
-nohup java -Dsupress_java_version_check=true -jar plexus.jar&
+
+function usage() {
+	echo usage: `basename $0` executionDir
+	exit 1
+}
+
+if [ ! "$1" ] ; then
+	usage
+elif [ ! -e "$1" ] ; then
+	echo no directory: $1
+	exit 1
+fi
+p=$(pwd)
+cd $1
+rm nohup.out
+ln -sf $p/plexus.jar .
+nohup sh $p/looprun $1&

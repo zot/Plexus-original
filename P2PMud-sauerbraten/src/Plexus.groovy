@@ -295,11 +295,11 @@ public class Plexus {
 		}
 		P2PMudPeer.verboseLogging = LaunchPlexus.props.verbose_log == '1'
 		P2PMudPeer.logFile = new File(plexusDir, "cache/$name/plexus.log")
-			if (P2PMudPeer.verboseLogging) {
-				P2PMudPeer.sauerLogFile = new File(plexusDir, "cache/$name/sauer.log")
-				if (P2PMudPeer.sauerLogFile.exists()) P2PMudPeer.sauerLogFile.delete()
-			}
-			try {
+		if (P2PMudPeer.verboseLogging) {
+			P2PMudPeer.sauerLogFile = new File(plexusDir, "cache/$name/sauer.log")
+			if (P2PMudPeer.sauerLogFile.exists()) P2PMudPeer.sauerLogFile.delete()
+		}
+		try {
 			P2PMudPeer.main(
 				{id, topic, cmd ->
 					try {

@@ -107,11 +107,10 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 		bindport = Integer.parseInt(args[0]);
 		// build the bootaddress from the command line args
 		boothost = args[1];
-//		if (node_interface != null && node_interface != "") {
-//			test.outgoingAddress = InetAddress.getByName(node_interface);
-//			System.out.println("Using node_interface: " + test.outgoingAddress);
-//			bootaddress = host.equals("-") ? null : new InetSocketAddress(test.outgoingAddress,bootport);
-//		} else {
+		if (node_interface != null && node_interface != "") {
+			System.out.println("Using node_interface: " + InetAddress.getByName(node_interface));
+			bootaddress = boothost.equals("-") ? null : InetAddress.getByName(node_interface);
+		} else {
 			faces: for (Enumeration interfaces = NetworkInterface.getNetworkInterfaces(); interfaces.hasMoreElements(); ) {
 				NetworkInterface face = (NetworkInterface) interfaces.nextElement();
 				
@@ -128,7 +127,7 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 			}
 			System.out.println("Using interface: " + test.outgoingAddress);
 			bootaddress = boothost.equals("-") ? null : InetAddress.getByName(boothost);
-//		}
+		}
 		firstBootport = Integer.parseInt(args[2]);
 		lastBootport = Integer.parseInt(args[3]);
 		for (int i = 3; i < args.length; i++) {
@@ -356,14 +355,17 @@ public class P2PMudPeer implements Application, ScribeMultiClient {
 			Socket sock = new Socket();
 
 			try {
+//				System.out.println("TESTING: " + address);
 				sock.connect(address);
 				bootAddresses.add(address);
 				sock.close();
+//				System.out.println("SUCCEEDED");
 			} catch (IOException ex) {
 				//Couldn't connect to address
+//				System.out.println("FAILED");
 			}
 		}
-		System.out.println("Using bood addresses: " + bootAddresses);
+		System.out.println("Using boot addresses: " + bootAddresses);
 		for (int i = 0; i < 1 && !success; i++) {
 			if (i > 0) System.out.println("TRYING AGAIN TO JOIN RING.  ATTEMPT NUMBER " + (i + 1));
 			success = attemptConnect(bootAddresses, probes, factory);

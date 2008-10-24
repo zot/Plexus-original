@@ -1,0 +1,17 @@
+#!/bin/sh
+while true
+do
+	echo
+	echo ##########################
+	echo ### STARTING PLEXUS... ###
+	echo ##########################
+	echo
+	if ! java -Dsupress_java_version_check=true -jar plexus.jar ; then
+		break
+	fi
+done
+echo
+echo ################
+echo ### FINISHED ###
+echo ################
+echo
