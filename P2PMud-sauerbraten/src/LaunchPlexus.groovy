@@ -72,106 +72,21 @@ public class LaunchPlexus {
 		}
 	}
 	public static getIgd() {
+		println "GETTING IGD"
 		if (!igd) {
-			def IGDs = InternetGatewayDevice.getDevices(5000);
+			def IGDs = InternetGatewayDevice.getDevices(1500);
 			if ( IGDs != null ) {
 				// let's get the first device found
 				igd = IGDs[0];
-			    System.out.println( "Found device " + igd.getIGDRootDevice().getModelName() );
+			    println( "Found device " + igd.getIGDRootDevice().getModelName() );
+				if (!gatewayIp) {
+					gatewayIp = igd.externalIPAddress
+					privateIp = isPrivateIP(gatewayIp)
+					println "REMOTE HOST: ${igd.remoteHost}"
+				}
 			}
 		}
 		igd
-	}
-	public static pokeHole(String service, int port) {
-		if (!(port in poked)) {
-			poked.add(port)
-			int discoveryTimeout = 5000; // 5 secs to receive a response from devices
-			try {
-			  if (getIgd()) {
-				println "externalIp: ${getGatewayIp()}"
-//			    cleanAllMappings()
-			    // now let's open the port
-			    String localHostIP = InetAddress.getLocalHost().getHostAddress();
-			    // we assume that localHostIP is something else than 127.0.0.1
-			    def mapped = igd.addPortMapping( "Plexus", null, port, port, localHostIP, 0, "TCP" );
-			    if ( mapped ) {
-					System.out.println( "TCP Port $port mapped to " + localHostIP );
-					portMappings << [port: port, protocol: "TCP"]
-			    } else {
-					System.out.println( "COULD NOT MAP TCP Port $port to " + localHostIP );
-			    }
-			    mapped = igd.addPortMapping( "Plexus", null, port, port, localHostIP, 0, "UDP" );
-			    if ( mapped ) {
-					System.out.println( "UDP Port $port mapped to " + localHostIP );
-					portMappings << [port: port, protocol: "UDP"]
-			    } else {
-					System.out.println( "COULD NOT MAP UDP Port $port to " + localHostIP );
-			    }
-			  } else {
-				  System.out.println("Couldn't find UPNP capable device");
-			  }
-			} catch ( IOException ex ) {
-			  // some IO Exception occured during communication with device
-				ex.printStackTrace()
-			} catch( UPNPResponseException respEx ) {
-			  // oops the IGD did not like something !!
-				respEx.printStackTrace()
-			}
-		}
-	}
-	public static cleanMappings() {
-		if (igd) {
-			portMappings.each {
-				println "attempting to remove mapping: $it.port [$it.protocol]..."
-				try {
-					if (igd.deletePortMapping(null, it.port, it.protocol)) {
-						println "Succeeded"
-					} else {
-						println "Couldn't remove mapping"
-					}
-				} catch (Exception ex) {
-					pritnln "Exception while attempting to remove mapping..."
-					ex.printStackTrace()
-				}
-			}
-		}
-	}
-	public static cleanAllMappings() {
-		try {
-			def count
-			def mappings = []
-
-			try {
-				count = igd.getNatMappingsCount()
-			} catch (UPNPResponseException ex) {
-				count = 200
-			}
-			println "Checking the first $count entries"
-			for (def i = 0; i < count; i++) {
-				try {
-					def entry = igd.getGenericPortMappingEntry(i)
-
-					if (entry.getOutActionArgumentValue('NewPortMappingDescription') == 'Plexus') {
-						mappings << entry
-					}
-				} catch (UPNPResponseException ex) {}
-				if (i > 0 && i % 50 == 0) {
-					println ''
-				}
-				print '.'
-			}
-			println ''
-			mappings.each {
-				println "deleting old mapping: ${it.getOutActionArgumentValue('NewExternalPort')}"
-				igd.deletePortMapping(null, Integer.parseInt(it.getOutActionArgumentValue('NewExternalPort')), it.getOutActionArgumentValue('NewProtocol'))
-			}
-		} catch ( IOException ex ) {
-		  // some IO Exception occured during communication with device
-			ex.printStackTrace()
-		} catch( UPNPResponseException respEx ) {
-		  // oops the IGD did not like something !!
-			respEx.printStackTrace()
-		}
 	}
 	/**
 	 * reserved ranges:
@@ -180,11 +95,104 @@ public class LaunchPlexus {
 	 * 172.16.x.x - 172.31.x.x
 	 * 192.168.x.x
 	 */
-	public static getGatewayIp() {
-		if (!gatewayIp) {
-			gatewayIp = getIgd().externalIPAddress
-			privateIp = gatewayIp ==~ /((10|169)|172\.(1[6-9]|2.|30|31)|192.168)\..*/
+	public static isPrivateIP(ip) {
+		ip ==~ /((10|169)|172\.(1[6-9]|2.|30|31)|192.168)\..*/
+	}
+	public static pokeHole(String service, int port) {
+		if (!(port in poked)) {
+			poked.add(port)
+			try {
+				def device = getIgd()
+
+				if (device) {
+					def localHostIP = InetAddress.getLocalHost().getHostAddress();
+
+					println "externalIp: ${getGatewayIp()}"
+					pokeIgdHole(device, port, localHostIP)
+				} else {
+					println("Couldn't find UPNP capable device");
+				}
+			} catch ( IOException ex ) {
+				// some IO Exception occured during communication with device
+				ex.printStackTrace()
+			} catch( UPNPResponseException respEx ) {
+				// oops the IGD did not like something !!
+				respEx.printStackTrace()
+			}
 		}
-		gatewayIp
+	}
+	public static pokeIgdHole(device, port, destIP) {
+	    // we assume that destIP is something else than 127.0.0.1
+	    println "ADDING TCP PORT MAPPING $port -> $destIP"
+	    def mapped = igd.addPortMapping( "Plexus", null, port, port, destIP, 0, "TCP" );
+
+	    if ( mapped ) {
+			System.out.println( "TCP Port $port mapped to " + destIP );
+			portMappings << [device: device, port: port, protocol: "TCP"]
+	    } else {
+			System.out.println( "COULD NOT MAP TCP Port $port to " + destIP );
+	    }
+	    println "ADDING UDP PORT MAPPING $port -> $destIP"
+	    mapped = igd.addPortMapping( "Plexus", null, port, port, destIP, 0, "UDP" );
+	    if ( mapped ) {
+			System.out.println( "UDP Port $port mapped to " + destIP );
+			portMappings << [device: device, port: port, protocol: "UDP"]
+	    } else {
+			System.out.println( "COULD NOT MAP UDP Port $port to " + destIP );
+	    }
+	}
+	public static cleanMappings() {
+		portMappings.each {
+			println "attempting to remove mapping: $it.port [$it.protocol]..."
+			try {
+				if (it.device.deletePortMapping(null, it.port, it.protocol)) {
+					println "Succeeded"
+				} else {
+					println "Couldn't remove mapping $it"
+				}
+			} catch (Exception ex) {
+				pritnln "Exception while attempting to remove mapping $t"
+				ex.printStackTrace()
+			}
+		}
+	}
+	public static cleanAllMappings() {
+		if (igd) {
+			try {
+				def count
+				def mappings = []
+	
+				try {
+					count = igd.getNatMappingsCount()
+				} catch (UPNPResponseException ex) {
+					count = 200
+				}
+				println "Checking the first $count entries"
+				for (def i = 0; i < count; i++) {
+					try {
+						def entry = igd.getGenericPortMappingEntry(i)
+	
+						if (entry.getOutActionArgumentValue('NewPortMappingDescription') == 'Plexus') {
+							mappings << entry
+						}
+					} catch (UPNPResponseException ex) {}
+					if (i > 0 && i % 50 == 0) {
+						println ''
+					}
+					print '.'
+				}
+				println ''
+				mappings.each {
+					println "deleting old mapping: ${it.getOutActionArgumentValue('NewExternalPort')}"
+					igd.deletePortMapping(null, Integer.parseInt(it.getOutActionArgumentValue('NewExternalPort')), it.getOutActionArgumentValue('NewProtocol'))
+				}
+			} catch ( IOException ex ) {
+			  // some IO Exception occured during communication with device
+				ex.printStackTrace()
+			} catch( UPNPResponseException respEx ) {
+			  // oops the IGD did not like something !!
+				respEx.printStackTrace()
+			}
+		}
 	}
 }
