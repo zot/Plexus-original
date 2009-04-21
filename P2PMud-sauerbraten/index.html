@@ -786,12 +786,12 @@ example, one GMS might be more suited for space adventures, one for ancient worl
 &lt;/html&gt;
 }}}</pre>
 </div>
-<div title="Plexus" modifier="BillBurdick" created="200806171636" modified="200808291619" changecount="12">
-<pre>P2PMud is a peer-to-peer multiuser dungeon with a [[long history|Reloaded]]
+<div title="Plexus" modifier="WRB" created="200806171636" modified="200904211241" changecount="14">
+<pre>Plexus is a peer-to-peer multiuser dungeon with a [[long history|Reloaded]]
 
 And it's The Killer App of the Future!
 
-The //''P2PMud [[Reloaded]]''// project adds support to the fantastic ''[[Sauerbraten|http://sauerbraten.org]]'' engine to allow remote scripting and hooking in at deep levels, with the goal of minimizing changes to the Sauerbraten source code.
+The //''~P2PMud [[Reloaded]]''// project adds support to the fantastic ''[[Sauerbraten|http://sauerbraten.org]]'' engine to allow remote scripting and hooking in at deep levels, with the goal of minimizing changes to the Sauerbraten source code.
 
 Part of this is putting in hooks for moderated play, for instance, chain of command-style hooks for weapon hits.  You can register a hook that Sauerbraten calls instead of the normal hit code.  The hook may invoke a &quot;defaulthit&quot; command to proceed with normal damage.
 
@@ -801,12 +801,12 @@ Part of this is putting in hooks for moderated play, for instance, chain of comm
 <pre>relaying (if using Sauerbraten's server)
 *to prevent, set curmsg = p.length(), otherwise it multicasts the current message</pre>
 </div>
-<div title="Reloaded" modifier="BillBurdick" created="200806171638" modified="200810101524" changecount="20">
+<div title="Reloaded" modifier="Zot" created="200806171638" modified="200904030547" changecount="21">
 <pre>~P2PMud traces its roots back to the murky depths of history.  In 1988, Roy Riggs first wrote a tiny multi-user dungeon in C, one of the earliest ~MMORPGs that ran over the Internet (while, maybe an MORPG, anyway.)  It took only a matter of days, or perhaps even hours, for Bill Burdick to join Roy in this glorious endevour and together they formed the sinister TEAM CTHULHU!
 
 Since that time, TEAM CTHULHU's MUD has metamophosed many times, each time shedding its carapace to reveal something bizarrely different from its predecessor.
 
-You can even see a reference to TEAM CTHULHU in the CREDITS file of [[LPMud|http://www.genesismud.org/]].  We came up with an idea called &quot;forwarders&quot; for our original MUD which became &quot;shadows&quot; in ~LPMud.  There's a fairly early version of ~LPMud [[here|http://ibiblio.net/pub/historic-linux/ftp-archives/sunsite.unc.edu/Nov-06-1994/games/muds/]].
+You can even see a reference to TEAM CTHULHU in the [[CREDITS|http://www.genesismud.org/svn/driver/trunk/doc/CREDITS]] file of [[LPMud|http://www.genesismud.org/]].  We came up with an idea called &quot;forwarders&quot; for our original MUD which became &quot;shadows&quot; in ~LPMud.  There's a fairly early version of ~LPMud [[here|http://ibiblio.net/pub/historic-linux/ftp-archives/sunsite.unc.edu/Nov-06-1994/games/muds/]].
 
 !TEAM CTHULHU Timeline
 #Fall 1988, Roy Riggs write a miniscule MUD in C
@@ -821,7 +821,7 @@ You can even see a reference to TEAM CTHULHU in the CREDITS file of [[LPMud|http
 #Fall 2005, we commission Steven Missal to create Lovecraftian art
 #Spring 2008, we switch to Sauerbraten, Groovy, and Pastry (on top of Java)</pre>
 </div>
-<div title="RoadMap" modifier="BillBurdick" created="200806191122" modified="200810210428" changecount="258">
+<div title="RoadMap" modifier="WRB" created="200806191122" modified="200904211243" changecount="259">
 <pre>!Mondo Yith
 *Cycle plubble peers every 45-60 mins
 *Player names seem screwy -- bubba + fur = fur + fur?
@@ -829,6 +829,7 @@ You can even see a reference to TEAM CTHULHU in the CREDITS file of [[LPMud|http
 *Handle error loading a map from a peer that drops out
 *camera rotation problem on Linux
 !Next
+*check out alternate UPnP versions (http://code.google.com/p/razpub/ and http://code.google.com/p/weupnp/)
 *if this is a new plexus version, offer to toast the cache
 *Pastry reconnect business (multiple root peers?)
 *set CPPFLAGS -DTC in src/Makefile's call to src/enet/configure
@@ -987,8 +988,8 @@ You can even see a reference to TEAM CTHULHU in the CREDITS file of [[LPMud|http
 <div title="SiteTitle" modifier="Zot" created="200806171608" modified="200806191146" changecount="9">
 <pre>[img[P2PMud|docs/images/p2pmud.gif]]</pre>
 </div>
-<div title="StartingOut" modifier="BillBurdick" created="200807142041" modified="200809272113" changecount="12">
-<pre>*P2PMud is currently based on the Assassin version of Sauerbraten, which you can download [[here|http://sourceforge.net/project/showfiles.php?group_id=102911&amp;package_id=110363&amp;release_id=563483]]
+<div title="StartingOut" modifier="WRB" created="200807142041" modified="200904211241" changecount="15">
+<pre>*Plexus is currently based on the CTF version of Sauerbraten, which you can download [[here|http://www.cubeengine.com/files.php4]]
 *This repository is an Eclipse project, so you'll probably want Eclipse and the CDT feature for C/C++
 Once you have the stuff, you need to:
 *Build the project
